@@ -8,6 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 import Image from "next/image";
 import { Auth } from "@/api/api";
+import { toast } from 'react-toastify';
 
 interface PasswordRequirement {
   text: string;
@@ -99,13 +100,14 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
+      toast.error("Passwords do not match");
       setIsLoading(false);
       return;
     }
-
     // Validate password strength
     if (passwordStrength < 4) {
       setError("Please choose a stronger password");
+      toast.error("Please choose a stronger password");
       setIsLoading(false);
       return;
     }
@@ -114,13 +116,18 @@ const handleSubmit = async (e: React.FormEvent) => {
         const response = await Auth.register(formData);
         console.log("response: ", response);
         if (response.status === 200) {
+            toast.success(response.message);
             // Redirect to success page with email in query params
             router.push(`/register/success?email=${encodeURIComponent(formData.email)}`);
         } else {
-            setError(response.message || "Failed to create account");
+            const errorMessage = response.message || "Failed to create account";
+            setError(errorMessage);
+            toast.error(errorMessage);
         }
-    } catch (err) {
-        setError("Failed to create account");
+    } catch (err: any) {
+        const errorMessage = err.response?.data?.message || "Failed to create account";
+        setError(errorMessage);
+        toast.error(errorMessage);
         console.log("error: ", err);
     } finally {
         setIsLoading(false);
@@ -134,9 +141,12 @@ const handleSubmit = async (e: React.FormEvent) => {
     try {
       // TODO: Implement social authentication
       await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success(`Successfully signed up with ${provider}`);
       router.push("/dashboard");
     } catch (err) {
-      setError(`Failed to sign up with ${provider}`);
+      const errorMessage = `Failed to sign up with ${provider}`;
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

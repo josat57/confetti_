@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from 'react-toastify';
 
 export default function RegisterSuccessPage() {
   const router = useRouter();
@@ -12,10 +13,19 @@ export default function RegisterSuccessPage() {
   const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
+    if (!email) {
+      toast.error("Invalid registration flow");
+      router.push("/register");
+      return;
+    }
+
+    toast.success("Registration successful! Please check your email for verification.");
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          toast.info("Redirecting to sign in page...");
           router.push("/sign-in");
           return 0;
         }
@@ -24,7 +34,7 @@ export default function RegisterSuccessPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [router, email]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
