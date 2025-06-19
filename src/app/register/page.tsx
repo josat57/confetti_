@@ -115,7 +115,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     try {
         const response = await Auth.register(formData);
         console.log("response: ", response);
-        if (response.status === 200) {
+        if (response.status === "success") {
             toast.success(response.message);
             // Redirect to success page with email in query params
             router.push(`/register/success?email=${encodeURIComponent(formData.email)}`);
@@ -139,15 +139,29 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(true);
 
     try {
-      // TODO: Implement social authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Successfully signed up with ${provider}`);
-      router.push("/dashboard");
-    } catch (err) {
-      const errorMessage = `Failed to sign up with ${provider}`;
+      switch (provider) {
+        case 'google':
+          // Redirect to Google OAuth
+          const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+          window.location.href = googleAuthUrl;
+          return;
+
+        case 'facebook':
+          // Redirect to Facebook OAuth
+          const facebookAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/facebook`;
+          window.location.href = facebookAuthUrl;
+          return;
+
+        case 'twitter':
+          // Redirect to Twitter OAuth
+          const twitterAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/twitter`;
+          window.location.href = twitterAuthUrl;
+          return;
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || `Failed to sign up with ${provider}`;
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setIsLoading(false);
     }
   };

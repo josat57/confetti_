@@ -1,13 +1,34 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { Check, X } from 'lucide-react';
+import { Check, X, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { toast } from 'react-toastify';
+import PaymentModal from '../subscription/PaymentModal';
 
-const vendorPlans = [
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  period: string;
+  description: string;
+  features: string[];
+  limitations: string[];
+  role: 'vendor' | 'event_planner';
+  trialDays: number;
+  trialEvents: number;
+}
+
+// Dummy data for plans
+const dummyPlans: Plan[] = [
   {
+    id: 'vendor-basic',
     name: 'Basic',
-    price: 'Free',
+    price: 0,
+    period: '/month',
     description: 'Perfect for vendors just starting out',
     features: [
       'Basic profile listing',
@@ -21,12 +42,14 @@ const vendorPlans = [
       'Limited photo uploads',
       'Basic customer reviews',
     ],
-    cta: 'Get Started',
-    popular: false,
+    role: 'vendor',
+    trialDays: 0,
+    trialEvents: 0,
   },
   {
+    id: 'vendor-pro',
     name: 'Professional',
-    price: '$49',
+    price: 49,
     period: '/month',
     description: 'Ideal for growing vendors',
     features: [
@@ -40,12 +63,14 @@ const vendorPlans = [
       'Booking calendar',
     ],
     limitations: [],
-    cta: 'Start Free Trial',
-    popular: true,
+    role: 'vendor',
+    trialDays: 14,
+    trialEvents: 2,
   },
   {
+    id: 'vendor-enterprise',
     name: 'Enterprise',
-    price: '$99',
+    price: 99,
     period: '/month',
     description: 'For established vendors',
     features: [
@@ -61,15 +86,15 @@ const vendorPlans = [
       'White-label options',
     ],
     limitations: [],
-    cta: 'Contact Sales',
-    popular: false,
+    role: 'vendor',
+    trialDays: 14,
+    trialEvents: 2,
   },
-];
-
-const plannerPlans = [
   {
+    id: 'planner-basic',
     name: 'Starter',
-    price: 'Free',
+    price: 0,
+    period: '/month',
     description: 'Perfect for personal event planning',
     features: [
       'Basic event planning tools',
@@ -83,12 +108,14 @@ const plannerPlans = [
       'Limited guest management',
       'Basic budget tracking',
     ],
-    cta: 'Get Started',
-    popular: false,
+    role: 'event_planner',
+    trialDays: 0,
+    trialEvents: 0,
   },
   {
+    id: 'planner-pro',
     name: 'Professional',
-    price: '$29',
+    price: 29,
     period: '/month',
     description: 'For professional event planners',
     features: [
@@ -102,12 +129,14 @@ const plannerPlans = [
       'Vendor management tools',
     ],
     limitations: [],
-    cta: 'Start Free Trial',
-    popular: true,
+    role: 'event_planner',
+    trialDays: 14,
+    trialEvents: 2,
   },
   {
+    id: 'planner-enterprise',
     name: 'Enterprise',
-    price: '$79',
+    price: 79,
     period: '/month',
     description: 'For event planning agencies',
     features: [
@@ -121,45 +150,139 @@ const plannerPlans = [
       'Dedicated account manager',
     ],
     limitations: [],
-    cta: 'Contact Sales',
-    popular: false,
+    role: 'event_planner',
+    trialDays: 14,
+    trialEvents: 2,
   },
 ];
 
-const PricingSection = () => {
-  const [activeTab, setActiveTab] = useState<'vendor' | 'planner'>('vendor');
+export default function PricingSection() {
+  const [activeTab, setActiveTab] = useState<'vendor' | 'event_planner'>('vendor');
+  const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<'flutterwave' | 'paystack'>('flutterwave');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+  const { currentPlan, trialStatus, isLoading, subscribe } = useSubscription();
+
+  const handleSubscribe = async (plan: Plan) => {
+    if (!user) {
+      toast.info('Please sign in to subscribe to a plan');
+      router.push('/sign-in');
+      return;
+    }
+
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!selectedPlan) return;
+
+    try {
+      await subscribe(selectedPlan.id, selectedPaymentProvider);
+      setShowPaymentModal(false);
+      setSelectedPlan(null);
+      toast.success('Successfully subscribed to plan');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to subscribe to plan');
+    }
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentModal(false);
+    setSelectedPlan(null);
+  };
+
+  const renderPricingCard = (plan: Plan) => {
+    const isCurrentPlan = currentPlan?.id === plan.id;
+    const isTrialActive = trialStatus?.isActive && isCurrentPlan;
+
+    return (
+      <motion.div
+        key={plan.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className={`relative p-6 rounded-lg border shadow-sm ${
+          isCurrentPlan ? 'border-primary bg-primary/5' : 'border-gray-200'
+        }`}
+      >
+        {isCurrentPlan && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm">
+            Current Plan
+          </div>
+        )}
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+          <div className="text-3xl font-bold mb-2">
+            ${plan.price}
+            <span className="text-sm font-normal text-gray-500">{plan.period}</span>
+          </div>
+          <p className="text-gray-600">{plan.description}</p>
+        </div>
+        <ul className="space-y-3 mb-6">
+          {plan.features.map((feature, index) => (
+            <li key={index} className="flex items-start">
+              <Check className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" />
+              <span>{feature}</span>
+            </li>
+          ))}
+          {plan.limitations.map((limitation, index) => (
+            <li key={index} className="flex items-start text-gray-500">
+              <X className="w-5 h-5 text-gray-400 mr-2 flex-shrink-0" />
+              <span>{limitation}</span>
+            </li>
+          ))}
+        </ul>
+        {plan.trialDays > 0 && !isCurrentPlan && (
+          <div className="text-center text-sm text-gray-600 mb-4">
+            {plan.trialDays}-day free trial with {plan.trialEvents} events
+          </div>
+        )}
+        {isTrialActive && (
+          <div className="text-center text-sm text-primary mb-4">
+            {trialStatus.daysRemaining} days remaining in trial
+            <br />
+            {trialStatus.eventsRemaining} events remaining
+          </div>
+        )}
+        <button
+          onClick={() => handleSubscribe(plan)}
+          disabled={isCurrentPlan}
+          className={`w-full py-4 px-4 rounded-lg text-white font-medium transition-colors ${
+            isCurrentPlan
+              ? 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-purple-600 text-white hover:bg-purple-700'
+          }`}
+        >
+          {isCurrentPlan ? 'Current Plan' : 'Subscribe Now'}
+        </button>
+      </motion.div>
+    );
+  };
+
+  const filteredPlans = dummyPlans.filter(plan => plan.role === activeTab);
 
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-gray-900 mb-4"
-          >
-            Simple, Transparent Pricing
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-xl text-gray-600 max-w-3xl mx-auto"
-          >
-            Choose the perfect plan for your needs
-          </motion.p>
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Select the perfect plan for your needs. All plans include a 14-day free trial.
+          </p>
+        </div>
 
-          {/* Tab Navigation */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex justify-center space-x-4 mt-8"
-          >
+        {/* Tab Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex justify-center space-x-4 mt-8"
+        >
+          <div className="inline-flex rounded-lg border border-gray-200 p-1">
             <button
               onClick={() => setActiveTab('vendor')}
               className={`px-6 py-2 rounded-full text-lg font-medium transition-colors ${
@@ -171,94 +294,34 @@ const PricingSection = () => {
               For Vendors
             </button>
             <button
-              onClick={() => setActiveTab('planner')}
+              onClick={() => setActiveTab('event_planner')}
               className={`px-6 py-2 rounded-full text-lg font-medium transition-colors ${
-                activeTab === 'planner'
+                activeTab === 'event_planner'
                   ? 'bg-purple-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-100'
               }`}
             >
               For Event Planners
             </button>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {(activeTab === 'vendor' ? vendorPlans : plannerPlans).map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-white rounded-2xl shadow-lg overflow-hidden ${
-                plan.popular ? 'ring-2 ring-purple-600' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="bg-purple-600 text-white text-center py-2 text-sm font-medium">
-                  Most Popular
-                </div>
-              )}
-              <div className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                <div className="flex items-baseline mb-4">
-                  <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                  {plan.period && (
-                    <span className="text-gray-600 ml-1">{plan.period}</span>
-                  )}
-                </div>
-                <p className="text-gray-600 mb-6">{plan.description}</p>
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start">
-                      <Check className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" />
-                      <span className="text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                  {plan.limitations.map((limitation) => (
-                    <li key={limitation} className="flex items-start">
-                      <X className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
-                      <span className="text-gray-600">{limitation}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
-                    plan.popular
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  {plan.cta}
-                </button>
-              </div>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+          {filteredPlans.map(plan => renderPricingCard(plan))}
         </div>
 
-        {/* Additional Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-gray-600 mb-4">
-            All plans include a 14-day free trial. No credit card required.
-          </p>
-          <p className="text-gray-600">
-            Need a custom plan?{' '}
-            <a href="#contact" className="text-purple-600 hover:text-purple-700 font-medium">
-              Contact our sales team
-            </a>
-          </p>
-        </motion.div>
+        {/* Payment Modal */}
+        {showPaymentModal && selectedPlan && (
+          <PaymentModal
+            isOpen={showPaymentModal}
+            onClose={handlePaymentCancel}
+            plan={selectedPlan}
+            paymentProvider={selectedPaymentProvider}
+            onSuccess={handlePaymentSuccess}
+          />
+        )}
       </div>
     </section>
   );
-};
-
-export default PricingSection; 
+} 

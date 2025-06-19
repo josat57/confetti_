@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Auth } from "@/api/api";
+import { toast } from "react-toastify";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -20,13 +22,18 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual password reset request API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSuccess(true);
-      // Redirect to OTP verification page after 2 seconds
-      setTimeout(() => {
-        router.push(`/reset-password?email=${encodeURIComponent(email)}`);
-      }, 2000);
+      const response = await Auth.forgotPassword(email);
+      if (response.status === "success") {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setSuccess(true);
+        // Redirect to OTP verification page after 2 seconds
+        setTimeout(() => {
+          router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+        }, 2000);
+      } else {
+        setError(response.message);
+        toast.error(response.message || "Unable to sent password reset link")
+      }
     } catch (err) {
       setError("Failed to send reset code. Please try again.");
     } finally {

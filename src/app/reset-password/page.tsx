@@ -3,19 +3,29 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Lock, Eye, EyeOff, RefreshCw, Check, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Auth } from "@/api/api";
+import { toast } from "react-toastify";
+
+interface PasswordRequirement {
+  text: string;
+  regex: RegExp;
+  met: boolean;
+}
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const token = searchParams.get("token");
 
   const [formData, setFormData] = useState({
     otp: "",
     password: "",
     confirmPassword: "",
+    token: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +34,14 @@ export default function ResetPasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [requirements, setRequirements] = useState<PasswordRequirement[]>([
+    { text: "At least 8 characters", regex: /.{8,}/, met: false },
+    { text: "At least one uppercase letter", regex: /[A-Z]/, met: false },
+    { text: "At least one lowercase letter", regex: /[a-z]/, met: false },
+    { text: "At least one number", regex: /[0-9]/, met: false },
+    { text: "At least one special character", regex: /[!@#$%^&*(),.?":{}|<>]/, met: false },
+  ]);
 
   useEffect(() => {
     if (!email) {
@@ -43,6 +61,60 @@ export default function ResetPasswordPage() {
     return () => clearInterval(timer);
   }, [resendTimer]);
 
+  useEffect(() => {
+    if (formData.password) {
+      const updatedRequirements = requirements.map(req => ({
+        ...req,
+        met: req.regex.test(formData.password)
+      }));
+      setRequirements(updatedRequirements);
+      
+      const strength = updatedRequirements.filter(req => req.met).length;
+      setPasswordStrength(strength);
+    } else {
+      setRequirements(requirements.map(req => ({ ...req, met: false })));
+      setPasswordStrength(0);
+    }
+  }, [formData.password]);
+
+  const getStrengthColor = (strength: number) => {
+    switch (strength) {
+      case 0:
+        return "bg-gray-200";
+      case 1:
+        return "bg-red-500";
+      case 2:
+        return "bg-orange-500";
+      case 3:
+        return "bg-yellow-500";
+      case 4:
+        return "bg-blue-500";
+      case 5:
+        return "bg-green-500";
+      default:
+        return "bg-gray-200";
+    }
+  };
+
+  const getStrengthText = (strength: number) => {
+    switch (strength) {
+      case 0:
+        return "No password";
+      case 1:
+        return "Very Weak";
+      case 2:
+        return "Weak";
+      case 3:
+        return "Medium";
+      case 4:
+        return "Strong";
+      case 5:
+        return "Very Strong";
+      default:
+        return "No password";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -50,18 +122,30 @@ export default function ResetPasswordPage() {
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
+      toast.error("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password strength
+    if (passwordStrength < 4) {
+      setError("Please choose a stronger password");
+      toast.error("Please choose a stronger password");
       setIsLoading(false);
       return;
     }
 
     try {
-      // TODO: Implement actual password reset API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSuccess(true);
-      // Redirect to sign in page after 2 seconds
-      setTimeout(() => {
+      formData.token = token!;
+      const response = await Auth.resetPassword(formData);
+      if (response.status === "success") {
+        setSuccess(true);
+        toast.success(response.message);
         router.push("/sign-in");
-      }, 2000);
+      } else {
+        setError(response.message);
+        toast.error(response.message);
+      }
     } catch (err) {
       setError("Failed to reset password. Please try again.");
     } finally {
@@ -75,10 +159,15 @@ export default function ResetPasswordPage() {
     setError(null);
     setIsLoading(true);
     try {
-      // TODO: Implement actual resend OTP API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setResendTimer(60);
-      setCanResend(false);
+      const response = await Auth.resendOtp(email!);
+      if (response.status === "success") {
+        toast.success(response.message)
+        setResendTimer(60);
+        setCanResend(false);
+        router.push("/sign-in");
+      } else {
+        router.push("/forgot-password");
+      }
     } catch (err) {
       setError("Failed to resend code. Please try again.");
     } finally {
@@ -218,6 +307,35 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
+
+              {/* Password Strength Indicator */}
+              <div className="mt-2">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)}`}
+                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Password Strength: {getStrengthText(passwordStrength)}
+                </p>
+              </div>
+
+              {/* Password Requirements */}
+              <div className="mt-3 space-y-2">
+                {requirements.map((requirement, index) => (
+                  <div key={index} className="flex items-center text-sm">
+                    {requirement.met ? (
+                      <Check className="w-4 h-4 text-green-500 mr-2" />
+                    ) : (
+                      <X className="w-4 h-4 text-gray-400 mr-2" />
+                    )}
+                    <span className={requirement.met ? "text-green-600" : "text-gray-500"}>
+                      {requirement.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Confirm Password */}
@@ -253,25 +371,20 @@ export default function ResetPasswordPage() {
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading || success}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Resetting..." : success ? "Password Reset!" : "Reset Password"}
-              </button>
-            </div>
-
-            <div className="text-center text-sm">
-              <Link
-                href="/sign-in"
-                className="font-medium text-purple-600 hover:text-purple-500 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Sign In
-              </Link>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Resetting Password...</span>
+                </div>
+              ) : (
+                "Reset Password"
+              )}
+            </button>
           </motion.form>
         </div>
       </div>

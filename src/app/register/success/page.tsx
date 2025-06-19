@@ -81,7 +81,8 @@ export default function RegisterSuccessPage() {
             transition={{ delay: 0.5 }}
             className="text-gray-600 mb-4"
           >
-            Please check your email and follow the verification link to activate your account.
+            Please check your email and click the verification link to activate your account.
+            The verification link will include your email address and a token.
           </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
