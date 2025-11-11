@@ -1,6 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ============================================================================
+# Dependencies
+# ============================================================================
 /node_modules
 /.pnp
 .pnp.*
@@ -9,33 +11,246 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# testing
+# ============================================================================
+# Testing
+# ============================================================================
 /coverage
+*.lcov
+.nyc_output
+/test-results/
+/playwright-report/
+/playwright/.cache/
 
-# next.js
+# ============================================================================
+# Next.js
+# ============================================================================
 /.next/
 /out/
+.next
+out
+next-env.d.ts
 
-# production
+# ============================================================================
+# Production
+# ============================================================================
 /build
+/dist
+*.js.map
 
-# misc
-.DS_Store
-*.pem
+# ============================================================================
+# Environment Variables
+# ============================================================================
+.env
+.env.local
+.env.local.example
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 
-# debug
+# Keep example files
+!.env.example
+!.env.local.example
+
+# ============================================================================
+# Logs
+# ============================================================================
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ============================================================================
+# Operating System Files
+# ============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# vercel
-.vercel
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# typescript
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================================================
+# IDEs and Editors
+# ============================================================================
+# VSCode
+.vscode/*
+.kiro/*
+.next/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+tags
+[._]*.un~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================================================
+# TypeScript
+# ============================================================================
 *.tsbuildinfo
-next-env.d.ts
+*.tgz
+.npm
+.eslintcache
+.stylelintcache
+
+# ============================================================================
+# Vercel
+# ============================================================================
+.vercel
+.vercel.json
+
+# ============================================================================
+# Certificates and Keys
+# ============================================================================
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ============================================================================
+# Temporary Files
+# ============================================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.cache
+.cache/
+
+# ============================================================================
+# Database
+# ============================================================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================================================
+# Misc
+# ============================================================================
+.turbo
+.contentlayer
+.docusaurus
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ============================================================================
+# AI/ML Models (if any)
+# ============================================================================
+*.h5
+*.pkl
+*.pickle
+*.model
+*.weights
+
+# ============================================================================
+# Documentation Build
+# ============================================================================
+/docs/_build/
+/docs/.docusaurus/
+
+# ============================================================================
+# Storybook
+# ============================================================================
+storybook-static
+
+# ============================================================================
+# Sentry
+# ============================================================================
+.sentryclirc
+
+# ============================================================================
+# Local Development
+# ============================================================================
+.local
+*.local
+
+# ============================================================================
+# Keep These Files
+# ============================================================================
+!.gitkeep
+!.npmrc
+!.nvmrc
+!.prettierrc
+!.eslintrc.json
