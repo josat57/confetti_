@@ -23,8 +23,10 @@ import {
 import { motion } from 'framer-motion';
 
 export default function AdminDashboard() {
+  
   const { stats, loading, refreshStats } = useAdmin();
   const { user } = useAuth();
+
   const [recentActivity, setRecentActivity] = useState([
     {
       id: 1,

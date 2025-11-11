@@ -1,0 +1,464 @@
+# Implementation Plan
+
+- [ ] 1. Set up data models and types
+
+  - [ ] 1.1 Create Event type definition with all required fields
+    - Define Event interface with id, userId, title, description, eventType, date, location, venue, guestCount, budget, status, progress, imageUrl, timestamps
+    - Define EventStatus enum (draft, planning, confirmed, in_progress, completed, cancelled)
+    - Define EventType enum (wedding, corporate, birthday, graduation, conference, other)
+    - _Requirements: 1.1, 1.3, 6.1_
+  - [ ] 1.2 Create Filter and Sort type definitions
+    - Define EventFilters interface with status, eventType, dateRange, budgetRange
+    - Define SortOptions interface with field and order
+    - Define PaginationState interface
+    - _Requirements: 2.1, 2.2, 3.1_
+  - [ ] 1.3 Create Statistics type definition
+    - Define EventStatistics interface with totalEvents, upcomingEvents, completedEvents, totalBudget, eventsByStatus, nextEvent
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+
+- [ ] 2. Implement backend API endpoints
+
+  - [ ] 2.1 Create GET /api/v1/events endpoint with filtering, sorting, and pagination
+    - Implement query parameter parsing for page, limit, status, eventType, dateFrom, dateTo, search, sortBy, sortOrder
+    - Add database query with filters and sorting
+    - Implement pagination logic
+    - Return events array with pagination metadata
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 3.1, 5.1_
+  - [ ] 2.2 Create GET /api/v1/events/statistics endpoint
+    - Calculate total events count
+    - Calculate upcoming events count (events with date >= today)
+    - Calculate completed events count
+    - Calculate total budget across all active events
+    - Calculate events by status breakdown
+    - Find next upcoming event with countdown
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+  - [ ] 2.3 Create DELETE /api/v1/events/:id endpoint
+    - Validate user ownership of event
+    - Delete event from database
+    - Return success response
+    - _Requirements: 4.4, 12.1, 12.2, 12.3_
+  - [ ] 2.4 Create POST /api/v1/events/:id/duplicate endpoint
+    - Fetch original event
+    - Create new event with copied data (new ID, reset status to draft)
+    - Return new event data
+    - _Requirements: 4.7_
+  - [ ] 2.5 Create DELETE /api/v1/events/bulk endpoint
+    - Accept array of event IDs
+    - Validate user ownership for all events
+    - Delete all events in transaction
+    - Return deleted count
+    - _Requirements: 11.2, 11.3_
+  - [ ] 2.6 Create PATCH /api/v1/events/bulk/status endpoint
+    - Accept array of event IDs and new status
+    - Validate user ownership for all events
+    - Update status for all events in transaction
+    - Return updated count
+    - _Requirements: 11.4_
+
+- [ ] 3. Create API client functions
+
+  - [ ] 3.1 Implement fetchEvents function in src/lib/api/events.ts
+    - Create function that calls GET /api/v1/events with query parameters
+    - Handle response parsing and error handling
+    - Return typed Event array and pagination data
+    - _Requirements: 1.1, 1.4_
+  - [ ] 3.2 Implement fetchEventStatistics function
+    - Create function that calls GET /api/v1/events/statistics
+    - Handle response parsing and error handling
+    - Return typed EventStatistics
+    - _Requirements: 10.1_
+  - [ ] 3.3 Implement deleteEvent function
+    - Create function that calls DELETE /api/v1/events/:id
+    - Handle response and error handling
+    - _Requirements: 4.4_
+  - [ ] 3.4 Implement duplicateEvent function
+    - Create function that calls POST /api/v1/events/:id/duplicate
+    - Handle response and return new event
+    - _Requirements: 4.7_
+  - [ ] 3.5 Implement bulkDeleteEvents function
+    - Create function that calls DELETE /api/v1/events/bulk
+    - Accept array of event IDs
+    - Handle response and error handling
+    - _Requirements: 11.2_
+  - [ ] 3.6 Implement bulkUpdateEventStatus function
+    - Create function that calls PATCH /api/v1/events/bulk/status
+    - Accept array of event IDs and new status
+    - Handle response and error handling
+    - _Requirements: 11.4_
+
+- [ ] 4. Create custom hooks for data management
+
+  - [ ] 4.1 Create useEvents hook in src/hooks/useEvents.ts
+    - Implement SWR-based data fetching with caching
+    - Accept filters, sort, search, and pagination parameters
+    - Return events, loading state, error state, and mutate function
+    - Implement 5-minute cache duration
+    - _Requirements: 1.1, 1.4, 9.3_
+  - [ ] 4.2 Create useEventStatistics hook
+    - Implement SWR-based statistics fetching
+    - Return statistics, loading state, and error state
+    - Implement automatic refresh on event changes
+    - _Requirements: 10.1, 10.5_
+  - [ ] 4.3 Create useEventFilters hook
+    - Manage filter state (status, eventType, dateRange, budgetRange)
+    - Provide functions to update individual filters
+    - Provide function to clear all filters
+    - Persist filters in session storage
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
+  - [ ] 4.4 Create useBulkActions hook
+    - Manage selected events state
+    - Provide functions for select, deselect, select all, deselect all
+    - Provide functions for bulk delete and bulk status update
+    - Handle optimistic updates
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [ ] 5. Build core UI components
+
+  - [ ] 5.1 Create EventCard component in src/components/dashboard/EventCard.tsx
+    - Display event image with fallback
+    - Display event title (truncated to 2 lines)
+    - Display event date with calendar icon using date-fns formatting
+    - Display location with map pin icon
+    - Display status badge with color coding based on status
+    - Display progress bar when status is 'planning'
+    - Display task counter badge
+    - Add checkbox for bulk selection (top-left corner)
+    - Add three-dot menu button for quick actions
+    - Implement hover effects and animations
+    - Make component responsive for mobile, tablet, desktop
+    - _Requirements: 1.3, 4.1, 6.1, 6.2, 6.3, 6.4, 6.5, 8.2, 8.3, 8.4, 11.1_
+  - [ ] 5.2 Create QuickActionsMenu component
+    - Create dropdown menu with View, Edit, Delete, Share, Duplicate actions
+    - Implement click handlers for each action
+    - Add icons for each action
+    - Add keyboard navigation support
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
+  - [ ] 5.3 Create EmptyState component
+    - Display when no events exist or no search results
+    - Show appropriate message based on context (no events vs. no results)
+    - Include "Create Event" call-to-action button
+    - Add illustration or icon
+    - _Requirements: 1.5, 5.5_
+  - [ ] 5.4 Create LoadingSkeleton component
+    - Create skeleton loader for event cards
+    - Display 12 skeleton cards in grid layout
+    - Animate with pulse effect
+    - _Requirements: 9.1_
+
+- [ ] 6. Build filter and search components
+
+  - [ ] 6.1 Create SearchInput component in src/components/dashboard/SearchInput.tsx
+    - Create search input with search icon
+    - Implement debounced search (300ms delay)
+    - Add clear button when text is entered
+    - Add keyboard shortcuts (Cmd/Ctrl + K to focus)
+    - Highlight matching text in results
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [ ] 6.2 Create StatusFilter component
+    - Create multi-select dropdown for status filtering
+    - Display all EventStatus options with color-coded badges
+    - Allow multiple status selection
+    - Show selected count in button
+    - _Requirements: 2.1, 2.2, 2.5_
+  - [ ] 6.3 Create DateRangeFilter component
+    - Create date range picker with start and end date
+    - Use date picker library or native input
+    - Validate date range (start <= end)
+    - Show selected range in button
+    - _Requirements: 2.1, 2.3, 2.5_
+  - [ ] 6.4 Create EventTypeFilter component
+    - Create multi-select dropdown for event type filtering
+    - Display all EventType options
+    - Allow multiple type selection
+    - Show selected count in button
+    - _Requirements: 2.1, 2.4, 2.5_
+  - [ ] 6.5 Create SortDropdown component
+    - Create dropdown with sort options (date, name, status, createdAt)
+    - Add toggle for ascending/descending order
+    - Show current sort option and direction
+    - Add icons for sort direction
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [ ] 6.6 Create FiltersBar component
+    - Compose SearchInput, StatusFilter, DateRangeFilter, EventTypeFilter, SortDropdown
+    - Add "Clear All Filters" button (shown when filters active)
+    - Display active filter chips below bar
+    - Make responsive (stack on mobile, horizontal on desktop)
+    - _Requirements: 2.1, 2.6, 2.7, 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 7. Build statistics and header components
+
+  - [ ] 7.1 Create StatCard component
+    - Display metric value (large, bold)
+    - Display metric label (small, gray)
+    - Display icon
+    - Add loading state
+    - Make responsive
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+  - [ ] 7.2 Create StatisticsPanel component
+    - Compose 4 StatCard components (Total Events, Upcoming Events, Completed Events, Total Budget)
+    - Display next upcoming event with countdown
+    - Fetch data using useEventStatistics hook
+    - Display loading skeletons while fetching
+    - Make responsive (2 columns on mobile, 4 columns on desktop)
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 8.2, 8.3, 8.4_
+  - [ ] 7.3 Create DashboardHeader component
+    - Compose StatisticsPanel and CreateEventButton
+    - Add page title "My Events"
+    - Make responsive
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [ ] 7.4 Create CreateEventButton component
+    - Create prominent button with "Create Event" text and icon
+    - Handle click to navigate to event creation page
+    - Check subscription limits and show upgrade prompt if limit reached
+    - Display current event count and plan limit
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+- [ ] 8. Build bulk actions components
+
+  - [ ] 8.1 Create BulkActionsToolbar component
+    - Display when events are selected
+    - Show selected count
+    - Add "Delete Selected" button with confirmation
+    - Add "Change Status" dropdown
+    - Add "Deselect All" button
+    - Position as sticky toolbar at bottom on mobile, top on desktop
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [ ] 9. Build modal components
+
+  - [ ] 9.1 Create DeleteConfirmationModal component
+    - Display event title in confirmation message
+    - Show "Cancel" and "Delete" buttons
+    - Handle delete action with loading state
+    - Close modal on success or cancel
+    - Show success toast notification
+    - _Requirements: 4.4, 4.5_
+  - [ ] 9.2 Create ShareEventModal component
+    - Display sharing options (copy link, email, social media)
+    - Generate shareable event link
+    - Implement copy to clipboard functionality
+    - Show success message when link copied
+    - _Requirements: 4.6_
+  - [ ] 9.3 Create UpgradePromptModal component
+    - Display when user reaches event limit
+    - Show current plan and limits
+    - Display upgrade options
+    - Add "Upgrade Now" button linking to pricing page
+    - Add "Cancel" button
+    - _Requirements: 7.3_
+
+- [ ] 10. Build pagination component
+
+  - [ ] 10.1 Create Pagination component
+    - Display page numbers with current page highlighted
+    - Add "Previous" and "Next" buttons
+    - Add "First" and "Last" buttons
+    - Show total pages and current page
+    - Disable buttons appropriately (first page, last page)
+    - Make responsive (show fewer page numbers on mobile)
+    - _Requirements: 1.2, 9.2_
+
+- [ ] 11. Build event grid and layout components
+
+  - [ ] 11.1 Create EventGrid component
+    - Display events in responsive grid (1 column mobile, 2 tablet, 3 desktop)
+    - Map events to EventCard components
+    - Show EmptyState when no events
+    - Show LoadingSkeleton while loading
+    - Handle event selection for bulk actions
+    - _Requirements: 1.1, 1.2, 1.3, 1.5, 8.2, 8.3, 8.4_
+  - [ ] 11.2 Create DashboardLayout component
+    - Compose DashboardHeader, FiltersBar, BulkActionsToolbar, EventGrid, Pagination
+    - Handle layout for different screen sizes
+    - Add proper spacing and padding
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 12. Implement main dashboard page
+
+  - [ ] 12.1 Create dashboard page in src/app/dashboard/page.tsx
+    - Set up page metadata (title, description)
+    - Initialize state for filters, sort, search, pagination, selected events
+    - Use useEvents hook to fetch events with current filters
+    - Use useEventStatistics hook to fetch statistics
+    - Use useEventFilters hook to manage filter state
+    - Use useBulkActions hook to manage bulk selections
+    - Implement event handlers for all actions (view, edit, delete, share, duplicate)
+    - Implement filter change handlers
+    - Implement sort change handler
+    - Implement search change handler
+    - Implement pagination change handler
+    - Implement bulk action handlers
+    - Render DashboardLayout with all props
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1-2.7, 3.1-3.5, 4.1-4.7, 5.1-5.5, 6.1-6.5, 7.1-7.4, 10.1-10.5, 11.1-11.6, 12.1-12.5_
+
+- [ ] 13. Implement error handling and loading states
+
+  - [ ] 13.1 Add error boundary component
+    - Catch and display errors gracefully
+    - Provide retry option
+    - Log errors for debugging
+    - _Requirements: 9.4_
+  - [ ] 13.2 Implement network error handling
+    - Display toast notifications for network errors
+    - Show retry button
+    - Maintain last known state
+    - _Requirements: 9.4, 9.5_
+  - [ ] 13.3 Implement loading states for all async operations
+    - Show loading skeletons for initial load
+    - Show loading indicators on action buttons
+    - Implement optimistic updates for better UX
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - [ ] 13.4 Add toast notifications for user feedback
+    - Show success messages for actions (delete, duplicate, status change)
+    - Show error messages for failures
+    - Make dismissible
+    - _Requirements: 4.5, 4.7, 9.4_
+
+- [ ] 14. Implement caching and performance optimizations
+
+  - [ ] 14.1 Set up SWR configuration with 5-minute cache
+    - Configure SWR with revalidation options
+    - Implement cache invalidation on mutations
+    - _Requirements: 9.3_
+  - [ ] 14.2 Implement React.memo for EventCard components
+    - Memoize EventCard to prevent unnecessary re-renders
+    - Use useMemo for expensive calculations
+    - Use useCallback for event handlers
+    - _Requirements: 9.1, 9.2_
+  - [ ] 14.3 Implement image lazy loading
+    - Use Next.js Image component with lazy loading
+    - Add loading placeholder
+    - Optimize image sizes
+    - _Requirements: 9.1_
+  - [ ] 14.4 Implement debouncing for search input
+    - Use debounce utility (300ms delay)
+    - Cancel pending requests on new input
+    - _Requirements: 5.3, 9.1_
+
+- [ ] 15. Implement responsive design
+
+  - [ ] 15.1 Test and adjust mobile layout (320px - 767px)
+    - Single column event grid
+    - Stacked filters (collapsible)
+    - Bottom sheet for modals
+    - Simplified statistics (2 columns)
+    - Touch-friendly button sizes (44x44px minimum)
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 15.2 Test and adjust tablet layout (768px - 1023px)
+    - Two column event grid
+    - Horizontal filters bar
+    - Modal dialogs
+    - Statistics in 4 columns
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 15.3 Test and adjust desktop layout (1024px+)
+    - Three column event grid
+    - Full filters bar
+    - Modal dialogs
+    - Statistics in 4 columns with more details
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 16. Implement accessibility features
+
+  - [ ] 16.1 Add keyboard navigation support
+    - Ensure all interactive elements are keyboard accessible
+    - Implement logical tab order
+    - Add visible focus indicators
+    - Add keyboard shortcuts (Cmd/Ctrl + K for search)
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 16.2 Add ARIA labels and roles
+    - Add semantic HTML elements
+    - Add ARIA labels for icons and actions
+    - Add ARIA live regions for dynamic updates
+    - Add descriptive alt text for images
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 16.3 Ensure color contrast compliance
+    - Verify all text has contrast ratio ≥ 4.5:1
+    - Ensure information is not conveyed by color alone
+    - Test with color blindness simulators
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 16.4 Test with screen readers
+    - Test with NVDA/JAWS on Windows
+    - Test with VoiceOver on macOS/iOS
+    - Ensure all content is accessible
+    - Fix any issues found
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 17. Implement security measures
+
+  - [ ] 17.1 Add authentication check on page load
+    - Verify user is authenticated
+    - Redirect to login if not authenticated
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
+  - [ ] 17.2 Implement authorization checks for all actions
+    - Verify user owns event before allowing actions
+    - Check role-based permissions
+    - Handle unauthorized access gracefully
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
+  - [ ] 17.3 Sanitize all user inputs
+    - Use DOMPurify for search queries
+    - Validate filter values
+    - Prevent XSS attacks
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [ ] 17.4 Implement CSRF protection
+    - Add CSRF tokens to all mutation requests
+    - Verify tokens on backend
+    - _Requirements: 12.3, 12.4, 12.5_
+
+- [ ]\* 18. Write tests
+
+  - [ ]\* 18.1 Write unit tests for components
+    - Test EventCard rendering with different props
+    - Test FiltersBar filter application
+    - Test StatisticsPanel calculations
+    - Test Pagination navigation
+    - Test BulkActionsToolbar selection logic
+    - _Requirements: All_
+  - [ ]\* 18.2 Write integration tests
+    - Test fetching and displaying events
+    - Test applying filters and verifying API calls
+    - Test searching events
+    - Test sorting events
+    - Test deleting events
+    - Test duplicating events
+    - Test bulk operations
+    - Test pagination
+    - _Requirements: All_
+  - [ ]\* 18.3 Write E2E tests
+    - Test user login → dashboard load → events displayed
+    - Test user searches for event → results filtered
+    - Test user applies filters → events filtered
+    - Test user deletes event → confirmation → event removed
+    - Test user creates event → returns to dashboard with new event
+    - _Requirements: All_
+
+- [ ] 19. Final polish and optimization
+  - [ ] 19.1 Add animations and transitions
+    - Add fade-in animation for page load
+    - Add slide-in animation for modals
+    - Add hover effects on cards
+    - Add loading animations
+    - Use Framer Motion for smooth animations
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 19.2 Optimize bundle size
+    - Code split dashboard components
+    - Lazy load modals
+    - Use dynamic imports for heavy libraries
+    - Analyze bundle with webpack-bundle-analyzer
+    - _Requirements: 9.1, 9.2_
+  - [ ] 19.3 Performance testing
+    - Test initial load time (target < 2 seconds)
+    - Test filter application time (target < 500ms)
+    - Test search response time (target < 300ms after debounce)
+    - Test page navigation time (target < 200ms)
+    - Optimize as needed
+    - _Requirements: 1.4, 9.1, 9.2, 9.3, 9.4, 9.5_
+  - [ ] 19.4 Cross-browser testing
+    - Test on Chrome, Firefox, Safari, Edge
+    - Test on iOS Safari and Android Chrome
+    - Fix any browser-specific issues
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 19.5 User acceptance testing
+    - Conduct testing with real users
+    - Gather feedback on usability
+    - Make adjustments based on feedback
+    - _Requirements: All_

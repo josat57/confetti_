@@ -12,31 +12,69 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const urlOtp = searchParams.get("otp");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [autoVerifying, setAutoVerifying] = useState(false);
+  const [hasAutoVerified, setHasAutoVerified] = useState(false);
+
+  const handleAutoVerify = async (otpCode: string) => {
+    if (hasAutoVerified) return; // Prevent multiple calls
+
+    try {
+      const response = await Auth.verifyEmail(token!, otpCode);
+      if (response.status === "success") {
+        toast.success(response.message || "Email verified successfully!");
+        router.push("/sign-in");
+      } else {
+        toast.error(response.message || "Failed to verify email");
+        setAutoVerifying(false);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to verify email");
+      setAutoVerifying(false);
+    }
+  };
 
   useEffect(() => {
-    if (!token || !email) {
+    if (!token) {
       toast.error("Invalid verification link");
       router.push("/sign-in");
       return;
     }
 
-    // Start countdown for resend button
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // If OTP is provided in URL, auto-verify (only once)
+    if (urlOtp && urlOtp.length === 6 && !hasAutoVerified) {
+      setAutoVerifying(true);
+      setHasAutoVerified(true);
+      handleAutoVerify(urlOtp);
+      return;
+    }
 
-    return () => clearInterval(timer);
-  }, [token, email, router]);
+    // If no email and no OTP in URL, it's invalid
+    if (!email && !urlOtp) {
+      toast.error("Invalid verification link");
+      router.push("/sign-in");
+      return;
+    }
+
+    // Start countdown for resend button (only if not auto-verifying)
+    if (!autoVerifying) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [token, email, urlOtp, router, hasAutoVerified, autoVerifying]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return; // Prevent multiple characters
@@ -53,7 +91,10 @@ export default function VerifyEmailPage() {
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       const prevInput = document.getElementById(`otp-${index - 1}`);
       prevInput?.focus();
@@ -97,10 +138,13 @@ export default function VerifyEmailPage() {
 
   const handleResendOtp = async () => {
     if (countdown > 0) return;
-    
+
     setIsResending(true);
     try {
-      const response = await Auth.resendVerification(token!);
+      // Use email if available, otherwise use token for resend
+      const response = email
+        ? await Auth.resendVerification(email)
+        : await Auth.resendVerification(token!);
       if (response.status === "success") {
         toast.success(response.message);
         setCountdown(60);
@@ -134,64 +178,79 @@ export default function VerifyEmailPage() {
         </motion.button>
 
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Verify Your Email</h2>
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            Verify Your Email
+          </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Please enter the 6-digit verification code sent to your email
+            {autoVerifying
+              ? "Verifying your email automatically..."
+              : "Please enter the 6-digit verification code sent to your email"}
           </p>
         </div>
 
-        <div className="mt-8 space-y-6">
-          <div className="flex justify-center gap-2">
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                id={`otp-${index}`}
-                type="text"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleOtpChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={handlePaste}
-                className="w-12 h-12 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-colors"
-              />
-            ))}
+        {autoVerifying ? (
+          <div className="mt-8 flex justify-center">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+              <span className="text-lg text-gray-700">
+                Verifying your email...
+              </span>
+            </div>
           </div>
+        ) : (
+          <div className="mt-8 space-y-6">
+            <div className="flex justify-center gap-2">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
+                  className="w-12 h-12 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-colors"
+                />
+              ))}
+            </div>
 
-          <div className="flex flex-col items-center gap-4">
-            <button
-              onClick={handleVerify}
-              disabled={isLoading || otp.join("").length !== 6}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Verifying...</span>
-                </div>
-              ) : (
-                "Verify Email"
-              )}
-            </button>
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={handleVerify}
+                disabled={isLoading || otp.join("").length !== 6}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Verifying...</span>
+                  </div>
+                ) : (
+                  "Verify Email"
+                )}
+              </button>
 
-            <button
-              onClick={handleResendOtp}
-              disabled={countdown > 0 || isResending}
-              className="text-sm text-purple-600 hover:text-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isResending ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Resending...</span>
-                </div>
-              ) : countdown > 0 ? (
-                `Resend code in ${countdown}s`
-              ) : (
-                "Resend verification code"
-              )}
-            </button>
+              <button
+                onClick={handleResendOtp}
+                disabled={countdown > 0 || isResending}
+                className="text-sm text-purple-600 hover:text-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResending ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Resending...</span>
+                  </div>
+                ) : countdown > 0 ? (
+                  `Resend code in ${countdown}s`
+                ) : (
+                  "Resend verification code"
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );
-} 
+}

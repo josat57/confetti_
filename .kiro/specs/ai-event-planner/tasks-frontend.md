@@ -1,0 +1,459 @@
+# AI Event Planner - Frontend Implementation Tasks
+
+- [ ] 1. Set up data models and types
+
+  - [x] 1.1 Create TypeScript interfaces for form data
+    - Define EventPlanFormData interface with all form fields
+    - Define LocationData interface for map and manual entry
+    - Define GuestClassData interface with age groups, formality, social status, special requirements
+    - Define BudgetData interface with amount and currency
+    - Define all enums: EventType, AgeGroup, FormalityLevel, SocialStatus, SpecialRequirement, Currency
+    - _Requirements: 1.1, 2.1, 3.1_
+  - [x] 1.2 Create TypeScript interfaces for API responses
+    - Define EventPlanTeaser interface for teaser result
+    - Define EventSummary, BudgetBreakdownTeaser, VendorCategoryTeaser, TimelineTeaser interfaces
+    - Define API response types for success and error cases
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x] 1.3 Create validation schema types
+    - Define FormErrors interface
+    - Define validation rule types
+    - Create error message constants
+    - _Requirements: 4.1, 4.2, 4.3_
+
+- [ ] 2. Create form validation utilities
+
+  - [x] 2.1 Implement validation functions in src/lib/utils/formValidation.ts
+    - Create validateEventType function
+    - Create validateEventDate function (must be future date)
+    - Create validateGuestCount function (1-10000 range)
+    - Create validateLocation function (address, city, state required)
+    - Create validateEventDescription function (50-1000 characters)
+    - Create validateGuestClass function (at least one age group and social status)
+    - Create validateBudget function (minimum based on event type)
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
+  - [x] 2.2 Create useFormValidation custom hook
+    - Implement real-time validation logic
+    - Return errors object and validation functions
+    - Implement debounced validation for text inputs
+    - _Requirements: 4.1, 4.2_
+
+- [ ] 3. Build core form components
+
+  - [x] 3.1 Create EventTypeSelect component
+    - Dropdown with all event type options
+    - Display icons for each event type
+    - Show validation error if not selected
+    - _Requirements: 1.2_
+  - [x] 3.2 Create EventDatePicker component
+    - Use native date picker or library (react-datepicker)
+    - Disable past dates
+    - Show validation error for invalid dates
+    - Display calendar icon
+    - _Requirements: 1.3_
+  - [x] 3.3 Create GuestCountInput component
+    - Numeric input with increment/decrement buttons
+    - Validate range (1-10000)
+    - Show validation error for invalid counts
+    - _Requirements: 1.6_
+  - [x] 3.4 Create EventDescriptionTextarea component
+    - Textarea with character counter (50-1000)
+    - Show placeholder with example
+    - Display validation error for length issues
+    - Auto-resize based on content
+    - _Requirements: 1.7_
+  - [x] 3.5 Create BudgetInput component
+    - Numeric input for amount
+    - Currency dropdown (USD, EUR, GBP, NGN)
+    - Format display with currency symbol
+    - Validate minimum budget
+    - _Requirements: 1.9_
+
+- [ ] 4. Build location input components
+
+  - [x] 4.1 Create MapPicker component in src/components/ai-planner/LocationStep/MapPicker.tsx
+    - Integrate Leaflet or Google Maps
+    - Display interactive map with search box
+    - Allow click-to-select location
+    - Show selected location marker
+    - Implement reverse geocoding to get address from coordinates
+    - Add zoom controls
+    - Make responsive for mobile (full-screen modal)
+    - _Requirements: 2.1, 2.2, 2.3, 13.1, 13.2_
+  - [x] 4.2 Create ManualLocationForm component
+    - State dropdown with all US states
+    - City dropdown populated based on selected state
+    - Address text input
+    - Validate all fields required
+    - Show validation errors
+    - _Requirements: 2.4, 2.5, 2.6, 2.7_
+  - [x] 4.3 Create LocationStep component
+    - Toggle between MapPicker and ManualLocationForm
+    - "Use Map Picker" and "Use Manual Entry" buttons
+    - Display selected location summary
+    - Handle location validation
+    - _Requirements: 2.1, 2.4, 2.8, 2.9_
+
+- [ ] 5. Build guest class form components
+
+  - [x] 5.1 Create AgeGroupCheckboxes component
+    - Checkbox group for age groups (Children, Teenagers, Young Adults, Adults, Seniors)
+    - Display with icons
+    - Allow multiple selections
+    - Validate at least one selected
+    - _Requirements: 3.2_
+  - [x] 5.2 Create FormalityRadioButtons component
+    - Radio button group for formality levels (Casual, Semi-Formal, Formal, Black-Tie)
+    - Display with icons and descriptions
+    - Single selection
+    - Validate selection required
+    - _Requirements: 3.3_
+  - [x] 5.3 Create SocialStatusCheckboxes component
+    - Checkbox group for social status (Budget-Conscious, Middle-Class, Affluent, Luxury)
+    - Display with descriptions
+    - Allow multiple selections
+    - Validate at least one selected
+    - _Requirements: 3.4_
+  - [x] 5.4 Create SpecialRequirementsCheckboxes component
+    - Checkbox group for special requirements (Dietary, Accessibility, Cultural, Religious)
+    - Display with icons
+    - Allow multiple selections
+    - Optional field
+    - _Requirements: 3.5_
+  - [x] 5.5 Create GuestClassForm component
+    - Compose all guest class sub-components
+    - Add "Additional Details" textarea (max 500 characters)
+    - Handle validation for all fields
+    - Display section with clear labels
+    - _Requirements: 3.1, 3.6, 3.7_
+
+- [ ] 6. Build main form component
+
+  - [x] 6.1 Create FormProgress component
+    - Display step indicator (1/4, 2/4, 3/4, 4/4)
+    - Show step titles
+    - Highlight current step
+    - Make clickable to navigate between completed steps
+    - _Requirements: 1.1_
+  - [x] 6.2 Create EventPlanningForm component
+    - Implement multi-step form logic
+    - Step 1: Event Basics (EventTypeSelect, EventDatePicker, GuestCountInput)
+    - Step 2: Location (LocationStep)
+    - Step 3: Event Details (EventDescriptionTextarea, GuestClassForm)
+    - Step 4: Budget (BudgetInput)
+    - Add "Next" and "Back" buttons for navigation
+    - Validate current step before allowing next
+    - Add "Submit" button on final step
+    - Handle form submission
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11_
+  - [x] 6.3 Create useEventPlanForm custom hook
+    - Manage form state (formData, currentStep, errors, isSubmitting)
+    - Provide functions: updateFormData, nextStep, prevStep, submitForm
+    - Handle form validation
+    - Handle API submission
+    - _Requirements: 1.1, 4.1, 4.7_
+
+- [ ] 7. Build loading screen component
+
+  - [x] 7.1 Create LoadingScreen component
+    - Display animated AI icon (brain or sparkles)
+    - Show progress bar (0-100%)
+    - Display rotating status messages
+    - Implement smooth animations with Framer Motion
+    - Add particle effects or confetti animation
+    - Make responsive for mobile
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
+  - [x] 7.2 Implement progress simulation
+    - Create array of loading steps with messages
+    - Simulate progress updates every 1-2 seconds
+    - Ensure smooth transition between steps
+    - _Requirements: 12.4_
+
+- [ ] 8. Build teaser result components
+
+  - [ ] 8.1 Create EventPlanOverview component
+    - Display event summary card with key details
+    - Show event type, date, location, guest count, budget
+    - Display formality level
+    - Add visual icons for each detail
+    - Make responsive
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [ ] 8.2 Create BudgetChart component
+    - Implement pie or donut chart using Chart.js or Recharts
+    - Display budget breakdown by category
+    - Show percentages and dollar amounts
+    - Add interactive hover tooltips
+    - Use color coding for categories
+    - Animate chart entrance
+    - Make responsive (switch to bar chart on mobile)
+    - _Requirements: 9.3, 9.4_
+  - [ ] 8.3 Create BudgetBreakdown component
+    - Display budget categories in list format
+    - Show category name, amount, percentage
+    - Display priority badges (Essential/Recommended/Optional)
+    - Add category descriptions
+    - Include BudgetChart component
+    - _Requirements: 9.3, 9.4_
+  - [ ] 8.4 Create VendorCategoryCard component
+    - Display category name and icon
+    - Show brief description
+    - Display estimated cost range
+    - Show priority badge
+    - Add blur effect overlay
+    - Display lock icon
+    - Show "Sign up to see vendors" text
+    - Add hover effect with CTA
+    - _Requirements: 9.5, 9.6, 9.9_
+  - [ ] 8.5 Create VendorCategoriesPreview component
+    - Display grid of VendorCategoryCard components
+    - Show vendor count per category
+    - Add "Unlock All Vendors" overlay
+    - Make responsive (1 column mobile, 2 tablet, 3 desktop)
+    - _Requirements: 9.5, 9.6, 9.9_
+  - [ ] 8.6 Create TimelinePreview component
+    - Display planning milestones list
+    - Show event day schedule highlights
+    - Add locked section for detailed timeline
+    - Display "Sign up for detailed timeline" message
+    - Make responsive
+    - _Requirements: 9.7, 9.8_
+  - [ ] 8.7 Create CTASection component
+    - Display prominent headline
+    - Add "Sign Up to See Full Plan" primary button
+    - Add "Save & Continue" secondary button
+    - Display benefits list with checkmarks
+    - Add social proof (testimonials or stats)
+    - Include trust indicators
+    - Make responsive
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+  - [ ] 8.8 Create TeaserResultPage component
+    - Compose all teaser components
+    - Display AI-generated insights text
+    - Add smooth scroll animations
+    - Implement staggered entrance animations
+    - Handle CTA button clicks
+    - Make fully responsive
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10, 10.1, 10.2, 10.3_
+
+- [ ] 9. Implement API integration
+
+  - [x] 9.1 Create API client functions in src/lib/api/ai-planner.ts
+    - Implement analyzeEvent function (POST /api/v1/ai-planner/analyze)
+    - Implement getEventPlanResult function (GET /api/v1/ai-planner/result/:token)
+    - Implement saveEventPlan function (POST /api/v1/ai-planner/save)
+    - Handle request/response formatting
+    - Implement error handling
+    - _Requirements: 1.1, 9.1, 10.5, 10.6_
+  - [ ] 9.2 Create useEventPlanAnalysis custom hook
+    - Handle form submission to API
+    - Manage loading state
+    - Handle success and error responses
+    - Store session token in localStorage
+    - Navigate to result page on success
+    - _Requirements: 12.1, 12.2, 12.7, 12.8_
+
+- [ ] 10. Build main pages
+
+  - [x] 10.1 Create AI Event Planner page at src/app/ai-event-planner/page.tsx
+    - Add hero section with headline and CTA
+    - Render EventPlanningForm component
+    - Handle form submission
+    - Show LoadingScreen during processing
+    - Navigate to result page on completion
+    - Add SEO metadata
+    - Make accessible from landing page
+    - _Requirements: 1.1, 1.12, 12.1_
+  - [x] 10.2 Create result page at src/app/ai-event-planner/result/[token]/page.tsx
+    - Fetch event plan using session token
+    - Display TeaserResultPage component
+    - Handle expired sessions
+    - Implement "Sign Up" redirect to registration
+    - Implement "Save & Continue" modal
+    - Add SEO metadata
+    - _Requirements: 9.1, 10.1, 10.2, 10.3, 10.4, 10.5_
+
+- [ ] 11. Implement error handling and user feedback
+
+  - [ ] 11.1 Create error handling utilities
+    - Implement handleAPIError function
+    - Create error message mapping
+    - Handle network errors
+    - Handle validation errors
+    - Handle timeout errors
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8_
+  - [ ] 11.2 Add toast notifications
+    - Install and configure react-toastify
+    - Show success toast on form submission
+    - Show error toasts for failures
+    - Show info toasts for warnings
+    - Make dismissible
+    - _Requirements: 4.8, 15.1_
+  - [ ] 11.3 Implement loading states
+    - Add loading skeletons for form
+    - Add loading spinner for submit button
+    - Add loading state for result page
+    - Implement smooth transitions
+    - _Requirements: 12.1, 12.3, 12.4, 12.5_
+
+- [ ] 12. Implement responsive design
+
+  - [ ] 12.1 Test and adjust mobile layout (320px - 767px)
+    - Single column form layout
+    - Full-screen map modal
+    - Stacked form fields
+    - Large touch targets (48px minimum)
+    - Bottom sticky submit button
+    - Simplified teaser result layout
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
+  - [ ] 12.2 Test and adjust tablet layout (768px - 1023px)
+    - Two column layout where appropriate
+    - Optimized map size
+    - Grid layout for vendor categories (2 columns)
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
+  - [ ] 12.3 Test and adjust desktop layout (1024px+)
+    - Multi-column layouts
+    - Full-featured map
+    - Grid layout for vendor categories (3 columns)
+    - Optimal spacing and typography
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
+
+- [ ] 13. Implement accessibility features
+
+  - [ ] 13.1 Add keyboard navigation support
+    - Ensure all form fields accessible via Tab
+    - Implement Enter to submit
+    - Add Escape to close modals
+    - Add visible focus indicators
+    - Test keyboard-only navigation
+    - _Requirements: 17.1, 17.2, 17.3_
+  - [ ] 13.2 Add ARIA labels and roles
+    - Add aria-label to all form inputs
+    - Add aria-describedby for help text
+    - Add aria-required for required fields
+    - Add aria-invalid for error states
+    - Add aria-live for loading messages
+    - Add role="status" for dynamic content
+    - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8_
+  - [ ] 13.3 Ensure color contrast compliance
+    - Verify all text meets 4.5:1 contrast ratio
+    - Use both color and icons for validation errors
+    - Test with color blindness simulators
+    - _Requirements: 17.4_
+  - [ ] 13.4 Test with screen readers
+    - Test with NVDA/JAWS on Windows
+    - Test with VoiceOver on macOS
+    - Ensure all content is accessible
+    - Fix any issues found
+    - _Requirements: 17.2, 17.3_
+
+- [ ] 14. Add animations and polish
+
+  - [ ] 14.1 Implement form animations
+    - Add fade-in animation for page load
+    - Add slide transition between form steps
+    - Add shake animation for validation errors
+    - Add hover effects on buttons
+    - Use Framer Motion for smooth animations
+    - _Requirements: 13.1_
+  - [ ] 14.2 Implement teaser result animations
+    - Add staggered entrance animations for sections
+    - Add chart drawing animation
+    - Add blur/lock overlay transitions
+    - Add pulse animation for CTA buttons
+    - _Requirements: 9.1, 9.9_
+  - [ ] 14.3 Add micro-interactions
+    - Button hover and click effects
+    - Input focus animations
+    - Checkbox/radio button animations
+    - Tooltip animations
+    - _Requirements: 13.1_
+
+- [ ] 15. Implement performance optimizations
+
+  - [ ] 15.1 Add code splitting
+    - Lazy load MapPicker component
+    - Lazy load BudgetChart component
+    - Lazy load heavy libraries
+    - Use dynamic imports
+    - _Requirements: 12.1_
+  - [ ] 15.2 Optimize images
+    - Use Next.js Image component
+    - Lazy load images below fold
+    - Provide appropriate sizes for viewports
+    - Use WebP format with fallbacks
+    - _Requirements: 13.1_
+  - [ ] 15.3 Implement debouncing
+    - Debounce search input (300ms)
+    - Debounce validation (300ms)
+    - Cancel pending requests on new input
+    - _Requirements: 4.1, 12.3_
+  - [ ] 15.4 Add memoization
+    - Use React.memo for static components
+    - Use useMemo for expensive calculations
+    - Use useCallback for event handlers
+    - _Requirements: 12.1_
+
+- [ ] 16. Implement analytics tracking
+
+  - [ ] 16.1 Add event tracking
+    - Track form start event
+    - Track form completion event
+    - Track form abandonment
+    - Track teaser result views
+    - Track CTA button clicks
+    - Track signup conversions
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
+  - [ ] 16.2 Add error tracking
+    - Track validation errors by field
+    - Track API errors
+    - Track timeout errors
+    - Send error reports to monitoring service
+    - _Requirements: 14.8, 15.6_
+
+- [ ]\* 17. Write tests
+
+  - [ ]\* 17.1 Write unit tests for components
+    - Test form validation functions
+    - Test EventPlanningForm rendering
+    - Test LocationStep toggle logic
+    - Test GuestClassForm validation
+    - Test BudgetChart rendering
+    - Test VendorCategoryCard locked state
+    - _Requirements: All_
+  - [ ]\* 17.2 Write integration tests
+    - Test form submission flow
+    - Test API integration
+    - Test navigation between steps
+    - Test error handling
+    - Test loading states
+    - _Requirements: All_
+  - [ ]\* 17.3 Write E2E tests
+    - Test complete form submission
+    - Test map picker interaction
+    - Test teaser result display
+    - Test CTA button clicks
+    - Test mobile responsiveness
+    - _Requirements: All_
+
+- [ ] 18. Final polish and testing
+  - [ ] 18.1 Cross-browser testing
+    - Test on Chrome, Firefox, Safari, Edge
+    - Test on iOS Safari and Android Chrome
+    - Fix browser-specific issues
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
+  - [ ] 18.2 Performance testing
+    - Test initial load time (target < 3 seconds)
+    - Test form submission time
+    - Test result page load time
+    - Optimize as needed
+    - _Requirements: 12.1, 12.2_
+  - [ ] 18.3 User acceptance testing
+    - Conduct testing with real users
+    - Gather feedback on usability
+    - Make adjustments based on feedback
+    - _Requirements: All_
+  - [ ] 18.4 SEO optimization
+    - Add meta tags for social sharing
+    - Add structured data markup
+    - Optimize page titles and descriptions
+    - Add canonical URLs
+    - _Requirements: 1.12_

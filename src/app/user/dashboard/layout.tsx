@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -19,28 +19,31 @@ export default function DashboardLayout({
       try {
         const response = await verifyUser();
         if (!response?.userData) {
-          router.push('/sign-in');
+          router.push("/sign-in");
           return;
         }
 
         // Check if user has access to this dashboard
         const currentPath = window.location.pathname;
-        const pathRole = currentPath.split('/')[1];
-        
+        const pathRole = currentPath.split("/")[1];
+
         if (response.userData.role !== pathRole) {
-          router.push(`/${response.user.role}/dashboard`);
+          router.push(`/${response.userData.role}/dashboard`);
           return;
         }
 
         setIsVerifying(false);
       } catch (error) {
-        console.error('Verification failed:', error);
-        router.push('/sign-in');
+        console.error("Verification failed:", error);
+        router.push("/sign-in");
       }
     };
 
-    verifyAndRedirect();
-  }, [router, verifyUser]);
+    // Only run verification once when component mounts
+    if (isVerifying) {
+      verifyAndRedirect();
+    }
+  }, [router, isVerifying]); // Removed verifyUser from dependencies
 
   if (loading || isVerifying) {
     return (
@@ -58,4 +61,4 @@ export default function DashboardLayout({
   }
 
   return <>{children}</>;
-} 
+}

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -19,28 +19,31 @@ export default function DashboardLayout({
       try {
         const response = await verifyUser();
         if (!response?.user) {
-          router.push('/sign-in');
+          router.push("/sign-in");
           return;
         }
 
         const userRole = response.user.role;
         const currentPath = window.location.pathname;
-        const pathRole = currentPath.split('/')[1];
+        const pathRole = currentPath.split("/")[1];
 
         // If user role doesn't match the current path, redirect to appropriate dashboard
         if (pathRole !== userRole) {
           router.push(`/${userRole}/dashboard`);
         }
       } catch (error) {
-        console.error('Verification failed:', error);
-        router.push('/sign-in');
+        console.error("Verification failed:", error);
+        router.push("/sign-in");
       } finally {
         setIsVerifying(false);
       }
     };
 
-    verifyAndRedirect();
-  }, [router, verifyUser]);
+    // Only run verification once when component mounts
+    if (isVerifying) {
+      verifyAndRedirect();
+    }
+  }, [router, isVerifying]); // Removed verifyUser from dependencies
 
   if (loading || isVerifying) {
     return (
@@ -60,9 +63,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Add your dashboard layout components here */}
-      <main className="p-4">
-        {children}
-      </main>
+      <main className="p-4">{children}</main>
     </div>
   );
-} 
+}

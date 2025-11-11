@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Auth } from '@/api/api';
 import { toast } from 'react-toastify';
+import { AdminAPI } from '@/api/adminApi';
 
 interface User {
   id: string;
@@ -41,35 +42,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Check authentication status on mount and when cookies change
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await Auth.verifyUser();
-        if (response?.status === "success" && response?.userData) {
-          setUser(response.userData);
-          // Store user data in localStorage for persistence
-          localStorage.setItem('user', JSON.stringify(response.userData));
-        } else {
+    const hydrateAndVerify = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        try {
+          let verifiedUser = null;
+          if (parsedUser.role === 'admin' || parsedUser.role === 'super_admin') {
+            // Call admin verify
+            const response = await AdminAPI.verifyAdminAccess();
+            verifiedUser = response?.data?.admin;
+          } else {
+            // Call regular user verify
+            const response = await Auth.verifyUser();
+            verifiedUser = response?.userData;
+          }
+          if (verifiedUser) {
+            setUser(verifiedUser);
+            localStorage.setItem('user', JSON.stringify(verifiedUser));
+          } else {
+            setUser(null);
+            localStorage.removeItem('user');
+          }
+        } catch (error) {
           setUser(null);
           localStorage.removeItem('user');
         }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        setUser(null);
-        localStorage.removeItem('user');
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
-
-    // Check if we have stored user data
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-
-    checkAuth();
+    hydrateAndVerify();
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = false) => {

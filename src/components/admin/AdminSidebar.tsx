@@ -104,6 +104,11 @@ const navigation: NavigationItem[] = [
     icon: Store,
   },
   {
+    name: 'Event Planners',
+    href: '/admin/event-planners',
+    icon: Users,
+  },
+  {
     name: 'Communication',
     icon: Mail,
     children: [
