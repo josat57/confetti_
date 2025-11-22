@@ -189,11 +189,72 @@ export default function ResultPage() {
           >
             <div className="flex items-start gap-3">
               <Sparkles className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   AI Insights
                 </h3>
-                <p className="text-gray-700">{aiInsights}</p>
+
+                {/* Feasibility Score */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Event Feasibility
+                    </span>
+                    <span className="text-sm font-bold text-purple-600">
+                      {aiInsights.feasibilityScore}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${
+                        aiInsights.feasibilityScore >= 75
+                          ? "bg-green-500"
+                          : aiInsights.feasibilityScore >= 50
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                      style={{ width: `${aiInsights.feasibilityScore}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Sentiment */}
+                <div className="mb-4">
+                  <span className="text-sm font-medium text-gray-700 mr-2">
+                    Sentiment:
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      aiInsights.sentiment.label === "positive"
+                        ? "bg-green-100 text-green-700"
+                        : aiInsights.sentiment.label === "neutral"
+                        ? "bg-gray-100 text-gray-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {aiInsights.sentiment.label.charAt(0).toUpperCase() +
+                      aiInsights.sentiment.label.slice(1)}
+                  </span>
+                </div>
+
+                {/* Keywords */}
+                {aiInsights.keywords && aiInsights.keywords.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Key Themes:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {aiInsights.keywords.map((keyword, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

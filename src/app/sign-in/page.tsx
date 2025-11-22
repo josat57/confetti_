@@ -9,7 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Auth } from "@/api/api";
 import { toast } from "react-toastify";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -26,9 +26,13 @@ export default function SignInPage() {
 
   // Check for remembered email on component mount
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
     if (rememberedEmail) {
-      setFormData(prev => ({ ...prev, email: rememberedEmail, rememberMe: true }));
+      setFormData((prev) => ({
+        ...prev,
+        email: rememberedEmail,
+        rememberMe: true,
+      }));
     }
   }, []);
 
@@ -38,17 +42,30 @@ export default function SignInPage() {
     setIsLoading(true);
 
     try {
-      const response = await login(formData.email, formData.password, formData.rememberMe);
-      console.log('Login response:', response);
-      
+      const response = await login(
+        formData.email,
+        formData.password,
+        formData.rememberMe
+      );
+      console.log("Login response:", response);
+
       if (response?.user?.role) {
         // Redirect to role-specific dashboard
-        router.push(`/${response.user.role}/dashboard`);
+        const roleRouteMap: Record<string, string> = {
+          event_planner: "/planner/dashboard",
+          "event-planner": "/planner/dashboard", // Support hyphenated format
+          vendor: "/vendor/dashboard",
+          admin: "/admin",
+          user: "/user/dashboard",
+        };
+
+        const dashboardRoute = roleRouteMap[response.user.role] || "/dashboard";
+        router.push(dashboardRoute);
       } else {
         toast.error("Invalid user role");
         // Log out the user if they don't have a valid role
         await logout();
-        router.push('/sign-in');
+        router.push("/sign-in");
       }
     } catch (err: any) {
       const errorMessage = err.message || "Failed to sign in";
@@ -59,14 +76,18 @@ export default function SignInPage() {
     }
   };
 
-  const handleSocialAuth = async (provider: "google" | "facebook" | "twitter") => {
+  const handleSocialAuth = async (
+    provider: "google" | "facebook" | "twitter"
+  ) => {
     setError(null);
     setIsLoading(true);
 
     try {
       // Get the callback URL from query params or default to dashboard
       const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-      const authUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      const authUrl = `${
+        process.env.NEXT_PUBLIC_API_URL
+      }/auth/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
       window.location.href = authUrl;
     } catch (err: any) {
       const errorMessage = err.message || `Failed to sign in with ${provider}`;
@@ -115,10 +136,10 @@ export default function SignInPage() {
             quality={100}
           />
         </div>
-        
+
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 via-purple-800/80 to-purple-900/90" />
-        
+
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 py-12 text-white h-full">
           <motion.div
@@ -128,7 +149,8 @@ export default function SignInPage() {
           >
             <h1 className="text-4xl font-bold mb-6">Welcome Back!</h1>
             <p className="text-lg text-purple-100 mb-8">
-              Sign in to access your event planning dashboard and continue creating amazing experiences.
+              Sign in to access your event planning dashboard and continue
+              creating amazing experiences.
             </p>
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
@@ -186,8 +208,12 @@ export default function SignInPage() {
               disabled={isLoading}
               className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-6 h-6 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              <svg
+                className="w-6 h-6 text-[#1877F2]"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
             </button>
             <button
@@ -195,8 +221,12 @@ export default function SignInPage() {
               disabled={isLoading}
               className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-6 h-6 text-[#1DA1F2]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+              <svg
+                className="w-6 h-6 text-[#1DA1F2]"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
               </svg>
             </button>
           </motion.div>
@@ -206,7 +236,9 @@ export default function SignInPage() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+              <span className="px-2 bg-white text-gray-500">
+                Or continue with email
+              </span>
             </div>
           </div>
 
@@ -223,7 +255,10 @@ export default function SignInPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <div className="mt-1 relative">
@@ -237,7 +272,9 @@ export default function SignInPage() {
                   autoComplete="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="you@example.com"
                 />
@@ -245,7 +282,10 @@ export default function SignInPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <div className="mt-1 relative">
@@ -259,7 +299,9 @@ export default function SignInPage() {
                   autoComplete="current-password"
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -285,9 +327,14 @@ export default function SignInPage() {
                   type="checkbox"
                   className="h-4 w-4 bg-purple-700 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                   checked={formData.rememberMe}
-                  onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rememberMe: e.target.checked })
+                  }
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>
@@ -334,4 +381,4 @@ export default function SignInPage() {
       </div>
     </div>
   );
-} 
+}

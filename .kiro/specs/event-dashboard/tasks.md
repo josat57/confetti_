@@ -55,67 +55,84 @@
     - Return updated count
     - _Requirements: 11.4_
 
-- [ ] 3. Create API client functions
+- [ ] 3. Create utility functions for image handling
 
-  - [ ] 3.1 Implement fetchEvents function in src/lib/api/events.ts
+  - [ ] 3.1 Create getEventImageUrl utility in src/lib/utils/eventImages.ts
+    - Accept event object as parameter
+    - Check if event.media array exists and has items
+    - For base64 images (url contains "data:image"), return the base64 string directly
+    - For GridFS images (isGridFS: true), return constructed URL: `/api/v1/files/${fileId}`
+    - If no media, return placeholder image path based on eventType
+    - Export function for use in EventCard component
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
+
+- [ ] 4. Create API client functions
+
+  - [ ] 4.1 Implement fetchEvents function in src/lib/api/events.ts
     - Create function that calls GET /api/v1/events with query parameters
     - Handle response parsing and error handling
     - Return typed Event array and pagination data
     - _Requirements: 1.1, 1.4_
-  - [ ] 3.2 Implement fetchEventStatistics function
+  - [ ] 4.2 Implement fetchEventStatistics function
     - Create function that calls GET /api/v1/events/statistics
     - Handle response parsing and error handling
     - Return typed EventStatistics
     - _Requirements: 10.1_
-  - [ ] 3.3 Implement deleteEvent function
+  - [ ] 4.3 Implement deleteEvent function
     - Create function that calls DELETE /api/v1/events/:id
     - Handle response and error handling
     - _Requirements: 4.4_
-  - [ ] 3.4 Implement duplicateEvent function
+  - [ ] 4.4 Implement duplicateEvent function
     - Create function that calls POST /api/v1/events/:id/duplicate
     - Handle response and return new event
     - _Requirements: 4.7_
-  - [ ] 3.5 Implement bulkDeleteEvents function
+  - [ ] 4.5 Implement bulkDeleteEvents function
     - Create function that calls DELETE /api/v1/events/bulk
     - Accept array of event IDs
     - Handle response and error handling
     - _Requirements: 11.2_
-  - [ ] 3.6 Implement bulkUpdateEventStatus function
+  - [ ] 4.6 Implement bulkUpdateEventStatus function
     - Create function that calls PATCH /api/v1/events/bulk/status
     - Accept array of event IDs and new status
     - Handle response and error handling
     - _Requirements: 11.4_
 
-- [ ] 4. Create custom hooks for data management
+- [ ] 5. Create custom hooks for data management
 
-  - [ ] 4.1 Create useEvents hook in src/hooks/useEvents.ts
+  - [ ] 5.1 Create useEvents hook in src/hooks/useEvents.ts
     - Implement SWR-based data fetching with caching
     - Accept filters, sort, search, and pagination parameters
     - Return events, loading state, error state, and mutate function
     - Implement 5-minute cache duration
     - _Requirements: 1.1, 1.4, 9.3_
-  - [ ] 4.2 Create useEventStatistics hook
+  - [ ] 5.2 Create useEventStatistics hook
     - Implement SWR-based statistics fetching
     - Return statistics, loading state, and error state
     - Implement automatic refresh on event changes
     - _Requirements: 10.1, 10.5_
-  - [ ] 4.3 Create useEventFilters hook
+  - [ ] 5.3 Create useEventFilters hook
     - Manage filter state (status, eventType, dateRange, budgetRange)
     - Provide functions to update individual filters
     - Provide function to clear all filters
     - Persist filters in session storage
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
-  - [ ] 4.4 Create useBulkActions hook
+  - [ ] 5.4 Create useBulkActions hook
     - Manage selected events state
     - Provide functions for select, deselect, select all, deselect all
     - Provide functions for bulk delete and bulk status update
     - Handle optimistic updates
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-- [ ] 5. Build core UI components
+- [ ] 6. Build core UI components
 
-  - [ ] 5.1 Create EventCard component in src/components/dashboard/EventCard.tsx
-    - Display event image with fallback
+  - [ ] 6.1 Create EventCard component in src/components/dashboard/EventCard.tsx
+    - Implement image display logic:
+      - Check if event.media array exists and has items
+      - For base64 images (url starts with "data:image"), display directly using Next.js Image with unoptimized prop
+      - For GridFS images (isGridFS: true), construct URL from fileId
+      - If no media, display placeholder image based on eventType
+      - Handle image loading errors with fallback to placeholder
+      - Use object-cover for proper aspect ratio (16:9 recommended)
     - Display event title (truncated to 2 lines)
     - Display event date with calendar icon using date-fns formatting
     - Display location with map pin icon
@@ -126,7 +143,7 @@
     - Add three-dot menu button for quick actions
     - Implement hover effects and animations
     - Make component responsive for mobile, tablet, desktop
-    - _Requirements: 1.3, 4.1, 6.1, 6.2, 6.3, 6.4, 6.5, 8.2, 8.3, 8.4, 11.1_
+    - _Requirements: 1.3, 4.1, 6.1, 6.2, 6.3, 6.4, 6.5, 8.2, 8.3, 8.4, 11.1, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
   - [ ] 5.2 Create QuickActionsMenu component
     - Create dropdown menu with View, Edit, Delete, Share, Duplicate actions
     - Implement click handlers for each action

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useAdmin } from '../../../contexts/AdminContext';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useAdmin } from "../../../contexts/AdminContext";
 import {
   Users,
   Search,
@@ -16,15 +16,15 @@ import {
   Mail,
   Phone,
   Calendar,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface User {
   id: string;
   userName: string;
   email: string;
   phone: string;
-  role: 'user' | 'admin' | 'vendor' | 'event_planner';
-  status: 'active' | 'inactive' | 'suspended';
+  role: "user" | "admin" | "vendor" | "event-planner";
+  status: "active" | "inactive" | "suspended";
   createdAt: string;
   lastLogin: string;
   profileImage?: string;
@@ -33,9 +33,9 @@ interface User {
 export default function UserManagement() {
   const { getUsers, updateUserStatus, deleteUser, loading } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
@@ -48,48 +48,48 @@ export default function UserManagement() {
           setUsers(response.data);
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error("Error fetching users:", error);
         // Fallback to mock data if API fails
         const mockUsers: User[] = [
           {
-            id: '1',
-            userName: 'John Doe',
-            email: 'john.doe@example.com',
-            phone: '+1234567890',
-            role: 'user',
-            status: 'active',
-            createdAt: '2024-01-15',
-            lastLogin: '2024-01-20',
+            id: "1",
+            userName: "John Doe",
+            email: "john.doe@example.com",
+            phone: "+1234567890",
+            role: "user",
+            status: "active",
+            createdAt: "2024-01-15",
+            lastLogin: "2024-01-20",
           },
           {
-            id: '2',
-            userName: 'Jane Smith',
-            email: 'jane.smith@example.com',
-            phone: '+1234567891',
-            role: 'vendor',
-            status: 'active',
-            createdAt: '2024-01-10',
-            lastLogin: '2024-01-19',
+            id: "2",
+            userName: "Jane Smith",
+            email: "jane.smith@example.com",
+            phone: "+1234567891",
+            role: "vendor",
+            status: "active",
+            createdAt: "2024-01-10",
+            lastLogin: "2024-01-19",
           },
           {
-            id: '3',
-            userName: 'Bob Johnson',
-            email: 'bob.johnson@example.com',
-            phone: '+1234567892',
-            role: 'event_planner',
-            status: 'inactive',
-            createdAt: '2024-01-05',
-            lastLogin: '2024-01-15',
+            id: "3",
+            userName: "Bob Johnson",
+            email: "bob.johnson@example.com",
+            phone: "+1234567892",
+            role: "event-planner",
+            status: "inactive",
+            createdAt: "2024-01-05",
+            lastLogin: "2024-01-15",
           },
           {
-            id: '4',
-            userName: 'Alice Brown',
-            email: 'alice.brown@example.com',
-            phone: '+1234567893',
-            role: 'user',
-            status: 'suspended',
-            createdAt: '2024-01-01',
-            lastLogin: '2024-01-10',
+            id: "4",
+            userName: "Alice Brown",
+            email: "alice.brown@example.com",
+            phone: "+1234567893",
+            role: "user",
+            status: "suspended",
+            createdAt: "2024-01-01",
+            lastLogin: "2024-01-10",
           },
         ];
         setUsers(mockUsers);
@@ -99,44 +99,55 @@ export default function UserManagement() {
     fetchUsers();
   }, [getUsers]);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || user.status === statusFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
     return matchesSearch && matchesStatus && matchesRole;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-gray-100 text-gray-800";
+      case "suspended":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-purple-100 text-purple-800';
-      case 'vendor': return 'bg-blue-100 text-blue-800';
-      case 'event_planner': return 'bg-orange-100 text-orange-800';
-      case 'user': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "admin":
+        return "bg-purple-100 text-purple-800";
+      case "vendor":
+        return "bg-blue-100 text-blue-800";
+      case "event-planner":
+        return "bg-orange-100 text-orange-800";
+      case "user":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const handleUserAction = async (userId: string, action: string) => {
     try {
-      if (action === 'delete') {
+      if (action === "delete") {
         await deleteUser(userId);
         // Refresh users list
         const response = await getUsers();
         if (response?.data) {
           setUsers(response.data);
         }
-      } else if (action === 'edit') {
+      } else if (action === "edit") {
         // Handle edit action
         console.log(`Edit user ${userId}`);
       }
@@ -151,7 +162,9 @@ export default function UserManagement() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              User Management
+            </h1>
             <p className="text-gray-600 mt-1">
               Manage user accounts, permissions, and status
             </p>
@@ -175,7 +188,7 @@ export default function UserManagement() {
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
-          
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -186,7 +199,7 @@ export default function UserManagement() {
             <option value="inactive">Inactive</option>
             <option value="suspended">Suspended</option>
           </select>
-          
+
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -195,10 +208,10 @@ export default function UserManagement() {
             <option value="all">All Roles</option>
             <option value="user">User</option>
             <option value="vendor">Vendor</option>
-            <option value="event_planner">Event Planner</option>
+            <option value="event-planner">Event Planner</option>
             <option value="admin">Admin</option>
           </select>
-          
+
           <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
             <Filter className="h-4 w-4 mr-2" />
             More Filters
@@ -213,7 +226,7 @@ export default function UserManagement() {
             Users ({filteredUsers.length})
           </h2>
         </div>
-        
+
         {loading ? (
           <div className="p-6 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
@@ -271,12 +284,20 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
-                        {user.role.replace('_', ' ')}
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(
+                          user.role
+                        )}`}
+                      >
+                        {user.role.replace("_", " ")}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          user.status
+                        )}`}
+                      >
                         {user.status}
                       </span>
                     </td>
@@ -298,13 +319,13 @@ export default function UserManagement() {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleUserAction(user.id, 'edit')}
+                          onClick={() => handleUserAction(user.id, "edit")}
                           className="text-gray-400 hover:text-blue-600"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleUserAction(user.id, 'delete')}
+                          onClick={() => handleUserAction(user.id, "delete")}
                           className="text-gray-400 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -325,7 +346,9 @@ export default function UserManagement() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">User Details</h3>
+                <h3 className="text-lg font-medium text-gray-900">
+                  User Details
+                </h3>
                 <button
                   onClick={() => setShowUserModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -333,7 +356,7 @@ export default function UserManagement() {
                   ×
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center">
@@ -345,28 +368,41 @@ export default function UserManagement() {
                     <h4 className="text-lg font-medium text-gray-900">
                       {selectedUser.userName}
                     </h4>
-                    <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                    <p className="text-sm text-gray-500">
+                      {selectedUser.email}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{selectedUser.phone}</span>
+                    <span className="text-sm text-gray-600">
+                      {selectedUser.phone}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-600">
-                      Joined: {new Date(selectedUser.createdAt).toLocaleDateString()}
+                      Joined:{" "}
+                      {new Date(selectedUser.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex space-x-2">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(selectedUser.role)}`}>
-                    {selectedUser.role.replace('_', ' ')}
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(
+                      selectedUser.role
+                    )}`}
+                  >
+                    {selectedUser.role.replace("_", " ")}
                   </span>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedUser.status)}`}>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                      selectedUser.status
+                    )}`}
+                  >
                     {selectedUser.status}
                   </span>
                 </div>
@@ -377,4 +413,4 @@ export default function UserManagement() {
       )}
     </div>
   );
-} 
+}

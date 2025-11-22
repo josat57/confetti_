@@ -1,43 +1,45 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // List of paths that don't require authentication
 const publicPaths = [
-  '/',
-  '/sign-in',
-  '/register',
-  '/auth/google',
-  '/auth/facebook',
-  '/auth/twitter',
-  '/auth/callback',
-  '/auth/verify-email',
-  '/auth/forgot-password',
-  '/auth/reset-password',
-  '/auth/complete-profile',
-  '/auth/verify',
-  '/auth/refresh-token',
-  '/admin/login',
-  // '/auth/signout',
+  "/",
+  "/sign-in",
+  "/register",
+  "/auth/google",
+  "/auth/facebook",
+  "/auth/twitter",
+  "/auth/callback",
+  "/auth/verify-email",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/complete-profile",
+  "/auth/verify",
+  "/auth/refresh-token",
+  "/admin/login",
+  "/settings/payment-methods/verify",
+  "/verify-email",
+  // '/auth/logout',
 ];
 
 // Role-based dashboard paths
 const roleBasedPaths = {
-  admin: '/admin',
-  vendor: '/vendor/dashboard',
-  event_planner: '/planner/dashboard',
-  user: '/user/dashboard',
+  admin: "/admin",
+  vendor: "/vendor/dashboard",
+  "event-planner": "/planner/dashboard",
+  user: "/user/dashboard",
 };
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow access to all dashboard routes without verification
-  if (pathname.includes('/dashboard')) {
+  if (pathname.includes("/dashboard")) {
     return NextResponse.next();
   }
 
   // Check if the path is public
-  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
   // If it's a public path, allow access
   if (isPublicPath) {
@@ -45,8 +47,8 @@ export function middleware(request: NextRequest) {
   }
 
   // For all other routes, redirect to sign-in
-  const signInUrl = new URL('/sign-in', request.url);
-  signInUrl.searchParams.set('callbackUrl', pathname);
+  const signInUrl = new URL("/sign-in", request.url);
+  signInUrl.searchParams.set("callbackUrl", pathname);
   return NextResponse.redirect(signInUrl);
 }
 
@@ -60,6 +62,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
   ],
-}; 
+};

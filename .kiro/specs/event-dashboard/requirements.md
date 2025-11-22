@@ -155,7 +155,20 @@ The Event Dashboard is the central hub where users can view, manage, and interac
 5. THE Event Dashboard SHALL provide a "Select All" option to select all visible events
 6. THE Event Dashboard SHALL display the count of selected events in the bulk actions toolbar
 
-### Requirement 12: Access Control
+### Requirement 12: Event Media Display
+
+**User Story:** As an event planner, I want to see event images on event cards, so that I can visually identify my events quickly.
+
+#### Acceptance Criteria
+
+1. WHEN an event has media with base64-encoded images, THE Event Dashboard SHALL decode and display the first image on the Event Card
+2. WHEN an event has media with GridFS file references, THE Event Dashboard SHALL construct the proper image URL and display the image
+3. WHEN an event has no media, THE Event Dashboard SHALL display a default placeholder image based on event type
+4. THE Event Dashboard SHALL optimize base64 image display to prevent performance degradation
+5. THE Event Dashboard SHALL handle corrupted or invalid image data gracefully with fallback to placeholder
+6. THE Event Dashboard SHALL display images with proper aspect ratio and cropping for Event Cards
+
+### Requirement 13: Access Control
 
 **User Story:** As a system administrator, I want to ensure users can only access events they have permission to view, so that event data remains secure and private.
 
