@@ -66,13 +66,19 @@ export default function EditEventPage() {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        const fetchedEvent = await eventService.getById(params.id as string);
+        const fetchedEvent = (await eventService.getById(
+          params.id as string
+        )) as any;
         setEvent(fetchedEvent);
 
         setFormData({
           title: fetchedEvent.title,
-          startDate: fetchedEvent.startDate.split("T")[0],
-          endDate: fetchedEvent.endDate.split("T")[0],
+          startDate: (fetchedEvent.startDate || fetchedEvent.date || "").split(
+            "T"
+          )[0],
+          endDate: (fetchedEvent.endDate || fetchedEvent.date || "").split(
+            "T"
+          )[0],
           description: fetchedEvent.description || "",
           status: fetchedEvent.status,
         });
@@ -80,7 +86,7 @@ export default function EditEventPage() {
         // Set existing photos - check media array first (new format), then photos (old format)
         if (fetchedEvent.media && fetchedEvent.media.length > 0) {
           setPhotoPreview(
-            fetchedEvent.media.map((m) => {
+            fetchedEvent.media.map((m: any) => {
               // Handle base64 images
               if (m.url && m.url.startsWith("data:image")) {
                 return m.url;
@@ -93,7 +99,7 @@ export default function EditEventPage() {
             })
           );
         } else if (fetchedEvent.photos && fetchedEvent.photos.length > 0) {
-          setPhotoPreview(fetchedEvent.photos.map((p) => p.url));
+          setPhotoPreview(fetchedEvent.photos.map((p: any) => p.url));
         }
       } catch (error: any) {
         console.error("Error fetching event:", error);
@@ -115,7 +121,7 @@ export default function EditEventPage() {
     const files = Array.from(e.target.files || []);
 
     // Check tier limits (Basic: 10 photos, Professional+: 100 photos)
-    const maxPhotos = user?.subscriptionTier === "basic" ? 10 : 100;
+    const maxPhotos = (user as any)?.subscriptionTier === "basic" ? 10 : 100;
 
     if (photoPreview.length + files.length > maxPhotos) {
       toast.error(`You can upload up to ${maxPhotos} photos`);
@@ -200,6 +206,7 @@ export default function EditEventPage() {
         endDate: formData.endDate,
         description: formData.description,
         status: formData.status,
+        // createdBy is handled by the backend
       });
 
       // Step 2: Delete photos marked for deletion
@@ -375,7 +382,7 @@ export default function EditEventPage() {
               </label>
               <p className="text-sm text-gray-500 mt-2">
                 JPG, PNG or GIF. Max size 5MB per photo.
-                {user?.subscriptionTier === "basic"
+                {(user as any)?.subscriptionTier === "basic"
                   ? " Basic tier: up to 10 photos"
                   : " Professional+: up to 100 photos"}
               </p>

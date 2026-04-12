@@ -5,6 +5,10 @@ import {
   AnalyzeEventResponse,
   GetResultResponse,
 } from "@/types/ai-planner";
+import { guestSessionService } from "@/services/guest-session.service";
+import aiPlannerService, {
+  EventPlanningRequest,
+} from "@/services/ai-planner.service";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1";
@@ -24,6 +28,10 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem("authToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Add guest session headers if not authenticated
+      const guestHeaders = guestSessionService.getGuestSessionHeaders();
+      Object.assign(config.headers, guestHeaders);
     }
     return config;
   },
@@ -111,12 +119,40 @@ export const getMinutesUntilReset = (): number => {
 };
 
 /**
+ * Check if user is authenticated
+ */
+const isAuthenticated = (): boolean => {
+  return !!localStorage.getItem("authToken");
+};
+
+/**
+ * Ensure guest session exists for non-authenticated users
+ */
+const ensureGuestSession = async (): Promise<string | null> => {
+  if (isAuthenticated()) {
+    return null; // No guest session needed for authenticated users
+  }
+
+  try {
+    const session = await guestSessionService.getOrCreateGuestSession();
+    return session.guestSessionToken;
+  } catch (error) {
+    console.error("Failed to ensure guest session:", error);
+    return null;
+  }
+};
+
+/**
  * Analyze event and generate AI-powered event plan
  */
 export const analyzeEvent = async (
   formData: EventPlanFormData
 ): Promise<AnalyzeEventResponse> => {
+  // Ensure guest session exists for non-authenticated users
+  const guestSessionToken = await ensureGuestSession();
+
   const payload = {
+    // Core event information
     eventType: formData.eventType,
     eventDate: formData.eventDate.toISOString(),
     guestCount: formData.guestCount,
@@ -135,30 +171,96 @@ export const analyzeEvent = async (
           }
         : {}),
     },
-    eventDescription: formData.eventDescription,
-    guestClass: {
-      ageGroups: formData.guestClass.ageGroups,
-      formality: formData.guestClass.formality,
-      socialStatus: formData.guestClass.socialStatus,
-      specialRequirements: formData.guestClass.specialRequirements,
-      additionalDetails: formData.guestClass.additionalDetails,
-    },
     budget: {
       amount: formData.budget.amount,
       currency: formData.budget.currency,
     },
+
+    // Enhanced form data (optional)
+    ...(formData.eventDuration && {
+      eventDuration: formData.eventDuration,
+    }),
+    ...(formData.venuePreferences && {
+      venuePreferences: formData.venuePreferences,
+    }),
+    ...(formData.budgetBreakdown && {
+      budgetBreakdown: formData.budgetBreakdown,
+    }),
+    ...(formData.guestProfile && {
+      guestProfile: formData.guestProfile,
+    }),
+    ...(formData.clientProfile && {
+      clientProfile: formData.clientProfile,
+    }),
+    ...(formData.eventSpecific && {
+      eventSpecific: formData.eventSpecific,
+    }),
+    ...(formData.specialRequirements && {
+      specialRequirements: formData.specialRequirements,
+    }),
+
+    // Legacy fields for backward compatibility
+    ...(formData.eventDescription && {
+      eventDescription: formData.eventDescription,
+    }),
+    ...(formData.guestClass && {
+      guestClass: {
+        ageGroups: formData.guestClass.ageGroups,
+        formality: formData.guestClass.formality,
+        socialStatus: formData.guestClass.socialStatus,
+        specialRequirements: formData.guestClass.specialRequirements,
+        additionalDetails: formData.guestClass.additionalDetails,
+      },
+    }),
+
+    // Include guest session token in payload as fallback
+    ...(guestSessionToken ? { guestSessionToken } : {}),
   };
+
+  // Validate required fields
+  if (!payload.eventType) {
+    throw new Error("Event type is required");
+  }
+  if (!payload.eventDate) {
+    throw new Error("Event date is required");
+  }
+  if (!payload.guestCount || payload.guestCount <= 0) {
+    throw new Error("Guest count must be greater than 0");
+  }
+  if (!payload.location?.city) {
+    throw new Error("Location city is required");
+  }
+  if (!payload.budget?.amount || payload.budget.amount <= 0) {
+    throw new Error("Budget amount must be greater than 0");
+  }
 
   // Log payload for debugging
   console.log("Sending payload to backend:", JSON.stringify(payload, null, 2));
 
   try {
-    const response = await apiClient.post<APIResponse<AnalyzeEventResponse>>(
-      "/ai-planner/analyze",
+    console.log(
+      "Making API request to /ai-planner/generate with payload:",
       payload
     );
+    const response = await apiClient.post<APIResponse<AnalyzeEventResponse>>(
+      "/ai-planner/generate",
+      payload
+    );
+    console.log("API response received:", response.data);
 
     if (response.data.status === "success" && response.data.data) {
+      // Store plan result for guest sessions
+      if (!isAuthenticated() && response.data.data) {
+        guestSessionService.storePlanResult(response.data.data);
+
+        // Update session info if provided in response
+        if ((response.data.data as any).guestSession) {
+          guestSessionService.storeSessionInfo(
+            (response.data.data as any).guestSession
+          );
+        }
+      }
+
       return response.data.data;
     }
 
@@ -173,10 +275,69 @@ export const analyzeEvent = async (
       fullError: error,
     });
 
-    // Re-throw with more context
-    if (error.code) {
-      throw new Error(`${error.code}: ${error.message || "Bad request"}`);
+    // If the endpoint doesn't exist (404) or there's a server error (5xx), try fallback
+    if (error.response?.status === 404 || error.response?.status >= 500) {
+      console.log("Primary endpoint failed, trying fallback service...");
+
+      try {
+        // Transform EventPlanFormData to EventPlanningRequest
+        const fallbackRequest: EventPlanningRequest = {
+          eventType: formData.eventType,
+          budget: formData.budget.amount,
+          guestCount: formData.guestCount,
+          date: formData.eventDate.toISOString(),
+          location: `${formData.location.city}, ${formData.location.state}, ${formData.location.country}`,
+          duration: formData.eventDuration
+            ? (() => {
+                const start = parseInt(
+                  formData.eventDuration.startTime.split(":")[0]
+                );
+                const end = parseInt(
+                  formData.eventDuration.endTime.split(":")[0]
+                );
+                return end > start ? end - start : 4;
+              })()
+            : 4, // Default 4 hours
+          preferences: {
+            theme:
+              formData.eventSpecific?.weddingSpecific?.ceremonyType ||
+              formData.eventSpecific?.corporateSpecific?.eventPurpose ||
+              formData.eventSpecific?.birthdaySpecific?.theme ||
+              "",
+            style: formData.guestClass?.formality || "casual",
+            dietary: [], // Not available in SpecialRequirementsData
+            accessibility: [], // Not available in SpecialRequirementsData
+            entertainment: [],
+            special_requests:
+              formData.specialRequirements?.customRequirements ||
+              formData.eventDescription ||
+              "",
+          },
+          clientInfo: {
+            name: "Guest User", // ClientProfileData doesn't have simple name field
+            email: "guest@example.com", // ClientProfileData doesn't have simple email field
+            phone: "", // ClientProfileData doesn't have simple phone field
+          },
+        };
+
+        const fallbackResult = await aiPlannerService.createEventPlan(
+          fallbackRequest
+        );
+
+        // Transform AIEventPlan to AnalyzeEventResponse format
+        const transformedResult: AnalyzeEventResponse = {
+          sessionToken: fallbackResult.id || "fallback-session",
+          eventPlan: fallbackResult as any, // AIEventPlan needs to be transformed to EventPlanTeaser
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        };
+
+        return transformedResult;
+      } catch (fallbackError) {
+        console.error("Fallback service also failed:", fallbackError);
+        throw new Error("Both primary and fallback services are unavailable");
+      }
     }
+
     throw error;
   }
 };
@@ -243,6 +404,61 @@ export const healthCheck = async (): Promise<any> => {
   throw new Error("Health check failed");
 };
 
+/**
+ * Refine event plan (works for both authenticated and guest users)
+ */
+export const refineEventPlan = async (
+  resultId: string,
+  refinementPrompt: string,
+  refinementType: string = "general"
+): Promise<any> => {
+  // Ensure guest session exists for non-authenticated users
+  const guestSessionToken = await ensureGuestSession();
+
+  const payload = {
+    refinementPrompt,
+    refinementType,
+    // Include guest session token in payload as fallback
+    ...(guestSessionToken ? { guestSessionToken } : {}),
+  };
+
+  try {
+    const response = await apiClient.post(
+      `/ai-planner/refine/${resultId}`,
+      payload
+    );
+
+    if (response.data?.status === "success" && response.data?.data) {
+      // Store updated plan result for guest sessions
+      if (!isAuthenticated() && response.data.data) {
+        guestSessionService.storePlanResult(response.data.data);
+      }
+
+      return response.data.data;
+    }
+
+    throw new Error(response.data.message || "Failed to refine event plan");
+  } catch (error: any) {
+    console.error("Failed to refine event plan:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to refine event plan"
+    );
+  }
+};
+
+/**
+ * Convert guest session to authenticated account
+ */
+export const convertGuestSession = async (authToken: string): Promise<any> => {
+  try {
+    const result = await guestSessionService.convertGuestSession(authToken);
+    return result;
+  } catch (error: any) {
+    console.error("Failed to convert guest session:", error);
+    throw error;
+  }
+};
+
 export default {
   analyzeEvent,
   getEventPlanResult,
@@ -251,4 +467,7 @@ export default {
   healthCheck,
   canSubmitRequest,
   getMinutesUntilReset,
+  refineEventPlan,
+  convertGuestSession,
+  ensureGuestSession,
 };

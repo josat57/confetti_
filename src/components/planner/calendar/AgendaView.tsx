@@ -9,7 +9,10 @@ interface AgendaViewProps {
   onEventClick: (event: CalendarEvent) => void;
 }
 
-export default function AgendaView({ events, onEventClick }: AgendaViewProps) {
+export default function AgendaView({
+  events = [],
+  onEventClick,
+}: AgendaViewProps) {
   // Group events by date
   const groupedEvents = events.reduce((groups, event) => {
     const date = format(new Date(event.start), "yyyy-MM-dd");

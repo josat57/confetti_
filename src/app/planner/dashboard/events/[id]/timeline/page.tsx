@@ -39,10 +39,13 @@ export default function TimelinePage({ params }: TimelinePageProps) {
     if (!event) return;
 
     try {
+      const updatedTimeline = [
+        ...event.timeline,
+        { ...milestone, completed: false },
+      ];
       const updatedEvent = await eventsService.updateEvent(event._id, {
-        ...event,
-        timeline: [...event.timeline, { ...milestone, completed: false }],
-      });
+        timeline: updatedTimeline,
+      } as any); // Type assertion needed as timeline is not in UpdateEventInput
       if (updatedEvent) {
         setEvent(updatedEvent);
       }
@@ -62,9 +65,8 @@ export default function TimelinePage({ params }: TimelinePageProps) {
 
     try {
       const updatedEvent = await eventsService.updateEvent(event._id, {
-        ...event,
         timeline: updatedTimeline,
-      });
+      } as any); // Type assertion needed as timeline is not in UpdateEventInput
       if (updatedEvent) {
         setEvent(updatedEvent);
       }

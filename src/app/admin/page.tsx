@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { useAdmin } from "../../contexts/AdminContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Users,
   Store,
@@ -19,108 +19,119 @@ import {
   FileText,
   Flag,
   Settings,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
-  
   const { stats, loading, refreshStats } = useAdmin();
   const { user } = useAuth();
 
-  const [recentActivity, setRecentActivity] = useState([
-    {
-      id: 1,
-      type: 'user_registration',
-      message: 'New user registered: John Doe',
-      time: '2 minutes ago',
-      icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      id: 2,
-      type: 'vendor_verification',
-      message: 'Vendor verification completed: EventPro Services',
-      time: '15 minutes ago',
-      icon: Store,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      id: 3,
-      type: 'content_moderation',
-      message: 'Content flagged for review: Event post #1234',
-      time: '1 hour ago',
-      icon: Flag,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-    },
-    {
-      id: 4,
-      type: 'support_ticket',
-      message: 'New support ticket: Payment issue',
-      time: '2 hours ago',
-      icon: HelpCircle,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-  ]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   const quickActions = [
     {
-      name: 'User Management',
-      href: '/admin/users',
+      name: "User Management",
+      href: "/admin/users",
       icon: Users,
-      description: 'Manage user accounts and permissions',
-      color: 'bg-blue-500',
+      description: "Manage user accounts and permissions",
+      color: "bg-blue-500",
     },
     {
-      name: 'Vendor Management',
-      href: '/admin/vendors',
+      name: "Vendor Management",
+      href: "/admin/vendors",
       icon: Store,
-      description: 'Review and manage vendor accounts',
-      color: 'bg-green-500',
+      description: "Review and manage vendor accounts",
+      color: "bg-green-500",
     },
     {
-      name: 'Content Moderation',
-      href: '/admin/moderation/content',
+      name: "Content Moderation",
+      href: "/admin/moderation/content",
       icon: Flag,
-      description: 'Moderate platform content',
-      color: 'bg-yellow-500',
+      description: "Moderate platform content",
+      color: "bg-yellow-500",
     },
     {
-      name: 'Support Tickets',
-      href: '/admin/support',
+      name: "Support Tickets",
+      href: "/admin/support",
       icon: HelpCircle,
-      description: 'Handle support requests',
-      color: 'bg-purple-500',
+      description: "Handle support requests",
+      color: "bg-purple-500",
     },
     {
-      name: 'Analytics',
-      href: '/admin/analytics',
+      name: "Analytics",
+      href: "/admin/analytics",
       icon: BarChart3,
-      description: 'View platform analytics',
-      color: 'bg-indigo-500',
+      description: "View platform analytics",
+      color: "bg-indigo-500",
     },
     {
-      name: 'System Settings',
-      href: '/admin/settings',
+      name: "System Settings",
+      href: "/admin/settings",
       icon: Settings,
-      description: 'Configure system settings',
-      color: 'bg-gray-500',
+      description: "Configure system settings",
+      color: "bg-gray-500",
     },
   ];
 
   useEffect(() => {
     refreshStats();
+    fetchRecentActivity();
   }, [refreshStats]);
+
+  const fetchRecentActivity = async () => {
+    try {
+      const { AdminAPI } = await import("@/api/adminApi");
+      const response = await AdminAPI.getDashboardStats();
+
+      if (
+        response?.status === "success" &&
+        response?.data?.metrics?.recentActivity
+      ) {
+        const activities = response.data.metrics.recentActivity
+          .slice(0, 4)
+          .map((activity: any, index: number) => {
+            let icon = Activity;
+            let color = "text-gray-600";
+            let bgColor = "bg-gray-100";
+
+            if (activity.type === "user_registered") {
+              icon = Users;
+              color = "text-green-600";
+              bgColor = "bg-green-100";
+            } else if (activity.type === "payment_received") {
+              icon = DollarSign;
+              color = "text-purple-600";
+              bgColor = "bg-purple-100";
+            } else if (activity.type === "event_created") {
+              icon = Calendar;
+              color = "text-blue-600";
+              bgColor = "bg-blue-100";
+            }
+
+            return {
+              id: index + 1,
+              type: activity.type,
+              message: activity.description,
+              time: new Date(activity.timestamp).toLocaleString(),
+              icon,
+              color,
+              bgColor,
+            };
+          });
+
+        setRecentActivity(activities);
+      }
+    } catch (error) {
+      console.error("Error fetching recent activity:", error);
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.userName || 'Administrator'}!
+          Welcome back, {user?.username || user?.email || "Administrator"}!
         </h1>
         <p className="text-gray-600 mt-1">
           Here's what's happening with your platform today.
@@ -142,7 +153,7 @@ export default function AdminDashboard() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Users</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {loading ? '...' : stats.totalUsers.toLocaleString()}
+                {loading ? "..." : stats?.totalUsers?.toLocaleString() || "0"}
               </p>
             </div>
           </div>
@@ -161,7 +172,7 @@ export default function AdminDashboard() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Vendors</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {loading ? '...' : stats.totalVendors.toLocaleString()}
+                {loading ? "..." : stats?.totalVendors?.toLocaleString() || "0"}
               </p>
             </div>
           </div>
@@ -180,7 +191,7 @@ export default function AdminDashboard() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Events</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {loading ? '...' : stats.totalEvents.toLocaleString()}
+                {loading ? "..." : stats?.totalEvents?.toLocaleString() || "0"}
               </p>
             </div>
           </div>
@@ -199,7 +210,9 @@ export default function AdminDashboard() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Revenue</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`}
+                {loading
+                  ? "..."
+                  : `$${stats?.totalRevenue?.toLocaleString() || "0"}`}
               </p>
             </div>
           </div>
@@ -216,9 +229,13 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
+              <p className="text-sm font-medium text-gray-600">
+                Active Subscriptions
+              </p>
               <p className="text-xl font-semibold text-gray-900">
-                {loading ? '...' : stats.activeSubscriptions.toLocaleString()}
+                {loading
+                  ? "..."
+                  : stats?.activeSubscriptions?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="p-3 rounded-full bg-green-100 text-green-600">
@@ -235,9 +252,13 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending Reports</p>
+              <p className="text-sm font-medium text-gray-600">
+                Pending Reports
+              </p>
               <p className="text-xl font-semibold text-gray-900">
-                {loading ? '...' : stats.pendingReports.toLocaleString()}
+                {loading
+                  ? "..."
+                  : stats?.pendingReports?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="p-3 rounded-full bg-red-100 text-red-600">
@@ -254,9 +275,13 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Support Tickets</p>
+              <p className="text-sm font-medium text-gray-600">
+                Support Tickets
+              </p>
               <p className="text-xl font-semibold text-gray-900">
-                {loading ? '...' : stats.supportTickets.toLocaleString()}
+                {loading
+                  ? "..."
+                  : stats?.supportTickets?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -276,7 +301,9 @@ export default function AdminDashboard() {
           className="bg-white rounded-lg shadow"
         >
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h2>
             <p className="text-sm text-gray-600 mt-1">
               Access frequently used admin functions
             </p>
@@ -299,7 +326,9 @@ export default function AdminDashboard() {
                     <p className="text-sm font-medium text-gray-900">
                       {action.name}
                     </p>
-                    <p className="text-xs text-gray-500">{action.description}</p>
+                    <p className="text-xs text-gray-500">
+                      {action.description}
+                    </p>
                   </div>
                 </motion.a>
               ))}
@@ -315,7 +344,9 @@ export default function AdminDashboard() {
           className="bg-white rounded-lg shadow"
         >
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Recent Activity
+            </h2>
             <p className="text-sm text-gray-600 mt-1">
               Latest platform activities and updates
             </p>
@@ -347,4 +378,4 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
-} 
+}

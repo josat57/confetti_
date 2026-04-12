@@ -11,6 +11,7 @@ interface StatsCardProps {
   };
   color?: "purple" | "green" | "blue" | "yellow";
   loading?: boolean;
+  subtitle?: string;
 }
 
 export default function StatsCard({
@@ -20,6 +21,7 @@ export default function StatsCard({
   trend,
   color = "purple",
   loading = false,
+  subtitle,
 }: StatsCardProps) {
   const colorClasses = {
     purple: "bg-purple-50 text-purple-600",
@@ -69,6 +71,7 @@ export default function StatsCard({
       <div>
         <p className="text-sm text-gray-600 mb-1">{title}</p>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
+        {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
       </div>
     </div>
   );

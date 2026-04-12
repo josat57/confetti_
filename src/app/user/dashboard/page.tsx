@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, Users, Bell, Settings, LogOut, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Calendar, Users, Bell, Settings, LogOut, User } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function UserDashboard() {
   const { user, loading, logout } = useAuth();
@@ -41,7 +41,9 @@ export default function UserDashboard() {
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                   <User className="h-5 w-5 text-purple-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{user?.userName || 'User'}</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.username || "User"}
+                </span>
               </div>
             </div>
           </div>
@@ -58,7 +60,9 @@ export default function UserDashboard() {
                 <Calendar className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Upcoming Events
+                </h2>
                 <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
@@ -69,7 +73,9 @@ export default function UserDashboard() {
                 <Users className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h2 className="text-lg font-semibold text-gray-900">Connections</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Connections
+                </h2>
                 <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
@@ -80,7 +86,9 @@ export default function UserDashboard() {
                 <Bell className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Notifications
+                </h2>
                 <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
@@ -90,7 +98,9 @@ export default function UserDashboard() {
         {/* Recent Activity */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Recent Activity
+            </h2>
           </div>
           <div className="p-6">
             <p className="text-gray-500 text-center">No recent activity</p>
@@ -103,7 +113,7 @@ export default function UserDashboard() {
             <Settings className="h-5 w-5 mr-2" />
             Settings
           </button>
-          <button 
+          <button
             onClick={() => logout()}
             className="flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
           >
@@ -114,4 +124,4 @@ export default function UserDashboard() {
       </main>
     </div>
   );
-} 
+}

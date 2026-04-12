@@ -72,11 +72,16 @@ export default function CalendarPage() {
     }
 
     try {
-      // TODO: Call API to block date
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: calendarService } = await import(
+        "@/services/calendar.service"
+      );
+      const blockedDate = await calendarService.blockDates({
+        dates: [selectedDate.toISOString().split("T")[0]],
+        reason: blockReason,
+      });
 
       const newEvent: CalendarEvent = {
-        id: Date.now().toString(),
+        id: blockedDate._id || Date.now().toString(),
         title: blockReason,
         date: selectedDate,
         type: "blocked",
@@ -87,22 +92,24 @@ export default function CalendarPage() {
       setShowBlockModal(false);
       setBlockReason("");
       setSelectedDate(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error blocking date:", error);
-      toast.error("Failed to block date");
+      toast.error(error.response?.data?.message || "Failed to block date");
     }
   };
 
   const handleUnblockDate = async (eventId: string) => {
     try {
-      // TODO: Call API to unblock date
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: calendarService } = await import(
+        "@/services/calendar.service"
+      );
+      await calendarService.unblockDates(eventId);
 
       setEvents(events.filter((e) => e.id !== eventId));
       toast.success("Date unblocked successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error unblocking date:", error);
-      toast.error("Failed to unblock date");
+      toast.error(error.response?.data?.message || "Failed to unblock date");
     }
   };
 
@@ -120,12 +127,28 @@ export default function CalendarPage() {
     };
     setWorkingHours(newWorkingHours);
 
-    // TODO: Save to API
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      const { default: calendarService } = await import(
+        "@/services/calendar.service"
+      );
+
+      // Transform to backend format
+      const hours = Object.entries(newWorkingHours).map(
+        ([day, hours]: [string, any]) => ({
+          day,
+          open: hours.start,
+          close: hours.end,
+          closed: !hours.enabled,
+        })
+      );
+
+      await calendarService.updateHours(hours);
       toast.success("Working hours updated");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating working hours:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update working hours"
+      );
     }
   };
 

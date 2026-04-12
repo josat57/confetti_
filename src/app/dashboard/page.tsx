@@ -3,14 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import {
-  Calendar,
-  Users,
-  DollarSign,
-  TrendingUp,
-  Loader2,
-} from "lucide-react";
-import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
+import { Calendar, Users, DollarSign, TrendingUp, Loader2 } from "lucide-react";
+import SubscriptionStatus from "@/components/dashboard/SubscriptionStatus";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -47,9 +41,11 @@ export default function DashboardPage() {
     <div className="p-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.userName || "User"}!
+          Welcome back, {user?.username || user?.email || "User"}!
         </h1>
-        <p className="text-gray-600">Here's what's happening with your events</p>
+        <p className="text-gray-600">
+          Here's what's happening with your events
+        </p>
       </div>
 
       {/* Stats Grid */}
@@ -111,7 +107,9 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h2>
           <div className="space-y-4">
             <div className="flex items-center">
               <div className="w-2 h-2 rounded-full bg-green-500 mr-3"></div>
@@ -145,4 +143,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-} 
+}

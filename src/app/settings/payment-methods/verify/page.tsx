@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Loader2, CreditCard } from "lucide-react";
 import { toast } from "react-toastify";
 import { settingsService } from "@/services/settings.service";
 
-export default function VerifyPaymentMethodPage() {
+function VerifyPaymentMethodContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"verifying" | "success" | "error">(
@@ -174,5 +174,19 @@ export default function VerifyPaymentMethodPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function VerifyPaymentMethodPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <VerifyPaymentMethodContent />
+    </Suspense>
   );
 }

@@ -35,10 +35,14 @@ export default function VendorBookingForm({
 
   const fetchEvents = async () => {
     try {
-      const response = await eventsService.getEvents({
-        status: "Planning",
-        limit: 100,
-      });
+      const response = await eventsService.getEvents(
+        {
+          status: "Planning",
+        },
+        undefined,
+        1,
+        100
+      );
       setEvents(response.events);
     } catch (error) {
       console.error("Error fetching events:", error);

@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
-import { AdminAPI } from '@/api/adminApi';
-import { toast } from 'react-toastify';
-import { useRouter } from 'next/navigation';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  ReactNode,
+} from "react";
+import { useAuth } from "./AuthContext";
+import { AdminAPI } from "@/api/adminApi";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 interface AdminStats {
   totalUsers: number;
@@ -14,14 +22,18 @@ interface AdminStats {
   activeSubscriptions: number;
   pendingReports: number;
   supportTickets: number;
-  systemHealth: 'good' | 'warning' | 'critical';
+  systemHealth: "good" | "warning" | "critical";
 }
 
 interface AdminContextType {
   stats: AdminStats;
   loading: boolean;
   // Admin Authentication
-  adminLogin: (email: string, password: string, twoFactorCode?: string) => Promise<any>;
+  adminLogin: (
+    email: string,
+    password: string,
+    twoFactorCode?: string
+  ) => Promise<any>;
   adminLogout: () => Promise<void>;
   verifyAdminAccess: () => Promise<any>;
   // Admin Management
@@ -51,12 +63,24 @@ interface AdminContextType {
   updateFeatureFlags: (flags: any) => Promise<any>;
   // Moderation
   getReports: (params?: any) => Promise<any>;
-  handleReport: (reportId: string, action: string, reason?: string) => Promise<any>;
-  moderateContent: (contentId: string, action: string, reason?: string) => Promise<any>;
+  handleReport: (
+    reportId: string,
+    action: string,
+    reason?: string
+  ) => Promise<any>;
+  moderateContent: (
+    contentId: string,
+    action: string,
+    reason?: string
+  ) => Promise<any>;
   // Support System
   getSupportTickets: (params?: any) => Promise<any>;
   getTicketDetails: (ticketId: string) => Promise<any>;
-  updateTicketStatus: (ticketId: string, status: string, response?: string) => Promise<any>;
+  updateTicketStatus: (
+    ticketId: string,
+    status: string,
+    response?: string
+  ) => Promise<any>;
   // Audit & Logging
   getAuditLogs: (params?: any) => Promise<any>;
   getAdminActions: (params?: any) => Promise<any>;
@@ -67,7 +91,10 @@ interface AdminContextType {
   // Communication
   sendAnnouncement: (announcement: any) => Promise<any>;
   getAnnouncements: () => Promise<any>;
-  updateAnnouncement: (announcementId: string, announcement: any) => Promise<any>;
+  updateAnnouncement: (
+    announcementId: string,
+    announcement: any
+  ) => Promise<any>;
   // Stats
   refreshStats: () => Promise<void>;
 }
@@ -77,7 +104,7 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export function useAdmin() {
   const context = useContext(AdminContext);
   if (context === undefined) {
-    throw new Error('useAdmin must be used within an AdminProvider');
+    throw new Error("useAdmin must be used within an AdminProvider");
   }
   return context;
 }
@@ -93,35 +120,43 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     activeSubscriptions: 0,
     pendingReports: 0,
     supportTickets: 0,
-    systemHealth: 'good',
+    systemHealth: "good",
   });
   const [loading, setLoading] = useState(false);
 
   // Admin Authentication
-  const adminLogin = async (email: string, password: string, twoFactorCode?: string) => {
+  const adminLogin = async (
+    email: string,
+    password: string,
+    twoFactorCode?: string
+  ) => {
     try {
       setLoading(true);
-      const response = await AdminAPI.adminLogin({ email, password, twoFactorCode });
-      if (response?.status === 'success') {
+      const response = await AdminAPI.adminLogin({
+        email,
+        password,
+        twoFactorCode,
+      });
+      if (response?.status === "success") {
         // Use admin-specific verification instead of regular user verification
         const adminVerification = await verifyAdminAccess();
         // Extract admin user from either data.admin or userData for compatibility
         const adminUser = adminVerification?.data?.admin;
-        if (adminVerification?.status === 'success' && adminUser) {
+        if (adminVerification?.status === "success" && adminUser) {
           setUser(adminUser);
-          localStorage.setItem('user', JSON.stringify(adminUser));
+          localStorage.setItem("user", JSON.stringify(adminUser));
         }
-        toast.success('Admin login successful!');
+        toast.success("Admin login successful!");
         return response;
       } else if (response?.requiresTwoFactor) {
         // Return the response for two-factor handling
         return response;
       } else {
-        throw new Error(response?.message || 'Admin login failed');
+        throw new Error(response?.message || "Admin login failed");
       }
     } catch (error: any) {
-      console.error('Admin login error:', error);
-      toast.error(error.message || 'Admin login failed');
+      console.error("Admin login error:", error);
+      toast.error(error.message || "Admin login failed");
       throw error;
     } finally {
       setLoading(false);
@@ -132,11 +167,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       await AdminAPI.adminLogout();
-      toast.success('Admin logout successful');
-      router.push('/admin/login');
+      toast.success("Admin logout successful");
+      router.push("/admin/login");
     } catch (error: any) {
-      console.error('Admin logout error:', error);
-      toast.error(error.message || 'Admin logout failed');
+      console.error("Admin logout error:", error);
+      toast.error(error.message || "Admin logout failed");
       throw error;
     } finally {
       setLoading(false);
@@ -148,7 +183,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.verifyAdminAccess();
       return response;
     } catch (error: any) {
-      console.error('Admin access verification error:', error);
+      console.error("Admin access verification error:", error);
       throw error;
     }
   };
@@ -160,8 +195,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getAdmins();
       return response;
     } catch (error: any) {
-      console.error('Error fetching admins:', error);
-      toast.error('Failed to fetch admins');
+      console.error("Error fetching admins:", error);
+      toast.error("Failed to fetch admins");
       throw error;
     } finally {
       setLoading(false);
@@ -172,11 +207,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.createAdmin(adminData);
-      toast.success('Admin created successfully');
+      toast.success("Admin created successfully");
       return response;
     } catch (error: any) {
-      console.error('Error creating admin:', error);
-      toast.error('Failed to create admin');
+      console.error("Error creating admin:", error);
+      toast.error("Failed to create admin");
       throw error;
     } finally {
       setLoading(false);
@@ -187,11 +222,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateAdmin(adminId, adminData);
-      toast.success('Admin updated successfully');
+      toast.success("Admin updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating admin:', error);
-      toast.error('Failed to update admin');
+      console.error("Error updating admin:", error);
+      toast.error("Failed to update admin");
       throw error;
     } finally {
       setLoading(false);
@@ -202,11 +237,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.deleteAdmin(adminId);
-      toast.success('Admin deleted successfully');
+      toast.success("Admin deleted successfully");
       return response;
     } catch (error: any) {
-      console.error('Error deleting admin:', error);
-      toast.error('Failed to delete admin');
+      console.error("Error deleting admin:", error);
+      toast.error("Failed to delete admin");
       throw error;
     } finally {
       setLoading(false);
@@ -220,8 +255,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getUsers(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to fetch users');
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users");
       throw error;
     } finally {
       setLoading(false);
@@ -234,8 +269,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getUserDetails(userId);
       return response;
     } catch (error: any) {
-      console.error('Error fetching user details:', error);
-      toast.error('Failed to fetch user details');
+      console.error("Error fetching user details:", error);
+      toast.error("Failed to fetch user details");
       throw error;
     } finally {
       setLoading(false);
@@ -246,11 +281,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateUserStatus(userId, status);
-      toast.success('User status updated successfully');
+      toast.success("User status updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating user status:', error);
-      toast.error('Failed to update user status');
+      console.error("Error updating user status:", error);
+      toast.error("Failed to update user status");
       throw error;
     } finally {
       setLoading(false);
@@ -261,11 +296,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.deleteUser(userId);
-      toast.success('User deleted successfully');
+      toast.success("User deleted successfully");
       return response;
     } catch (error: any) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
       throw error;
     } finally {
       setLoading(false);
@@ -279,8 +314,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getVendors(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching vendors:', error);
-      toast.error('Failed to fetch vendors');
+      console.error("Error fetching vendors:", error);
+      toast.error("Failed to fetch vendors");
       throw error;
     } finally {
       setLoading(false);
@@ -293,8 +328,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getVendorDetails(vendorId);
       return response;
     } catch (error: any) {
-      console.error('Error fetching vendor details:', error);
-      toast.error('Failed to fetch vendor details');
+      console.error("Error fetching vendor details:", error);
+      toast.error("Failed to fetch vendor details");
       throw error;
     } finally {
       setLoading(false);
@@ -305,11 +340,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.verifyVendor(vendorId, verificationData);
-      toast.success('Vendor verification updated successfully');
+      toast.success("Vendor verification updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating vendor verification:', error);
-      toast.error('Failed to update vendor verification');
+      console.error("Error updating vendor verification:", error);
+      toast.error("Failed to update vendor verification");
       throw error;
     } finally {
       setLoading(false);
@@ -320,11 +355,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateVendorStatus(vendorId, status);
-      toast.success('Vendor status updated successfully');
+      toast.success("Vendor status updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating vendor status:', error);
-      toast.error('Failed to update vendor status');
+      console.error("Error updating vendor status:", error);
+      toast.error("Failed to update vendor status");
       throw error;
     } finally {
       setLoading(false);
@@ -335,11 +370,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.deleteVendor(vendorId);
-      toast.success('Vendor deleted successfully');
+      toast.success("Vendor deleted successfully");
       return response;
     } catch (error: any) {
-      console.error('Error deleting vendor:', error);
-      toast.error('Failed to delete vendor');
+      console.error("Error deleting vendor:", error);
+      toast.error("Failed to delete vendor");
       throw error;
     } finally {
       setLoading(false);
@@ -353,8 +388,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getContent(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching content:', error);
-      toast.error('Failed to fetch content');
+      console.error("Error fetching content:", error);
+      toast.error("Failed to fetch content");
       throw error;
     } finally {
       setLoading(false);
@@ -365,11 +400,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateContent(contentId, contentData);
-      toast.success('Content updated successfully');
+      toast.success("Content updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating content:', error);
-      toast.error('Failed to update content');
+      console.error("Error updating content:", error);
+      toast.error("Failed to update content");
       throw error;
     } finally {
       setLoading(false);
@@ -380,11 +415,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.deleteContent(contentId);
-      toast.success('Content deleted successfully');
+      toast.success("Content deleted successfully");
       return response;
     } catch (error: any) {
-      console.error('Error deleting content:', error);
-      toast.error('Failed to delete content');
+      console.error("Error deleting content:", error);
+      toast.error("Failed to delete content");
       throw error;
     } finally {
       setLoading(false);
@@ -398,8 +433,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getSystemSettings();
       return response;
     } catch (error: any) {
-      console.error('Error fetching system settings:', error);
-      toast.error('Failed to fetch system settings');
+      console.error("Error fetching system settings:", error);
+      toast.error("Failed to fetch system settings");
       throw error;
     } finally {
       setLoading(false);
@@ -410,11 +445,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateSystemSettings(settings);
-      toast.success('System settings updated successfully');
+      toast.success("System settings updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating system settings:', error);
-      toast.error('Failed to update system settings');
+      console.error("Error updating system settings:", error);
+      toast.error("Failed to update system settings");
       throw error;
     } finally {
       setLoading(false);
@@ -427,8 +462,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getFeatureFlags();
       return response;
     } catch (error: any) {
-      console.error('Error fetching feature flags:', error);
-      toast.error('Failed to fetch feature flags');
+      console.error("Error fetching feature flags:", error);
+      toast.error("Failed to fetch feature flags");
       throw error;
     } finally {
       setLoading(false);
@@ -439,11 +474,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.updateFeatureFlags(flags);
-      toast.success('Feature flags updated successfully');
+      toast.success("Feature flags updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating feature flags:', error);
-      toast.error('Failed to update feature flags');
+      console.error("Error updating feature flags:", error);
+      toast.error("Failed to update feature flags");
       throw error;
     } finally {
       setLoading(false);
@@ -457,38 +492,50 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getReports(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching reports:', error);
-      toast.error('Failed to fetch reports');
+      console.error("Error fetching reports:", error);
+      toast.error("Failed to fetch reports");
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReport = async (reportId: string, action: string, reason?: string) => {
+  const handleReport = async (
+    reportId: string,
+    action: string,
+    reason?: string
+  ) => {
     try {
       setLoading(true);
       const response = await AdminAPI.handleReport(reportId, action, reason);
       toast.success(`Report ${action} successfully`);
       return response;
     } catch (error: any) {
-      console.error('Error handling report:', error);
-      toast.error('Failed to handle report');
+      console.error("Error handling report:", error);
+      toast.error("Failed to handle report");
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const moderateContent = async (contentId: string, action: string, reason?: string) => {
+  const moderateContent = async (
+    contentId: string,
+    action: string,
+    reason?: string
+  ) => {
     try {
       setLoading(true);
-      const response = await AdminAPI.moderateContent(contentId, action, reason);
+      const response = await AdminAPI.moderateContent(
+        contentId,
+        action,
+        reason
+      );
       toast.success(`Content ${action} successfully`);
       return response;
     } catch (error: any) {
-      console.error('Error moderating content:', error);
-      toast.error('Failed to moderate content');
+      console.error("Error moderating content:", error);
+      toast.error("Failed to moderate content");
       throw error;
     } finally {
       setLoading(false);
@@ -502,8 +549,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getSupportTickets(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching support tickets:', error);
-      toast.error('Failed to fetch support tickets');
+      console.error("Error fetching support tickets:", error);
+      toast.error("Failed to fetch support tickets");
       throw error;
     } finally {
       setLoading(false);
@@ -516,23 +563,31 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getTicketDetails(ticketId);
       return response;
     } catch (error: any) {
-      console.error('Error fetching ticket details:', error);
-      toast.error('Failed to fetch ticket details');
+      console.error("Error fetching ticket details:", error);
+      toast.error("Failed to fetch ticket details");
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const updateTicketStatus = async (ticketId: string, status: string, response?: string) => {
+  const updateTicketStatus = async (
+    ticketId: string,
+    status: string,
+    response?: string
+  ) => {
     try {
       setLoading(true);
-      const result = await AdminAPI.updateTicketStatus(ticketId, status, response);
-      toast.success('Ticket status updated successfully');
+      const result = await AdminAPI.updateTicketStatus(
+        ticketId,
+        status,
+        response
+      );
+      toast.success("Ticket status updated successfully");
       return result;
     } catch (error: any) {
-      console.error('Error updating ticket status:', error);
-      toast.error('Failed to update ticket status');
+      console.error("Error updating ticket status:", error);
+      toast.error("Failed to update ticket status");
       throw error;
     } finally {
       setLoading(false);
@@ -546,8 +601,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getAuditLogs(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching audit logs:', error);
-      toast.error('Failed to fetch audit logs');
+      console.error("Error fetching audit logs:", error);
+      toast.error("Failed to fetch audit logs");
       throw error;
     } finally {
       setLoading(false);
@@ -560,8 +615,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getAdminActions(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching admin actions:', error);
-      toast.error('Failed to fetch admin actions');
+      console.error("Error fetching admin actions:", error);
+      toast.error("Failed to fetch admin actions");
       throw error;
     } finally {
       setLoading(false);
@@ -575,8 +630,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getAnalytics(params);
       return response;
     } catch (error: any) {
-      console.error('Error fetching analytics:', error);
-      toast.error('Failed to fetch analytics');
+      console.error("Error fetching analytics:", error);
+      toast.error("Failed to fetch analytics");
       throw error;
     } finally {
       setLoading(false);
@@ -589,9 +644,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getDashboardStats();
       return response;
     } catch (error: any) {
-      console.error('Error fetching dashboard stats:', error);
-      toast.error('Failed to fetch dashboard stats');
-      throw error;
+      console.error("Error fetching dashboard stats:", error);
+      // Don't show toast error for dashboard stats as it's called automatically
+      // and shouldn't interfere with navigation
+      return { data: null };
     } finally {
       setLoading(false);
     }
@@ -601,11 +657,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.generateReport(reportType, dateRange);
-      toast.success('Report generated successfully');
+      toast.success("Report generated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error generating report:', error);
-      toast.error('Failed to generate report');
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report");
       throw error;
     } finally {
       setLoading(false);
@@ -617,11 +673,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await AdminAPI.sendAnnouncement(announcement);
-      toast.success('Announcement sent successfully');
+      toast.success("Announcement sent successfully");
       return response;
     } catch (error: any) {
-      console.error('Error sending announcement:', error);
-      toast.error('Failed to send announcement');
+      console.error("Error sending announcement:", error);
+      toast.error("Failed to send announcement");
       throw error;
     } finally {
       setLoading(false);
@@ -634,23 +690,29 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await AdminAPI.getAnnouncements();
       return response;
     } catch (error: any) {
-      console.error('Error fetching announcements:', error);
-      toast.error('Failed to fetch announcements');
+      console.error("Error fetching announcements:", error);
+      toast.error("Failed to fetch announcements");
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const updateAnnouncement = async (announcementId: string, announcement: any) => {
+  const updateAnnouncement = async (
+    announcementId: string,
+    announcement: any
+  ) => {
     try {
       setLoading(true);
-      const response = await AdminAPI.updateAnnouncement(announcementId, announcement);
-      toast.success('Announcement updated successfully');
+      const response = await AdminAPI.updateAnnouncement(
+        announcementId,
+        announcement
+      );
+      toast.success("Announcement updated successfully");
       return response;
     } catch (error: any) {
-      console.error('Error updating announcement:', error);
-      toast.error('Failed to update announcement');
+      console.error("Error updating announcement:", error);
+      toast.error("Failed to update announcement");
       throw error;
     } finally {
       setLoading(false);
@@ -658,7 +720,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   // Stats
-  const refreshStats = async () => {
+  const refreshStats = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getDashboardStats();
@@ -666,18 +728,34 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         setStats(response.data);
       }
     } catch (error) {
-      console.error('Error fetching admin stats:', error);
-      toast.error('Failed to fetch admin statistics');
+      console.error("Error fetching admin stats:", error);
+      // Provide fallback stats when API is not available
+      setStats({
+        totalUsers: 0,
+        totalVendors: 0,
+        totalEvents: 0,
+        totalRevenue: 0,
+        activeSubscriptions: 0,
+        pendingReports: 0,
+        supportTickets: 0,
+        systemHealth: "good",
+      });
+      // Don't show error toast on initial load
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps - getDashboardStats is stable
+
+  // Use a ref to track if stats have been fetched
+  const statsFetched = useRef(false);
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    // Only fetch stats once when user becomes admin
+    if (user?.role === "admin" && !statsFetched.current) {
+      statsFetched.current = true;
       refreshStats();
     }
-  }, [user]);
+  }, [user?.role, refreshStats]); // Include refreshStats in deps
 
   const value = {
     stats,
@@ -734,5 +812,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     refreshStats,
   };
 
-  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
-} 
+  return (
+    <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
+  );
+}

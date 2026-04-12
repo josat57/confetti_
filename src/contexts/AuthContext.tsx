@@ -7,10 +7,11 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Auth } from "@/api/api";
 import { toast } from "react-toastify";
 import { AdminAPI } from "@/api/adminApi";
+import { guestSessionService } from "@/services/guest-session.service";
 
 interface User {
   _id: string;
@@ -113,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
+        // Immediately restore from localStorage so the UI isn't blank during verify
         setUser(parsedUser);
         try {
           let verifiedUser = null;
@@ -120,29 +122,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             parsedUser.role === "admin" ||
             parsedUser.role === "super_admin"
           ) {
-            // Call admin verify
             const response = await AdminAPI.verifyAdminAccess();
             verifiedUser = response?.data?.admin;
           } else {
-            // Call regular user verify
             const response = await Auth.verifyUser();
             verifiedUser = response?.userData;
           }
           if (verifiedUser) {
             setUser(verifiedUser);
             localStorage.setItem("user", JSON.stringify(verifiedUser));
-          } else {
+          }
+          // If verifiedUser is null but no auth error was thrown, keep existing
+          // stored user — the verify endpoint may have returned an unexpected format
+        } catch (error: any) {
+          const status = error?.response?.status;
+          const errorMessage =
+            error?.response?.data?.message || error?.message || "";
+
+          // Only clear session on explicit authentication failures
+          const isAuthError =
+            status === 401 ||
+            status === 403 ||
+            errorMessage.includes("User no longer exists") ||
+            errorMessage.includes("Invalid token") ||
+            errorMessage.includes("User not found") ||
+            errorMessage.includes("Not authenticated");
+
+          if (isAuthError) {
             setUser(null);
             localStorage.removeItem("user");
+            localStorage.removeItem("rememberedEmail");
+            router.push("/sign-in");
           }
-        } catch (error) {
-          setUser(null);
-          localStorage.removeItem("user");
+          // Network errors / 500s: keep the user logged in with stored data
         }
       }
       setLoading(false);
     };
+
+    // Listen for auth logout events from the API interceptor
+    const handleAuthLogout = (event: CustomEvent) => {
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("rememberedEmail");
+      toast.error(`Session expired: ${event.detail.reason}`);
+    };
+
+    window.addEventListener("auth-logout", handleAuthLogout as EventListener);
+
     hydrateAndVerify();
+
+    return () => {
+      window.removeEventListener(
+        "auth-logout",
+        handleAuthLogout as EventListener
+      );
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (
@@ -156,20 +192,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response?.status === "success" && response?.user) {
         setUser(response.user);
-        // Store user data in localStorage if remember me is checked
+        // Always persist user for session continuity; remember email separately
+        localStorage.setItem("user", JSON.stringify(response.user));
         if (rememberMe) {
-          localStorage.setItem("user", JSON.stringify(response.user));
           localStorage.setItem("rememberedEmail", email);
         } else {
-          localStorage.removeItem("user");
           localStorage.removeItem("rememberedEmail");
         }
+
+        // Convert any existing guest session plans to this user's account
+        if (guestSessionService.hasGuestSession()) {
+          try {
+            await guestSessionService.convertGuestSession("");
+          } catch {
+            // Non-critical — don't block login if conversion fails
+          }
+        }
+
         return response;
       } else {
         throw new Error(response?.message || "Login failed");
       }
     } catch (error: any) {
-      console.error("Login error:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -182,7 +226,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await Auth.register(userData);
       return response;
     } catch (error: any) {
-      console.error("Registration error:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -195,9 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Try to call backend signout, but don't fail if it errors
       try {
         await Auth.signOut();
-      } catch (signOutError) {
-        console.error("Backend signout error:", signOutError);
-        // Continue with local cleanup even if backend fails
+      } catch {
+        // Continue with local cleanup even if backend signout fails
       }
 
       setUser(null);

@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 import DashboardSidebar from "@/components/planner/layout/DashboardSidebar";
 import DashboardHeader from "@/components/planner/layout/DashboardHeader";
 import MobileNav from "@/components/planner/layout/MobileNav";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function PlannerDashboardLayout({
   children,
@@ -91,6 +93,20 @@ export default function PlannerDashboardLayout({
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+
+      {/* Toast Notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
   GuestStats,
 } from "@/types/guest";
 import GuestsService from "@/services/planner/guests.service";
-import EventsService from "@/services/planner/events.service";
+import { eventsService } from "@/services/planner/events.service";
 import GuestList from "@/components/planner/guests/GuestList";
 import GuestForm from "@/components/planner/guests/GuestForm";
 import GuestImport from "@/components/planner/guests/GuestImport";
@@ -59,7 +59,7 @@ export default function GuestsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await EventsService.getEvents({});
+      const response = await eventsService.getEvents({});
       setEvents(response.events);
       if (response.events.length > 0 && !selectedEventId) {
         setSelectedEventId(response.events[0]._id);
@@ -314,7 +314,13 @@ export default function GuestsPage() {
       {showGuestForm && (
         <GuestForm
           guest={editingGuest}
-          onSubmit={editingGuest ? handleUpdateGuest : handleCreateGuest}
+          onSubmit={(data) => {
+            if (editingGuest) {
+              return handleUpdateGuest(data as UpdateGuestInput);
+            } else {
+              return handleCreateGuest(data as CreateGuestInput);
+            }
+          }}
           onCancel={() => {
             setShowGuestForm(false);
             setEditingGuest(undefined);

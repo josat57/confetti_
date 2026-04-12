@@ -25,11 +25,26 @@ interface Client {
   email: string;
   phone: string;
   company?: string;
-  tags: string[];
-  totalSpent: number;
-  eventsCount: number;
-  lastContact: Date;
+  tags?: string[];
+  totalSpent?: number;
+  eventsCount?: number;
+  lastContact?: Date;
   nextFollowUp?: Date;
+  status?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  preferences?: {
+    budgetRange?: {
+      currency?: string;
+    };
+    communicationMethod?: string;
+    eventTypes?: string[];
+  };
   notes: Array<{
     id: string;
     text: string;
@@ -53,42 +68,51 @@ export default function ClientDetailsPage() {
     const fetchClient = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const { default: clientsService } = await import(
+          "@/services/clients.service"
+        );
+        const clientData = await clientsService.getClientById(
+          params.id as string
+        );
 
-        const mockClient: Client = {
-          id: params.id as string,
-          name: "Sarah Johnson",
-          email: "sarah.j@email.com",
-          phone: "+234 800 123 4567",
-          company: "Johnson Events",
-          tags: ["VIP", "Wedding"],
-          totalSpent: 500000,
-          eventsCount: 2,
-          lastContact: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-          nextFollowUp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2),
-          notes: [
-            {
-              id: "1",
-              text: "Interested in premium package for next event",
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-            },
-            {
-              id: "2",
-              text: "Prefers communication via email",
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-            },
-          ],
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90),
+        // Transform backend data to match component interface
+        const transformedClient: Client = {
+          id: clientData._id,
+          name: clientData.name,
+          email: clientData.email,
+          phone: clientData.phone,
+          company: clientData.company,
+          tags: clientData.tags || [], // Initialize as empty array if not present
+          totalSpent: clientData.totalSpent || 0,
+          eventsCount: clientData.eventsCount || 0,
+          status: clientData.status,
+          address: clientData.address,
+          preferences: clientData.preferences,
+          lastContact: clientData.lastContact
+            ? new Date(clientData.lastContact)
+            : new Date(clientData.updatedAt),
+          nextFollowUp: clientData.nextFollowUp
+            ? new Date(clientData.nextFollowUp)
+            : undefined,
+          notes: (clientData.notes || []).map((note: any) => ({
+            id: note._id || note.id,
+            text: note.text || note.content,
+            createdAt: new Date(note.createdAt),
+          })),
+          createdAt: new Date(clientData.createdAt),
         };
 
-        setClient(mockClient);
-        if (mockClient.nextFollowUp) {
-          setFollowUpDate(mockClient.nextFollowUp.toISOString().split("T")[0]);
+        setClient(transformedClient);
+        if (transformedClient.nextFollowUp) {
+          setFollowUpDate(
+            transformedClient.nextFollowUp.toISOString().split("T")[0]
+          );
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching client:", error);
-        toast.error("Failed to load client details");
+        toast.error(
+          error.response?.data?.message || "Failed to load client details"
+        );
         router.push("/vendor/dashboard/clients");
       } finally {
         setLoading(false);
@@ -107,25 +131,29 @@ export default function ClientDetailsPage() {
     }
 
     try {
-      // TODO: Call API to add note
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: clientsService } = await import(
+        "@/services/clients.service"
+      );
+      const response = await clientsService.addNote(client.id, newNote);
 
-      const note = {
-        id: Date.now().toString(),
-        text: newNote,
-        createdAt: new Date(),
-      };
+      // Backend returns { notes: [...] }
+      const updatedNotes = (response.notes || []).map((note: any) => ({
+        id: note._id || note.id,
+        text: note.text || note.content,
+        createdAt: new Date(note.createdAt),
+      }));
 
+      // Update client with new notes
       setClient({
         ...client,
-        notes: [note, ...client.notes],
+        notes: updatedNotes,
       });
 
       setNewNote("");
       toast.success("Note added successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding note:", error);
-      toast.error("Failed to add note");
+      toast.error(error.response?.data?.message || "Failed to add note");
     }
   };
 
@@ -135,26 +163,28 @@ export default function ClientDetailsPage() {
       return;
     }
 
-    if (client.tags.includes(newTag)) {
+    if (client.tags?.includes(newTag)) {
       toast.error("Tag already exists");
       return;
     }
 
     try {
-      // TODO: Call API to add tag
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: clientsService } = await import(
+        "@/services/clients.service"
+      );
+      const updatedClient = await clientsService.addTag(client.id, newTag);
 
       setClient({
         ...client,
-        tags: [...client.tags, newTag],
+        tags: updatedClient.tags || [],
       });
 
       setNewTag("");
       setShowTagInput(false);
       toast.success("Tag added successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding tag:", error);
-      toast.error("Failed to add tag");
+      toast.error(error.response?.data?.message || "Failed to add tag");
     }
   };
 
@@ -162,18 +192,20 @@ export default function ClientDetailsPage() {
     if (!client) return;
 
     try {
-      // TODO: Call API to remove tag
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: clientsService } = await import(
+        "@/services/clients.service"
+      );
+      const updatedClient = await clientsService.removeTag(client.id, tag);
 
       setClient({
         ...client,
-        tags: client.tags.filter((t) => t !== tag),
+        tags: updatedClient.tags || [],
       });
 
       toast.success("Tag removed successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error removing tag:", error);
-      toast.error("Failed to remove tag");
+      toast.error(error.response?.data?.message || "Failed to remove tag");
     }
   };
 
@@ -184,18 +216,25 @@ export default function ClientDetailsPage() {
     }
 
     try {
-      // TODO: Call API to set follow-up
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: clientsService } = await import(
+        "@/services/clients.service"
+      );
+      const updatedClient = await clientsService.setFollowUp(
+        client.id,
+        followUpDate
+      );
 
       setClient({
         ...client,
-        nextFollowUp: new Date(followUpDate),
+        nextFollowUp: updatedClient.nextFollowUp
+          ? new Date(updatedClient.nextFollowUp)
+          : undefined,
       });
 
       toast.success("Follow-up reminder set");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error setting follow-up:", error);
-      toast.error("Failed to set follow-up");
+      toast.error(error.response?.data?.message || "Failed to set follow-up");
     }
   };
 
@@ -266,8 +305,45 @@ export default function ClientDetailsPage() {
                   <span className="text-gray-700">{client.company}</span>
                 </div>
               )}
+              {client.status && (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        client.status === "active"
+                          ? "bg-green-500"
+                          : "bg-gray-400"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-gray-700 capitalize">
+                    {client.status}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Address - Only show if available */}
+          {client.address && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Address
+              </h2>
+              <div className="text-gray-700 space-y-1">
+                {client.address.street && <p>{client.address.street}</p>}
+                {(client.address.city || client.address.state) && (
+                  <p>
+                    {client.address.city}
+                    {client.address.city && client.address.state && ", "}
+                    {client.address.state}
+                  </p>
+                )}
+                {client.address.country && <p>{client.address.country}</p>}
+                {client.address.zipCode && <p>{client.address.zipCode}</p>}
+              </div>
+            </div>
+          )}
 
           {/* Tags */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -288,7 +364,7 @@ export default function ClientDetailsPage() {
                   type="text"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Enter tag name"
+                  placeholder="Enter tag name (e.g., VIP, Wedding, Corporate)"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                 />
@@ -302,23 +378,26 @@ export default function ClientDetailsPage() {
             )}
 
             <div className="flex flex-wrap gap-2">
-              {client.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium"
-                >
-                  <Tag className="w-3 h-3" />
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-purple-900"
+              {client.tags && client.tags.length > 0 ? (
+                client.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-              {client.tags.length === 0 && (
-                <p className="text-sm text-gray-500">No tags yet</p>
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="hover:text-purple-900"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">
+                  No tags yet. Add tags to organize and categorize your clients.
+                </p>
               )}
             </div>
           </div>
@@ -372,7 +451,7 @@ export default function ClientDetailsPage() {
                   <span className="text-sm text-gray-600">Total Spent</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
-                  ₦{client.totalSpent.toLocaleString()}
+                  ₦{client.totalSpent?.toLocaleString() || "0"}
                 </p>
               </div>
               <div>
@@ -387,7 +466,9 @@ export default function ClientDetailsPage() {
               <div>
                 <span className="text-sm text-gray-600">Last Contact</span>
                 <p className="text-sm font-medium text-gray-900 mt-1">
-                  {client.lastContact.toLocaleDateString()}
+                  {client.lastContact
+                    ? new Date(client.lastContact).toLocaleDateString()
+                    : "Never"}
                 </p>
               </div>
               <div>

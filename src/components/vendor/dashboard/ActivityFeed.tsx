@@ -5,15 +5,12 @@ import {
   Calendar,
   UserPlus,
   DollarSign,
+  FileText,
+  Image,
+  Settings,
+  CreditCard,
 } from "lucide-react";
-
-interface Activity {
-  id: string;
-  type: "view" | "review" | "lead" | "booking" | "message" | "payment";
-  title: string;
-  description: string;
-  timestamp: Date;
-}
+import type { Activity } from "@/types/activity.types";
 
 interface ActivityFeedProps {
   activities: Activity[];
@@ -38,6 +35,18 @@ export default function ActivityFeed({
         return <MessageSquare className="w-5 h-5" />;
       case "payment":
         return <DollarSign className="w-5 h-5" />;
+      case "invoice":
+        return <FileText className="w-5 h-5" />;
+      case "quote":
+        return <FileText className="w-5 h-5" />;
+      case "event":
+        return <Image className="w-5 h-5" />;
+      case "profile_update":
+        return <Settings className="w-5 h-5" />;
+      case "subscription":
+        return <CreditCard className="w-5 h-5" />;
+      default:
+        return <MessageSquare className="w-5 h-5" />;
     }
   };
 
@@ -55,10 +64,23 @@ export default function ActivityFeed({
         return "bg-pink-50 text-pink-600";
       case "payment":
         return "bg-emerald-50 text-emerald-600";
+      case "invoice":
+        return "bg-indigo-50 text-indigo-600";
+      case "quote":
+        return "bg-cyan-50 text-cyan-600";
+      case "event":
+        return "bg-orange-50 text-orange-600";
+      case "profile_update":
+        return "bg-gray-50 text-gray-600";
+      case "subscription":
+        return "bg-violet-50 text-violet-600";
+      default:
+        return "bg-gray-50 text-gray-600";
     }
   };
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
@@ -78,8 +100,10 @@ export default function ActivityFeed({
     <div className="space-y-4">
       {displayedActivities.map((activity) => (
         <div
-          key={activity.id}
-          className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          key={activity._id}
+          className={`flex items-start gap-4 p-4 rounded-lg hover:bg-gray-100 transition-colors ${
+            activity.read ? "bg-gray-50" : "bg-blue-50"
+          }`}
         >
           <div
             className={`p-2 rounded-lg flex-shrink-0 ${getActivityColor(
@@ -89,12 +113,20 @@ export default function ActivityFeed({
             {getActivityIcon(activity.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">
-              {activity.title}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-gray-900">
+                {activity.title}
+              </p>
+              {!activity.read && (
+                <span className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-1"></span>
+              )}
+            </div>
             <p className="text-sm text-gray-600 mt-0.5">
               {activity.description}
             </p>
+            {activity.user && (
+              <p className="text-xs text-gray-500 mt-1">{activity.user.name}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               {formatTimestamp(activity.timestamp)}
             </p>

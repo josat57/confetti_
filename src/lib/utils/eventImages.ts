@@ -120,7 +120,7 @@ function getPlaceholderImage(eventType?: string): string {
  * @returns Boolean indicating if event has images
  */
 export function hasEventImages(event: Event): boolean {
-  return (
+  return !!(
     (event.media && event.media.length > 0) ||
     (event.photos && event.photos.length > 0)
   );

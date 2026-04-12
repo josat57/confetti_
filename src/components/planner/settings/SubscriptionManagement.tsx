@@ -38,8 +38,8 @@ export default function SubscriptionManagement() {
       setLoading(true);
       const subscription = await settingsService.getSubscription();
       console.log("Fetched subscription data:", subscription);
-      console.log("Amount:", subscription?.amount);
-      console.log("Currency:", subscription?.currency);
+      console.log("Amount:", (subscription as any)?.amount);
+      console.log("Currency:", (subscription as any)?.currency);
       console.log("Status:", subscription?.status);
       setCurrentPlan(subscription);
     } catch (error) {
@@ -61,8 +61,8 @@ export default function SubscriptionManagement() {
       if (user?.role === "vendor") {
         planType = "vendor";
       } else if (
-        user?.role === "event-planner" ||
-        user?.role === "event_planner"
+        (user as any)?.role === "event-planner" ||
+        (user as any)?.role === "event_planner"
       ) {
         planType = "planner";
       }

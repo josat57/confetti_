@@ -49,8 +49,8 @@ class PlannerCalendarService {
     filters?: CalendarFilters
   ): Promise<CalendarData> {
     const params = new URLSearchParams({
-      startDate,
-      endDate,
+      start: startDate,
+      end: endDate,
       view,
     });
 
@@ -75,7 +75,7 @@ class PlannerCalendarService {
       }
     }
 
-    const response = await api.get(`/api/v1/planner/calendar?${params}`);
+    const response = await api.get(`/planner/calendar?${params}`);
     return response.data;
   }
 
@@ -84,7 +84,7 @@ class PlannerCalendarService {
    */
   async checkAvailability(date: string): Promise<AvailabilityCheck> {
     const response = await api.get(
-      `/api/v1/planner/calendar/availability?date=${date}`
+      `/planner/calendar/availability?date=${date}`
     );
     return response.data;
   }
@@ -96,7 +96,7 @@ class PlannerCalendarService {
     provider: "google" | "outlook",
     authToken: string
   ): Promise<{ success: boolean; synced: number }> {
-    const response = await api.post("/api/v1/planner/calendar/sync", {
+    const response = await api.post("/planner/calendar/sync", {
       provider,
       authToken,
     });
@@ -110,9 +110,9 @@ class PlannerCalendarService {
     startDate: string,
     endDate: string
   ): Promise<{ downloadUrl: string }> {
-    const response = await api.post("/api/v1/planner/calendar/export", {
-      startDate,
-      endDate,
+    const response = await api.post("/planner/calendar/export", {
+      start: startDate,
+      end: endDate,
     });
     return response.data;
   }
@@ -125,13 +125,10 @@ class PlannerCalendarService {
     itemType: "event" | "task",
     newDate: Date
   ): Promise<{ success: boolean }> {
-    const response = await api.patch(
-      `/api/v1/planner/calendar/items/${itemId}`,
-      {
-        type: itemType,
-        date: newDate,
-      }
-    );
+    const response = await api.patch(`/planner/calendar/items/${itemId}`, {
+      type: itemType,
+      date: newDate,
+    });
     return response.data;
   }
 }

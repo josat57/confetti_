@@ -11,7 +11,7 @@ import {
 } from "@/types/planner";
 
 class VendorsService {
-  private baseUrl = "/api/v1/planner/vendors";
+  private baseUrl = "/planner/vendors";
 
   /**
    * Search vendors with filters
@@ -105,8 +105,8 @@ class VendorsService {
 
     const queryString = params.toString();
     const url = queryString
-      ? `/api/v1/planner/bookings?${queryString}`
-      : "/api/v1/planner/bookings";
+      ? `/planner/bookings?${queryString}`
+      : "/planner/bookings";
 
     const response = await api.get(url);
     return response.data;
@@ -120,7 +120,7 @@ class VendorsService {
     data: UpdateBookingInput
   ): Promise<{ booking: VendorBooking }> {
     const response = await api.put(
-      `/api/v1/planner/bookings/${bookingId}`,
+      `/planner/bookings/${bookingId}`,
       data
     );
     return response.data;

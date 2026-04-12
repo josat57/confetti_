@@ -44,41 +44,90 @@ api.interceptors.response.use(
       originalRequest.url?.includes(url)
     );
 
-    // If error is 401 and we haven't tried to refresh token yet
-    // Also check if this is not an auth endpoint to prevent infinite loop
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !shouldExclude
-    ) {
-      originalRequest._retry = true;
+    // Handle 401 errors
+    if (error.response?.status === 401 && !shouldExclude) {
+      const errorMessage = error.response?.data?.message || "";
 
-      try {
-        // Try to refresh the token
-        const refreshResponse = await api.post(
-          "/auth/refresh-token",
-          {},
-          {
+      // If user no longer exists or similar critical auth errors, immediately logout
+      if (
+        errorMessage.includes("User no longer exists") ||
+        errorMessage.includes("Invalid token") ||
+        errorMessage.includes("Token expired") ||
+        errorMessage.includes("User not found")
+      ) {
+        // Clear local storage and redirect to login
+        localStorage.removeItem("user");
+        localStorage.removeItem("rememberedEmail");
+        if (typeof window !== "undefined") {
+          // Dispatch a custom event to notify the AuthContext
+          window.dispatchEvent(
+            new CustomEvent("auth-logout", {
+              detail: { reason: errorMessage },
+            })
+          );
+          // Small delay to allow the event to be processed
+          setTimeout(() => {
+            window.location.href = "/sign-in";
+          }, 100);
+        }
+        return Promise.reject(error);
+      }
+
+      // Try token refresh for other 401 errors (if not already tried)
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          // Try to refresh the token using a separate axios instance to avoid interceptor loops
+          const refreshApi = axios.create({
+            baseURL:
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1",
             withCredentials: true,
             headers: {
               "Content-Type": "application/json",
             },
+          });
+
+          const refreshResponse = await refreshApi.post(
+            "/auth/refresh-token",
+            {}
+          );
+
+          if (refreshResponse.status === 200) {
+            // After successful refresh, retry the original request
+            return api(originalRequest);
+          } else {
+            // Clear local storage and redirect to login
+            localStorage.removeItem("user");
+            localStorage.removeItem("rememberedEmail");
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("auth-logout", {
+                  detail: { reason: "Token refresh failed" },
+                })
+              );
+              setTimeout(() => {
+                window.location.href = "/sign-in";
+              }, 100);
+            }
+            return Promise.reject(error);
           }
-        );
-
-        console.log("Refresh Response: ", refreshResponse);
-        if (refreshResponse.status !== 200) {
-          // If refresh fails, clear any stored tokens and reject
-          console.error("Token refresh failed:", refreshResponse);
-          return Promise.reject(error);
+        } catch (refreshError) {
+          // Clear local storage and redirect to login
+          localStorage.removeItem("user");
+          localStorage.removeItem("rememberedEmail");
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("auth-logout", {
+                detail: { reason: "Token refresh error" },
+              })
+            );
+            setTimeout(() => {
+              window.location.href = "/sign-in";
+            }, 100);
+          }
+          return Promise.reject(error); // Return original error, not refresh error
         }
-
-        // After successful refresh, retry the original request
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, clear any stored tokens and reject
-        console.error("Token refresh error:", refreshError);
-        return Promise.reject(error); // Return original error, not refresh error
       }
     }
     return Promise.reject(error);
@@ -105,14 +154,12 @@ export const Auth = {
   signIn: async (formData: object) => {
     try {
       const response = await api.post("/auth/signin", formData);
-      console.log("Sign in response:", response.data);
       if (response.data?.status === "success" && response.data?.user) {
         return response.data;
       } else {
         throw new Error(response.data?.message || "Login failed");
       }
     } catch (error: any) {
-      console.error("Sign in error:", error);
       // Extract the actual error message from the response
       const errorMessage =
         error.response?.data?.message ||
@@ -135,10 +182,8 @@ export const Auth = {
           },
         }
       );
-    } catch (error) {
-      console.error("Sign out error:", error);
-      // Don't throw error on signout - just log it
-      // This allows the frontend to clear local state even if backend fails
+    } catch {
+      // Don't throw on signout — frontend clears local state regardless
     }
   },
 
@@ -159,7 +204,6 @@ export const Auth = {
       const response = await api.post("/auth/forgot-password", { email });
       return response.data;
     } catch (error: any) {
-      console.error("Forgot password API error:", error);
       throw error;
     }
   },
@@ -188,7 +232,6 @@ export const Auth = {
       });
       return response.data;
     } catch (error) {
-      console.error("Verify user error:", error);
       throw error;
     }
   },
@@ -249,7 +292,6 @@ export const Auth = {
       const response = await api.post(`/auth/${provider}`, { token });
       return response.data;
     } catch (error: any) {
-      console.error(`${provider} authentication error:`, error);
       throw new Error(
         error.response?.data?.message ||
           `Failed to authenticate with ${provider}. Please try again.`
@@ -265,7 +307,6 @@ export const User = {
         withCredentials: true,
       });
       if (response.status === 401 || response.status === 404) {
-        console.log("User not found");
         return null;
       }
       if (!response.data) {
@@ -273,13 +314,11 @@ export const User = {
       }
       return response.data;
     } catch (error) {
-      console.error("Error fetching user profile:", error);
       throw error;
     }
   },
 
   updateProfile: async (formData: FormData) => {
-    console.log("updateProfile formData: ", formData);
     const response = await api.patch("/users/me", formData);
     return response.data;
   },

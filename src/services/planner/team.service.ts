@@ -58,7 +58,7 @@ class TeamService {
     limit: number;
     current: number;
   }> {
-    const response = await api.get("/api/v1/planner/team");
+    const response = await api.get("/planner/team");
     return response.data;
   }
 
@@ -68,7 +68,7 @@ class TeamService {
   async inviteTeamMember(
     invitation: TeamInvitation
   ): Promise<{ invitation: any }> {
-    const response = await api.post("/api/v1/planner/team/invite", invitation);
+    const response = await api.post("/planner/team/invite", invitation);
     return response.data;
   }
 
@@ -82,7 +82,7 @@ class TeamService {
       assignedEvents?: string[];
     }
   ): Promise<{ member: TeamMember }> {
-    const response = await api.put(`/api/v1/planner/team/${memberId}`, updates);
+    const response = await api.put(`/planner/team/${memberId}`, updates);
     return response.data;
   }
 
@@ -90,7 +90,7 @@ class TeamService {
    * Remove team member
    */
   async removeTeamMember(memberId: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/api/v1/planner/team/${memberId}`);
+    const response = await api.delete(`/planner/team/${memberId}`);
     return response.data;
   }
 
@@ -101,7 +101,7 @@ class TeamService {
     limit: number = 50
   ): Promise<{ activities: TeamActivity[] }> {
     const response = await api.get(
-      `/api/v1/planner/team/activity?limit=${limit}`
+      `/planner/team/activity?limit=${limit}`
     );
     return response.data;
   }

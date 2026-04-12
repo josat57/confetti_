@@ -11,7 +11,7 @@ import { X } from "lucide-react";
 
 interface GuestFormProps {
   guest?: Guest;
-  onSubmit: (data: CreateGuestInput | UpdateGuestInput) => void;
+  onSubmit: (data: CreateGuestInput | UpdateGuestInput) => void | Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }

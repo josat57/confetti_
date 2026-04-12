@@ -10,16 +10,44 @@ interface FormProgressProps {
 const steps = [
   {
     number: 1 as FormStep,
-    title: "Event Basics",
-    description: "Type, date, guests",
+    title: "Basic Info",
+    description: "Event fundamentals",
   },
-  { number: 2 as FormStep, title: "Location", description: "Where it happens" },
+  {
+    number: 2 as FormStep,
+    title: "Timing",
+    description: "Duration & schedule",
+  },
   {
     number: 3 as FormStep,
-    title: "Event Details",
-    description: "Description & guests",
+    title: "Venue",
+    description: "Location preferences",
   },
-  { number: 4 as FormStep, title: "Budget", description: "Your investment" },
+  {
+    number: 4 as FormStep,
+    title: "Budget",
+    description: "Financial planning",
+  },
+  {
+    number: 5 as FormStep,
+    title: "Guests",
+    description: "Guest requirements",
+  },
+  {
+    number: 6 as FormStep,
+    title: "Style",
+    description: "Your preferences",
+  },
+  {
+    number: 7 as FormStep,
+    title: "Details",
+    description: "Event specifics",
+  },
+  {
+    number: 8 as FormStep,
+    title: "Final",
+    description: "Special requirements",
+  },
 ];
 
 export default function FormProgress({
@@ -38,16 +66,16 @@ export default function FormProgress({
       <div className="md:hidden mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">
-            Step {currentStep} of 4
+            Step {currentStep} of 8
           </span>
           <span className="text-sm text-gray-500">
-            {Math.round((currentStep / 4) * 100)}% Complete
+            {Math.round((currentStep / 8) * 100)}% Complete
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
             className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / 4) * 100}%` }}
+            style={{ width: `${(currentStep / 8) * 100}%` }}
           />
         </div>
         <p className="text-sm text-gray-600 mt-2">

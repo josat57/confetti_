@@ -62,12 +62,30 @@ export default function AIEventPlannerPage() {
     try {
       const result = await analyzeEvent(formData);
 
+      // Debug: Log the full response to see what we're getting
+      console.log("AI Planner API Response:", result);
+
+      // Based on the implementation guide, the session token should be at the top level
+      const sessionToken = result.sessionToken;
+
+      if (!sessionToken) {
+        console.error("No session token found in response:", result);
+        console.error("Available keys:", Object.keys(result));
+        console.error(
+          "EventPlan keys:",
+          result.eventPlan ? Object.keys(result.eventPlan) : "No eventPlan"
+        );
+        throw new Error("Invalid response: missing session token");
+      }
+
+      console.log("Using session token:", sessionToken);
+
       // Store session token
-      localStorage.setItem("eventPlanSessionToken", result.sessionToken);
+      localStorage.setItem("eventPlanSessionToken", sessionToken);
 
       // Navigate to result page
       setTimeout(() => {
-        router.push(`/ai-event-planner/result/${result.sessionToken}`);
+        router.push(`/ai-event-planner/result/${sessionToken}`);
       }, 8000); // Wait for animation to complete
     } catch (error: any) {
       setIsAnalyzing(false);

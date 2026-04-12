@@ -478,8 +478,39 @@ export interface PaginatedTasks {
   limit: number;
 }
 
-
 // Guest Management Types
 export type RSVPStatus = "Pending" | "Accepted" | "Declined" | "Maybe";
 
-export interface Gu
+export interface Guest {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  rsvpStatus: RSVPStatus;
+  dietaryRestrictions?: string[];
+  plusOne?: boolean;
+  notes?: string;
+  eventId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateGuestInput {
+  name: string;
+  email: string;
+  phone?: string;
+  dietaryRestrictions?: string[];
+  plusOne?: boolean;
+  notes?: string;
+  eventId: string;
+}
+
+export interface UpdateGuestInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  rsvpStatus?: RSVPStatus;
+  dietaryRestrictions?: string[];
+  plusOne?: boolean;
+  notes?: string;
+}

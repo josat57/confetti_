@@ -59,7 +59,7 @@ export default function NewEventPage() {
   // Check monthly listing limit for Basic tier
   useEffect(() => {
     const checkMonthlyLimit = async () => {
-      if (user?.subscriptionTier !== "basic") {
+      if ((user as any)?.subscriptionTier !== "basic") {
         setCanCreateListing(true);
         return;
       }
@@ -92,7 +92,7 @@ export default function NewEventPage() {
     const files = Array.from(e.target.files || []);
 
     // Check tier limits (Basic: 10 photos, Professional+: 100 photos)
-    const maxPhotos = user?.subscriptionTier === "basic" ? 10 : 100;
+    const maxPhotos = (user as any)?.subscriptionTier === "basic" ? 10 : 100;
 
     if (photoPreview.length + files.length > maxPhotos) {
       toast.error(`You can upload up to ${maxPhotos} photos`);
@@ -244,7 +244,7 @@ export default function NewEventPage() {
       </div>
 
       {/* Monthly Limit Warning for Basic Tier */}
-      {user?.subscriptionTier === "basic" && !canCreateListing && (
+      {(user as any)?.subscriptionTier === "basic" && !canCreateListing && (
         <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -269,7 +269,7 @@ export default function NewEventPage() {
       )}
 
       {/* Listing Count Info for Basic Tier */}
-      {user?.subscriptionTier === "basic" && canCreateListing && (
+      {(user as any)?.subscriptionTier === "basic" && canCreateListing && (
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -680,7 +680,7 @@ export default function NewEventPage() {
                 </label>
                 <p className="text-sm text-gray-500 mt-2">
                   JPG, PNG or GIF. Max size 5MB per photo.
-                  {user?.subscriptionTier === "basic"
+                  {(user as any)?.subscriptionTier === "basic"
                     ? " Basic tier: up to 10 photos"
                     : " Professional+: up to 100 photos"}
                 </p>

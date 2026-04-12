@@ -107,7 +107,8 @@ export const validateLocation = (location: LocationData): FormErrors => {
 export const validateEventDescription = (
   description: string
 ): string | null => {
-  if (!description || description.trim().length < 50) {
+  // Allow shorter descriptions for auto-generated content
+  if (!description || description.trim().length < 10) {
     return ERROR_MESSAGES.eventDescription;
   }
 
@@ -210,15 +211,18 @@ export const validateEventPlanForm = (
   const locationErrors = validateLocation(formData.location);
   Object.assign(errors, locationErrors);
 
-  // Validate event description
-  const descriptionError = validateEventDescription(formData.eventDescription);
-  if (descriptionError) {
-    errors.eventDescription = descriptionError;
+  // Validate event description (optional for enhanced form)
+  if (formData.eventDescription) {
+    const descriptionError = validateEventDescription(
+      formData.eventDescription
+    );
+    if (descriptionError) {
+      errors.eventDescription = descriptionError;
+    }
   }
 
-  // Validate guest class
-  const guestClassErrors = validateGuestClass(formData.guestClass);
-  Object.assign(errors, guestClassErrors);
+  // Skip guestClass validation for enhanced form - it's handled by guestProfile instead
+  // Legacy guestClass validation is only needed for old form submissions
 
   // Validate budget
   const budgetErrors = validateBudget(formData.budget, formData.eventType);

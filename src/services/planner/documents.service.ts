@@ -71,7 +71,7 @@ class DocumentsService {
     if (type) params.append("type", type);
     if (search) params.append("search", search);
 
-    const response = await api.get(`/api/v1/planner/documents?${params}`);
+    const response = await api.get(`/planner/documents?${params}`);
     return response.data;
   }
 
@@ -79,7 +79,7 @@ class DocumentsService {
    * Upload document
    */
   async uploadDocument(formData: FormData): Promise<{ document: Document }> {
-    const response = await api.post("/api/v1/planner/documents", formData, {
+    const response = await api.post("/planner/documents", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -93,7 +93,7 @@ class DocumentsService {
   async getDocument(
     documentId: string
   ): Promise<{ document: Document; downloadUrl: string }> {
-    const response = await api.get(`/api/v1/planner/documents/${documentId}`);
+    const response = await api.get(`/planner/documents/${documentId}`);
     return response.data;
   }
 
@@ -102,7 +102,7 @@ class DocumentsService {
    */
   async deleteDocument(documentId: string): Promise<{ success: boolean }> {
     const response = await api.delete(
-      `/api/v1/planner/documents/${documentId}`
+      `/planner/documents/${documentId}`
     );
     return response.data;
   }
@@ -116,7 +116,7 @@ class DocumentsService {
     role: "Vendor" | "Client" | "Team Member"
   ): Promise<{ success: boolean }> {
     const response = await api.post(
-      `/api/v1/planner/documents/${documentId}/share`,
+      `/planner/documents/${documentId}/share`,
       {
         userId,
         role,
@@ -129,7 +129,7 @@ class DocumentsService {
    * Get storage info
    */
   async getStorageInfo(): Promise<{ storage: StorageInfo }> {
-    const response = await api.get("/api/v1/planner/documents/storage");
+    const response = await api.get("/planner/documents/storage");
     return response.data;
   }
 
@@ -138,7 +138,7 @@ class DocumentsService {
    */
   downloadDocument(documentId: string, filename: string) {
     const link = document.createElement("a");
-    link.href = `/api/v1/planner/documents/${documentId}/download`;
+    link.href = `/planner/documents/${documentId}/download`;
     link.download = filename;
     link.click();
   }

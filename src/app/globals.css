@@ -105,3 +105,27 @@ body {
   background: transparent;
   border: none;
 }
+/* Pricing section mobile scroll improvements */
+.pricing-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.pricing-scroll::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Smooth scroll snap for pricing cards */
+.pricing-scroll {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.pricing-card {
+  scroll-snap-align: center;
+}
+
+/* Better touch scrolling on iOS */
+.pricing-scroll {
+  -webkit-overflow-scrolling: touch;
+}

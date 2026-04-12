@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import apiModule from "@/api/api";
+import api from "@/api/api";
 
 export default function DebugAuthPage() {
   const { user } = useAuth();
@@ -16,7 +16,7 @@ export default function DebugAuthPage() {
     // Test API call
     const testApi = async () => {
       try {
-        const response = await apiModule.api.get("/vendors/leads", {
+        const response = await api.get("/vendors/leads", {
           params: { page: 1, limit: 10 },
         });
         setApiTest({ success: true, data: response.data });

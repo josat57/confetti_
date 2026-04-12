@@ -14,25 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Link from "next/link";
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company?: string;
-  tags: string[];
-  totalSpent: number;
-  eventsCount: number;
-  lastContact: Date;
-  nextFollowUp?: Date;
-  notes: Array<{
-    id: string;
-    text: string;
-    createdAt: Date;
-  }>;
-  createdAt: Date;
-}
+import { clientsService, Client } from "@/services/clients.service";
 
 export default function ClientsPage() {
   const { user } = useAuth();
@@ -74,68 +56,26 @@ export default function ClientsPage() {
     const fetchClients = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const response = await clientsService.getClients({
+          search: searchQuery || undefined,
+          tag: selectedTag || undefined,
+        });
 
-        const mockClients: Client[] = [
-          {
-            id: "1",
-            name: "Sarah Johnson",
-            email: "sarah.j@email.com",
-            phone: "+234 800 123 4567",
-            company: "Johnson Events",
-            tags: ["VIP", "Wedding"],
-            totalSpent: 500000,
-            eventsCount: 2,
-            lastContact: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-            nextFollowUp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2),
-            notes: [
-              {
-                id: "1",
-                text: "Interested in premium package for next event",
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-              },
-            ],
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90),
-          },
-          {
-            id: "2",
-            name: "Michael Brown",
-            email: "m.brown@company.com",
-            phone: "+234 800 234 5678",
-            company: "Tech Corp",
-            tags: ["Corporate", "Recurring"],
-            totalSpent: 800000,
-            eventsCount: 4,
-            lastContact: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-            notes: [],
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 180),
-          },
-          {
-            id: "3",
-            name: "Emma Davis",
-            email: "emma.davis@email.com",
-            phone: "+234 800 345 6789",
-            tags: ["Birthday", "Referral"],
-            totalSpent: 150000,
-            eventsCount: 1,
-            lastContact: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-            nextFollowUp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-            notes: [
-              {
-                id: "1",
-                text: "Referred by Sarah Johnson",
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-              },
-            ],
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45),
-          },
-        ];
+        // Map backend response to frontend format
+        const mappedClients = response.clients.map((client) => ({
+          ...client,
+          id: client._id,
+          lastContact: new Date(client.updatedAt),
+          nextFollowUp: client.nextFollowUp
+            ? new Date(client.nextFollowUp)
+            : undefined,
+          createdAt: new Date(client.createdAt),
+        }));
 
-        setClients(mockClients);
-      } catch (error) {
+        setClients(mappedClients);
+      } catch (error: any) {
         console.error("Error fetching clients:", error);
-        toast.error("Failed to load clients");
+        toast.error(error.response?.data?.message || "Failed to load clients");
       } finally {
         setLoading(false);
       }
@@ -146,33 +86,24 @@ export default function ClientsPage() {
     } else {
       setLoading(false);
     }
-  }, [hasAccess]);
+  }, [hasAccess, searchQuery, selectedTag]);
 
   // Get all unique tags
   const allTags = Array.from(
-    new Set(clients.flatMap((client) => client.tags))
+    new Set(clients.flatMap((client) => client.tags || []))
   ).sort();
 
-  // Filter clients
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.company?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesTag = !selectedTag || client.tags.includes(selectedTag);
-
-    return matchesSearch && matchesTag;
-  });
+  // Clients are already filtered by the API, so just use them directly
+  const filteredClients = clients;
 
   // Calculate stats
   const stats = {
     totalClients: clients.length,
-    totalRevenue: clients.reduce((sum, c) => sum + c.totalSpent, 0),
+    totalRevenue: clients.reduce((sum, c) => sum + (c.totalSpent || 0), 0),
     avgSpent:
       clients.length > 0
-        ? clients.reduce((sum, c) => sum + c.totalSpent, 0) / clients.length
+        ? clients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) /
+          clients.length
         : 0,
     upcomingFollowUps: clients.filter((c) => c.nextFollowUp).length,
   };
@@ -263,48 +194,44 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Tag Filter */}
-          <div className="flex gap-2 overflow-x-auto">
-            <button
-              onClick={() => setSelectedTag(null)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                !selectedTag
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              All Tags
-            </button>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setSelectedTag(tag)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedTag === tag
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+      {/* Search and Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* Search */}
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
         </div>
+
+        {/* Tag Filter Pills */}
+        <button
+          onClick={() => setSelectedTag(null)}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            !selectedTag
+              ? "bg-purple-600 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          All Tags
+        </button>
+        {allTags.map((tag) => (
+          <button
+            key={tag}
+            onClick={() => setSelectedTag(tag)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedTag === tag
+                ? "bg-purple-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            {tag}
+          </button>
+        ))}
       </div>
 
       {/* Clients List */}
@@ -335,19 +262,21 @@ export default function ClientsPage() {
             <Link
               key={client.id}
               href={`/vendor/dashboard/clients/${client.id}`}
-              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
             >
-              {/* Client Header */}
-              <div className="flex items-start gap-4 mb-4">
+              {/* Client Header with Avatar */}
+              <div className="flex items-start gap-3 mb-4">
                 <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-lg flex-shrink-0">
                   {client.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">
-                    {client.name}
+                  <h3 className="font-semibold text-gray-900 text-lg truncate mb-1">
+                    {client.name.length > 15
+                      ? client.name.substring(0, 15) + "..."
+                      : client.name}
                   </h3>
                   {client.company && (
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-sm text-gray-500 truncate">
                       {client.company}
                     </p>
                   )}
@@ -355,12 +284,12 @@ export default function ClientsPage() {
               </div>
 
               {/* Tags */}
-              {client.tags.length > 0 && (
+              {client.tags && client.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {client.tags.map((tag) => (
+                  {client.tags.slice(0, 2).map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium"
+                      className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-medium"
                     >
                       {tag}
                     </span>
@@ -368,41 +297,45 @@ export default function ClientsPage() {
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Total Spent</p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    ₦{client.totalSpent.toLocaleString()}
+                  <p className="text-xs text-gray-500 mb-1">Total Spent</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    ₦{(client.totalSpent || 0).toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Events</p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {client.eventsCount}
+                  <p className="text-xs text-gray-500 mb-1">Events</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {client.eventsCount || 0}
                   </p>
                 </div>
               </div>
 
               {/* Contact Info */}
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm border-t border-gray-100 pt-4">
                 <div className="flex items-center gap-2 text-gray-600">
-                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <Mail className="w-4 h-4 flex-shrink-0 text-gray-400" />
                   <span className="truncate">{client.email}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
-                  <Phone className="w-4 h-4 flex-shrink-0" />
+                  <Phone className="w-4 h-4 flex-shrink-0 text-gray-400" />
                   <span>{client.phone}</span>
                 </div>
               </div>
 
               {/* Follow-up Reminder */}
               {client.nextFollowUp && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm text-blue-600">
                     <Bell className="w-4 h-4" />
                     <span>
-                      Follow-up: {client.nextFollowUp.toLocaleDateString()}
+                      Follow-up:{" "}
+                      {new Date(client.nextFollowUp).toLocaleDateString(
+                        "en-US",
+                        { month: "2-digit", day: "2-digit", year: "numeric" }
+                      )}
                     </span>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ export interface ClientFilters {
 }
 
 class ClientsService {
-  private baseUrl = "/api/v1/planner/clients";
+  private baseUrl = "/planner/clients";
 
   /**
    * Get all clients with optional filters

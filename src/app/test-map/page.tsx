@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import LeafletLoader from "@/components/shared/LeafletLoader";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
@@ -51,6 +52,7 @@ export default function TestMapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      <LeafletLoader />
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

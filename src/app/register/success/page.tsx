@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
-export default function RegisterSuccessPage() {
+function RegisterSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
@@ -19,7 +19,9 @@ export default function RegisterSuccessPage() {
       return;
     }
 
-    toast.success("Registration successful! Please check your email for verification.");
+    toast.success(
+      "Registration successful! Please check your email for verification."
+    );
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -81,8 +83,9 @@ export default function RegisterSuccessPage() {
             transition={{ delay: 0.5 }}
             className="text-gray-600 mb-4"
           >
-            Please check your email and click the verification link to activate your account.
-            The verification link will include your email address and a token.
+            Please check your email and click the verification link to activate
+            your account. The verification link will include your email address
+            and a token.
           </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
@@ -96,4 +99,18 @@ export default function RegisterSuccessPage() {
       </motion.div>
     </div>
   );
-} 
+}
+
+export default function RegisterSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <RegisterSuccessContent />
+    </Suspense>
+  );
+}

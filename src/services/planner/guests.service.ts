@@ -25,7 +25,7 @@ class GuestsService {
     if (filters?.search) params.append("search", filters.search);
 
     const response = await api.get(
-      `/api/v1/planner/events/${eventId}/guests?${params.toString()}`
+      `/events/${eventId}/guests?${params.toString()}`
     );
     return response.data;
   }
@@ -35,7 +35,7 @@ class GuestsService {
    */
   async getGuestStats(eventId: string): Promise<GuestStats> {
     const response = await api.get(
-      `/api/v1/planner/events/${eventId}/guests/stats`
+      `/events/${eventId}/guests/stats`
     );
     return response.data;
   }
@@ -45,7 +45,7 @@ class GuestsService {
    */
   async createGuest(eventId: string, data: CreateGuestInput): Promise<Guest> {
     const response = await api.post(
-      `/api/v1/planner/events/${eventId}/guests`,
+      `/events/${eventId}/guests`,
       data
     );
     return response.data.guest;
@@ -55,7 +55,7 @@ class GuestsService {
    * Update a guest
    */
   async updateGuest(guestId: string, data: UpdateGuestInput): Promise<Guest> {
-    const response = await api.put(`/api/v1/planner/guests/${guestId}`, data);
+    const response = await api.put(`/planner/guests/${guestId}`, data);
     return response.data.guest;
   }
 
@@ -63,7 +63,7 @@ class GuestsService {
    * Delete a guest
    */
   async deleteGuest(guestId: string): Promise<void> {
-    await api.delete(`/api/v1/planner/guests/${guestId}`);
+    await api.delete(`/planner/guests/${guestId}`);
   }
 
   /**
@@ -74,7 +74,7 @@ class GuestsService {
     formData.append("file", file);
 
     const response = await api.post(
-      `/api/v1/planner/events/${eventId}/guests/import`,
+      `/events/${eventId}/guests/import`,
       formData,
       {
         headers: {
@@ -90,7 +90,7 @@ class GuestsService {
    */
   async checkInGuest(guestId: string): Promise<Guest> {
     const response = await api.patch(
-      `/api/v1/planner/guests/${guestId}/check-in`
+      `/planner/guests/${guestId}/check-in`
     );
     return response.data.guest;
   }
@@ -103,7 +103,7 @@ class GuestsService {
     guestIds: string[]
   ): Promise<{ sent: number }> {
     const response = await api.post(
-      `/api/v1/planner/events/${eventId}/guests/send-invitations`,
+      `/events/${eventId}/guests/send-invitations`,
       {
         guestIds,
       }

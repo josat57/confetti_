@@ -26,6 +26,15 @@ interface AnalyticsData {
   leads: number;
   bookings: number;
   reviews: number;
+  leadStats?: {
+    totalLeads: number;
+    conversionRate: number;
+    leadsByStatus: Array<{ status: string; count: number; percentage: number }>;
+  };
+  revenue?: {
+    total: number;
+    change: number;
+  };
 }
 
 export default function AnalyticsPage() {
@@ -38,33 +47,111 @@ export default function AnalyticsPage() {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const { default: analyticsService } = await import(
+          "@/services/analytics.service"
+        );
 
-        const mockData: AnalyticsData = {
+        // Get analytics summary
+        const summary = await analyticsService.getSummary();
+
+        // Get lead statistics (optional)
+        let leadStats;
+        try {
+          leadStats = await analyticsService.getLeadStats();
+        } catch (error) {
+          console.log("Lead stats not available:", error);
+        }
+
+        const analyticsData: AnalyticsData = {
           profileViews: {
-            total: 1247,
-            trend: { value: 12.5, direction: "up" },
-            daily: Array.from({ length: 30 }, (_, i) => ({
-              date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
-                .toISOString()
-                .split("T")[0],
-              views: Math.floor(Math.random() * 50) + 20,
-            })),
+            total: summary.profileViews?.total || 0,
+            trend: {
+              value: summary.profileViews?.change || 0,
+              direction:
+                (summary.profileViews?.change || 0) >= 0 ? "up" : "down",
+            },
+            daily: [], // Views over time not available from backend
           },
           rating: {
-            average: 4.8,
-            total: 156,
+            average: summary.reviews?.averageRating || 0,
+            total: summary.reviews?.total || 0,
           },
-          eventListings: 12,
-          leads: 34,
-          bookings: 8,
-          reviews: 156,
+          eventListings: 0, // Not in summary, would need separate call
+          leads: summary.leads?.total || 0,
+          bookings: summary.bookings?.total || 0,
+          reviews: summary.reviews?.total || 0,
+          leadStats: leadStats
+            ? {
+                totalLeads: leadStats.totalLeads,
+                conversionRate: leadStats.conversionRate,
+                leadsByStatus: [
+                  {
+                    status: "new",
+                    count: leadStats.newLeads,
+                    percentage:
+                      (leadStats.newLeads / leadStats.totalLeads) * 100,
+                  },
+                  {
+                    status: "contacted",
+                    count: leadStats.contactedLeads,
+                    percentage:
+                      (leadStats.contactedLeads / leadStats.totalLeads) * 100,
+                  },
+                  {
+                    status: "quoted",
+                    count: leadStats.quotedLeads,
+                    percentage:
+                      (leadStats.quotedLeads / leadStats.totalLeads) * 100,
+                  },
+                  {
+                    status: "negotiating",
+                    count: 0, // Not available in LeadStats interface
+                    percentage: 0,
+                  },
+                  {
+                    status: "won",
+                    count: leadStats.wonLeads,
+                    percentage:
+                      (leadStats.wonLeads / leadStats.totalLeads) * 100,
+                  },
+                  {
+                    status: "lost",
+                    count: leadStats.lostLeads,
+                    percentage:
+                      (leadStats.lostLeads / leadStats.totalLeads) * 100,
+                  },
+                ].filter((item) => item.count > 0), // Only show statuses with counts > 0
+              }
+            : undefined,
+          revenue: {
+            total: summary.revenue?.total || 0,
+            change: summary.revenue?.change || 0,
+          },
         };
 
-        setAnalytics(mockData);
-      } catch (error) {
+        setAnalytics(analyticsData);
+      } catch (error: any) {
         console.error("Error fetching analytics:", error);
+        // Set default analytics data on error
+        setAnalytics({
+          profileViews: {
+            total: 0,
+            trend: { value: 0, direction: "up" },
+            daily: [],
+          },
+          rating: {
+            average: 0,
+            total: 0,
+          },
+          eventListings: 0,
+          leads: 0,
+          bookings: 0,
+          reviews: 0,
+          revenue: {
+            total: 0,
+            change: 0,
+          },
+        });
       } finally {
         setLoading(false);
       }
@@ -137,23 +224,37 @@ export default function AnalyticsPage() {
           value={analytics.rating.average.toFixed(1)}
           icon={Star}
           color="yellow"
+          subtitle={`${analytics.rating.total} reviews`}
         />
         <StatsCard
-          title="Event Listings"
-          value={analytics.eventListings}
-          icon={Calendar}
-          color="blue"
+          title="Total Revenue"
+          value={`₦${analytics.revenue?.total.toLocaleString() || 0}`}
+          icon={TrendingUp}
+          trend={
+            analytics.revenue
+              ? {
+                  value: analytics.revenue.change,
+                  direction: analytics.revenue.change >= 0 ? "up" : "down",
+                }
+              : undefined
+          }
+          color="green"
         />
         <StatsCard
           title="Total Leads"
           value={analytics.leads}
           icon={Users}
-          color="green"
+          color="blue"
+          subtitle={
+            analytics.leadStats
+              ? `${analytics.leadStats.conversionRate.toFixed(1)}% conversion`
+              : undefined
+          }
         />
         <StatsCard
           title="Bookings"
           value={analytics.bookings}
-          icon={TrendingUp}
+          icon={Calendar}
           color="purple"
         />
         <StatsCard
@@ -164,114 +265,153 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Profile Views Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Profile Views Over Time
-        </h2>
-        <div className="h-64 flex items-end justify-between gap-1">
-          {analytics.profileViews.daily.map((day, index) => {
-            const maxViews = Math.max(
-              ...analytics.profileViews.daily.map((d) => d.views)
-            );
-            const height = (day.views / maxViews) * 100;
-
-            return (
-              <div
-                key={index}
-                className="flex-1 flex flex-col items-center group"
-              >
-                <div
-                  className="w-full bg-purple-600 rounded-t hover:bg-purple-700 transition-colors relative"
-                  style={{ height: `${height}%` }}
-                >
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {day.views} views
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex justify-between mt-4 text-xs text-gray-500">
-          <span>
-            {new Date(analytics.profileViews.daily[0].date).toLocaleDateString(
-              "en-US",
-              { month: "short", day: "numeric" }
-            )}
-          </span>
-          <span>
-            {new Date(
-              analytics.profileViews.daily[
-                analytics.profileViews.daily.length - 1
-              ].date
-            ).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
-        </div>
-      </div>
-
-      {/* Additional Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Rating Breakdown */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+      {/* Profile Views Chart - Only show if we have daily data */}
+      {analytics.profileViews.daily.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Rating Breakdown
+            Profile Views Over Time
           </h2>
-          <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map((stars) => {
-              const percentage = Math.random() * 100;
+          <div className="h-64 flex items-end justify-between gap-1">
+            {analytics.profileViews.daily.map((day, index) => {
+              const maxViews = Math.max(
+                ...analytics.profileViews.daily.map((d) => d.views)
+              );
+              const height = (day.views / maxViews) * 100;
+
               return (
-                <div key={stars} className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 w-16">
-                    <span className="text-sm font-medium text-gray-700">
-                      {stars}
-                    </span>
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <div
+                  key={index}
+                  className="flex-1 flex flex-col items-center group"
+                >
+                  <div
+                    className="w-full bg-purple-600 rounded-t hover:bg-purple-700 transition-colors relative"
+                    style={{ height: `${height}%` }}
+                  >
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {day.views} views
+                    </div>
                   </div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-gray-600 w-12 text-right">
-                    {percentage.toFixed(0)}%
-                  </span>
                 </div>
               );
             })}
           </div>
+          <div className="flex justify-between mt-4 text-xs text-gray-500">
+            <span>
+              {new Date(
+                analytics.profileViews.daily[0].date
+              ).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            <span>
+              {new Date(
+                analytics.profileViews.daily[
+                  analytics.profileViews.daily.length - 1
+                ].date
+              ).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
         </div>
+      )}
 
-        {/* Top Performing Events */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Top Performing Events
-          </h2>
-          <div className="space-y-3">
-            {[
-              { name: "Beautiful Garden Wedding", views: 342 },
-              { name: "Corporate Gala Event", views: 289 },
-              { name: "Birthday Celebration", views: 234 },
-            ].map((event, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between py-2"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                    {index + 1}
+      {/* Additional Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Lead Status Breakdown */}
+        {analytics.leadStats && analytics.leadStats.leadsByStatus.length > 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Lead Status Breakdown
+            </h2>
+            <div className="space-y-3">
+              {analytics.leadStats.leadsByStatus.map((status) => (
+                <div key={status.status} className="flex items-center gap-3">
+                  <div className="w-24 text-sm font-medium text-gray-700 capitalize">
+                    {status.status}
                   </div>
-                  <span className="text-sm text-gray-900">{event.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {event.views}
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 h-2 rounded-full"
+                      style={{ width: `${status.percentage}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm text-gray-600 w-16 text-right">
+                    {status.count} ({status.percentage.toFixed(0)}%)
                   </span>
                 </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Conversion Rate
+                </span>
+                <span className="text-lg font-bold text-green-600">
+                  {analytics.leadStats.conversionRate.toFixed(1)}%
+                </span>
               </div>
-            ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Lead Status Breakdown
+            </h2>
+            <div className="text-center py-8 text-gray-500">
+              <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No lead data available yet</p>
+              <p className="text-sm mt-1">
+                Start receiving leads to see analytics
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Performance Summary */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Performance Summary
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-purple-600" />
+                <span className="text-sm text-gray-700">Profile Views</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">
+                {analytics.profileViews.total.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                <span className="text-sm text-gray-700">Total Leads</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">
+                {analytics.leads}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-green-600" />
+                <span className="text-sm text-gray-700">Bookings</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">
+                {analytics.bookings}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm text-gray-700">Avg Rating</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">
+                {analytics.rating.average.toFixed(1)} / 5.0
+              </span>
+            </div>
           </div>
         </div>
       </div>

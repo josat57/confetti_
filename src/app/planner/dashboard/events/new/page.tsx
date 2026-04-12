@@ -12,7 +12,11 @@ export default function NewEventPage() {
   const handleSubmit = async (data: CreateEventInput) => {
     try {
       const response = await eventsService.createEvent(data);
-      router.push(`/planner/dashboard/events/${response.event._id}`);
+      if (response) {
+        router.push(`/planner/dashboard/events/${response._id}`);
+      } else {
+        alert("Failed to create event. Please try again.");
+      }
     } catch (error) {
       console.error("Error creating event:", error);
       alert("Failed to create event. Please try again.");

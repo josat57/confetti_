@@ -18,15 +18,14 @@ import {
   Settings,
   LogOut,
   Lock,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import TierBadge from "@/components/vendor/common/TierBadge";
 import UpgradeModal from "@/components/vendor/common/UpgradeModal";
 import { hasFeatureAccess } from "@/utils/subscriptionTier";
 import { getUserSubscriptionTier } from "@/utils/getUserSubscriptionTier";
-import apiModule from "@/api/api";
-
-const api = apiModule.api;
+import api from "@/api/api";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -140,6 +139,12 @@ export default function DashboardSidebar({
       name: "Payments",
       href: "/vendor/dashboard/payments",
       icon: CreditCard,
+      tier: "business",
+    },
+    {
+      name: "AI Planner",
+      href: "/vendor/dashboard/ai-planner",
+      icon: Bot,
       tier: "business",
     },
     {

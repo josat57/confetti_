@@ -36,6 +36,21 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // Handle Leaflet properly in Next.js
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      leaflet: require.resolve("leaflet"),
+    };
+
+    // Exclude Leaflet from server-side rendering
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        leaflet: "leaflet",
+        "react-leaflet": "react-leaflet",
+      });
+    }
+
     // Production optimizations
     if (!dev && !isServer) {
       // Enable tree shaking

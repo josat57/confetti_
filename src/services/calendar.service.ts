@@ -18,7 +18,14 @@ export const calendarService = {
    * Get calendar view for a date range
    */
   async getCalendar(params: CalendarParams): Promise<CalendarData> {
-    const response = await api.get("/vendors/calendar", { params });
+    // Backend expects 'start' and 'end' instead of 'startDate' and 'endDate'
+    const queryParams = {
+      start: params.startDate,
+      end: params.endDate,
+    };
+    const response = await api.get("/vendors/calendar", {
+      params: queryParams,
+    });
     return response.data.data;
   },
 

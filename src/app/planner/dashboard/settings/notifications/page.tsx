@@ -45,7 +45,7 @@ const NotificationSettingsPage: React.FC = () => {
       ...preferences,
       notifications: {
         ...preferences.notifications,
-        [channel]: !preferences.notifications[channel],
+        [channel]: !preferences.notifications?.[channel],
       },
     });
   };
@@ -122,14 +122,14 @@ const NotificationSettingsPage: React.FC = () => {
                   type="button"
                   onClick={() => handleToggle("email")}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    preferences.notifications.email
+                    preferences.notifications?.email
                       ? "bg-teal-600"
                       : "bg-gray-200"
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      preferences.notifications.email
+                      preferences.notifications?.email
                         ? "translate-x-6"
                         : "translate-x-1"
                     }`}
@@ -154,14 +154,14 @@ const NotificationSettingsPage: React.FC = () => {
                   type="button"
                   onClick={() => handleToggle("inApp")}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    preferences.notifications.inApp
+                    preferences.notifications?.inApp
                       ? "bg-teal-600"
                       : "bg-gray-200"
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      preferences.notifications.inApp
+                      preferences.notifications?.inApp
                         ? "translate-x-6"
                         : "translate-x-1"
                     }`}
@@ -186,14 +186,14 @@ const NotificationSettingsPage: React.FC = () => {
                   type="button"
                   onClick={() => handleToggle("sms")}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    preferences.notifications.sms
+                    preferences.notifications?.sms
                       ? "bg-teal-600"
                       : "bg-gray-200"
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      preferences.notifications.sms
+                      preferences.notifications?.sms
                         ? "translate-x-6"
                         : "translate-x-1"
                     }`}
@@ -218,7 +218,7 @@ const NotificationSettingsPage: React.FC = () => {
                 </label>
                 <input
                   type="time"
-                  value={preferences.notifications.quietHoursStart || ""}
+                  value={preferences.notifications?.quietHoursStart || ""}
                   onChange={(e) =>
                     handleQuietHoursChange("quietHoursStart", e.target.value)
                   }
@@ -231,7 +231,7 @@ const NotificationSettingsPage: React.FC = () => {
                 </label>
                 <input
                   type="time"
-                  value={preferences.notifications.quietHoursEnd || ""}
+                  value={preferences.notifications?.quietHoursEnd || ""}
                   onChange={(e) =>
                     handleQuietHoursChange("quietHoursEnd", e.target.value)
                   }

@@ -91,7 +91,7 @@ export default function VendorProfilePage() {
           categories: profile.category ? [profile.category] : [],
           eventTypes: profile.eventTypes || [],
           businessHours: profile.businessHours?.reduce(
-            (acc, hour) => {
+            (acc: any, hour: any) => {
               acc[hour.day as keyof typeof acc] = {
                 open: hour.open,
                 close: hour.close,
@@ -136,7 +136,7 @@ export default function VendorProfilePage() {
             ...prev,
             email: user.email || "",
             phone: user.phone || "",
-            businessName: user.userName || "",
+            businessName: user.username || "",
           }));
         }
       } finally {

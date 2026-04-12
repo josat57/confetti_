@@ -102,9 +102,12 @@ export default function TasksPage() {
   };
 
   // Calculate completion percentage
-  const completedTasks = tasks.filter((t) => t.status === "Completed").length;
+  const completedTasks =
+    tasks && Array.isArray(tasks)
+      ? tasks.filter((t) => t.status === "Completed").length
+      : 0;
   const completionPercentage =
-    tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+    tasks && tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
   return (
     <div className="p-6">
@@ -134,7 +137,7 @@ export default function TasksPage() {
             Overall Progress
           </span>
           <span className="text-sm font-medium text-gray-900">
-            {completedTasks} of {tasks.length} completed (
+            {completedTasks} of {tasks ? tasks.length : 0} completed (
             {completionPercentage.toFixed(0)}%)
           </span>
         </div>
@@ -223,7 +226,7 @@ export default function TasksPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
         </div>
-      ) : tasks.length === 0 ? (
+      ) : !tasks || tasks.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -252,15 +255,16 @@ export default function TasksPage() {
               : "space-y-4"
           }
         >
-          {tasks.map((task) => (
-            <TaskCard
-              key={task._id}
-              task={task}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-              onComplete={handleCompleteTask}
-            />
-          ))}
+          {tasks &&
+            tasks.map((task) => (
+              <TaskCard
+                key={task._id}
+                task={task}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+                onComplete={handleCompleteTask}
+              />
+            ))}
         </div>
       )}
 

@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { PlanProvider } from "../contexts/PlanContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
-import { AdminProvider } from "../contexts/AdminContext";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
 import QueryProvider from "../providers/QueryProvider";
 import Script from "next/script";
@@ -33,21 +31,19 @@ export default function RootLayout({
             <AuthProvider>
               <PlanProvider>
                 <SubscriptionProvider>
-                  <AdminProvider>
-                    {children}
-                    <ToastContainer
-                      position="top-right"
-                      autoClose={5000}
-                      hideProgressBar={false}
-                      newestOnTop
-                      closeOnClick
-                      rtl={false}
-                      pauseOnFocusLoss
-                      draggable
-                      pauseOnHover
-                      theme="light"
-                    />
-                  </AdminProvider>
+                  {children}
+                  <ToastContainer
+                    position="top-right"
+                    autoClose={5000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="light"
+                  />
                 </SubscriptionProvider>
               </PlanProvider>
             </AuthProvider>

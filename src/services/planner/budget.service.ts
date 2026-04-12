@@ -11,7 +11,7 @@ class BudgetService {
    * Get budget for an event
    */
   async getEventBudget(eventId: string): Promise<{ budget: EventBudget }> {
-    const response = await api.get(`/api/v1/planner/events/${eventId}/budget`);
+    const response = await api.get(`/events/${eventId}/budget`);
     return response.data;
   }
 
@@ -31,7 +31,7 @@ class BudgetService {
     }
   ): Promise<{ budget: EventBudget }> {
     const response = await api.put(
-      `/api/v1/planner/events/${eventId}/budget`,
+      `/events/${eventId}/budget`,
       data
     );
     return response.data;
@@ -45,7 +45,7 @@ class BudgetService {
     data: CreateExpenseInput
   ): Promise<{ expense: Expense }> {
     const response = await api.post(
-      `/api/v1/planner/events/${eventId}/expenses`,
+      `/events/${eventId}/expenses`,
       data
     );
     return response.data;
@@ -59,7 +59,7 @@ class BudgetService {
     data: UpdateExpenseInput
   ): Promise<{ expense: Expense }> {
     const response = await api.put(
-      `/api/v1/planner/expenses/${expenseId}`,
+      `/planner/expenses/${expenseId}`,
       data
     );
     return response.data;
@@ -69,7 +69,7 @@ class BudgetService {
    * Delete expense
    */
   async deleteExpense(expenseId: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/api/v1/planner/expenses/${expenseId}`);
+    const response = await api.delete(`/planner/expenses/${expenseId}`);
     return response.data;
   }
 
@@ -86,7 +86,7 @@ class BudgetService {
       spent: number;
     }>;
   }> {
-    const response = await api.get("/api/v1/planner/budget/overview");
+    const response = await api.get("/planner/budget/overview");
     return response.data;
   }
 }

@@ -1,9 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock, Eye, EyeOff, RefreshCw, Check, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Lock,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Check,
+  X,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Auth } from "@/api/api";
@@ -15,7 +24,7 @@ interface PasswordRequirement {
   met: boolean;
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
@@ -25,7 +34,7 @@ export default function ResetPasswordPage() {
     otp: "",
     password: "",
     confirmPassword: "",
-    token: ""
+    token: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +49,11 @@ export default function ResetPasswordPage() {
     { text: "At least one uppercase letter", regex: /[A-Z]/, met: false },
     { text: "At least one lowercase letter", regex: /[a-z]/, met: false },
     { text: "At least one number", regex: /[0-9]/, met: false },
-    { text: "At least one special character", regex: /[!@#$%^&*(),.?":{}|<>]/, met: false },
+    {
+      text: "At least one special character",
+      regex: /[!@#$%^&*(),.?":{}|<>]/,
+      met: false,
+    },
   ]);
 
   useEffect(() => {
@@ -63,16 +76,16 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     if (formData.password) {
-      const updatedRequirements = requirements.map(req => ({
+      const updatedRequirements = requirements.map((req) => ({
         ...req,
-        met: req.regex.test(formData.password)
+        met: req.regex.test(formData.password),
       }));
       setRequirements(updatedRequirements);
-      
-      const strength = updatedRequirements.filter(req => req.met).length;
+
+      const strength = updatedRequirements.filter((req) => req.met).length;
       setPasswordStrength(strength);
     } else {
-      setRequirements(requirements.map(req => ({ ...req, met: false })));
+      setRequirements(requirements.map((req) => ({ ...req, met: false })));
       setPasswordStrength(0);
     }
   }, [formData.password]);
@@ -155,13 +168,13 @@ export default function ResetPasswordPage() {
 
   const handleResendOTP = async () => {
     if (!canResend) return;
-    
+
     setError(null);
     setIsLoading(true);
     try {
       const response = await Auth.resendOtp(email!);
       if (response.status === "success") {
-        toast.success(response.message)
+        toast.success(response.message);
         setResendTimer(60);
         setCanResend(false);
         router.push("/sign-in");
@@ -192,10 +205,10 @@ export default function ResetPasswordPage() {
             quality={100}
           />
         </div>
-        
+
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 via-purple-800/80 to-purple-900/90" />
-        
+
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 py-12 text-white">
           <motion.div
@@ -221,9 +234,7 @@ export default function ResetPasswordPage() {
             className="text-center mb-8"
           >
             <h2 className="text-3xl font-bold text-gray-900">Reset Password</h2>
-            <p className="mt-2 text-gray-600">
-              Enter the code sent to {email}
-            </p>
+            <p className="mt-2 text-gray-600">Enter the code sent to {email}</p>
           </motion.div>
 
           <motion.form
@@ -247,7 +258,10 @@ export default function ResetPasswordPage() {
 
             {/* OTP */}
             <div>
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="otp"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Verification Code
               </label>
               <div className="mt-1">
@@ -257,7 +271,9 @@ export default function ResetPasswordPage() {
                   type="text"
                   required
                   value={formData.otp}
-                  onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, otp: e.target.value })
+                  }
                   className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Enter 6-digit code"
                   maxLength={6}
@@ -278,7 +294,10 @@ export default function ResetPasswordPage() {
 
             {/* New Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 New Password
               </label>
               <div className="mt-1 relative">
@@ -291,7 +310,9 @@ export default function ResetPasswordPage() {
                   type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -312,7 +333,9 @@ export default function ResetPasswordPage() {
               <div className="mt-2">
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)}`}
+                    className={`h-full transition-all duration-300 ${getStrengthColor(
+                      passwordStrength
+                    )}`}
                     style={{ width: `${(passwordStrength / 5) * 100}%` }}
                   />
                 </div>
@@ -330,7 +353,11 @@ export default function ResetPasswordPage() {
                     ) : (
                       <X className="w-4 h-4 text-gray-400 mr-2" />
                     )}
-                    <span className={requirement.met ? "text-green-600" : "text-gray-500"}>
+                    <span
+                      className={
+                        requirement.met ? "text-green-600" : "text-gray-500"
+                      }
+                    >
                       {requirement.text}
                     </span>
                   </div>
@@ -340,7 +367,10 @@ export default function ResetPasswordPage() {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Confirm New Password
               </label>
               <div className="mt-1 relative">
@@ -353,7 +383,12 @@ export default function ResetPasswordPage() {
                   type={showConfirmPassword ? "text" : "password"}
                   required
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -390,4 +425,18 @@ export default function ResetPasswordPage() {
       </div>
     </div>
   );
-} 
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}

@@ -77,7 +77,7 @@ class NotificationsService {
       params.append("type", type);
     }
 
-    const response = await api.get(`/api/v1/planner/notifications?${params}`);
+    const response = await api.get(`/planner/notifications?${params}`);
     return response.data;
   }
 
@@ -88,7 +88,7 @@ class NotificationsService {
     notificationId: string
   ): Promise<{ notification: Notification }> {
     const response = await api.patch(
-      `/api/v1/planner/notifications/${notificationId}/read`
+      `/planner/notifications/${notificationId}/read`
     );
     return response.data;
   }
@@ -98,7 +98,7 @@ class NotificationsService {
    */
   async markAllAsRead(): Promise<{ updated: number }> {
     const response = await api.patch(
-      "/api/v1/planner/notifications/mark-all-read"
+      "/planner/notifications/mark-all-read"
     );
     return response.data;
   }
@@ -107,7 +107,7 @@ class NotificationsService {
    * Get notification preferences
    */
   async getPreferences(): Promise<{ preferences: NotificationPreferences }> {
-    const response = await api.get("/api/v1/planner/notifications/preferences");
+    const response = await api.get("/planner/notifications/preferences");
     return response.data;
   }
 
@@ -118,7 +118,7 @@ class NotificationsService {
     preferences: Partial<NotificationPreferences>
   ): Promise<{ preferences: NotificationPreferences }> {
     const response = await api.put(
-      "/api/v1/planner/notifications/preferences",
+      "/planner/notifications/preferences",
       preferences
     );
     return response.data;
@@ -131,7 +131,7 @@ class NotificationsService {
     notificationId: string
   ): Promise<{ success: boolean }> {
     const response = await api.delete(
-      `/api/v1/planner/notifications/${notificationId}`
+      `/planner/notifications/${notificationId}`
     );
     return response.data;
   }

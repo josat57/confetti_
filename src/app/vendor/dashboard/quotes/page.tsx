@@ -208,7 +208,7 @@ export default function QuotesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${quote.total.toLocaleString()}
+                    ₦{quote.total.toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Created {new Date(quote.createdAt).toLocaleDateString()}

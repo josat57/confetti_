@@ -85,6 +85,145 @@ export interface LocationData {
   country: string;
 }
 
+export interface EventDurationData {
+  startTime: string; // "14:00"
+  endTime: string; // "22:00"
+  isMultiDay: boolean;
+  numberOfDays: number;
+  timeFlexibility: "strict" | "moderate" | "flexible";
+}
+
+export interface VenuePreferencesData {
+  venueType: "indoor" | "outdoor" | "hybrid" | "flexible";
+  capacity: number;
+  style: "elegant" | "rustic" | "modern" | "traditional" | "luxury" | "casual";
+  mustHaveAmenities: string[];
+  niceToHaveAmenities: string[];
+  accessibilityNeeds: string[];
+  locationFlexibility: "same_city" | "nearby_cities" | "anywhere";
+}
+
+export interface BudgetBreakdownData {
+  totalBudget: number;
+  priorities: string[]; // Drag & drop ranking
+  flexibleCategories: string[];
+  fixedCategories: string[];
+  contingencyPercentage: number; // 5-20%
+  paymentPreferences: "upfront" | "installments" | "milestone_based";
+  budgetFlexibility: "strict" | "moderate" | "flexible";
+}
+
+export interface GuestProfileData {
+  ageGroups: {
+    children: number;
+    teens: number;
+    adults: number;
+    seniors: number;
+  };
+  dietaryRestrictions: {
+    vegetarian: number;
+    vegan: number;
+    halal: number;
+    kosher: number;
+    glutenFree: number;
+    allergies: string[];
+    other: string;
+  };
+  accessibilityNeeds: {
+    wheelchair: number;
+    hearingImpaired: number;
+    visualImpaired: number;
+    other: string;
+  };
+  guestTypes: string[];
+  outOfTownGuests: {
+    count: number;
+    needAccommodation: boolean;
+    needTransportation: boolean;
+  };
+}
+
+export interface ClientProfileData {
+  demographics: {
+    age: number;
+    occupation: string;
+    lifestyle: "modern" | "traditional" | "luxury" | "minimalist" | "bohemian";
+    personality: "extroverted" | "introverted" | "balanced";
+    eventExperience: "first_time" | "some_experience" | "very_experienced";
+  };
+  stylePreferences: {
+    colorScheme: string[]; // Max 3 colors
+    musicGenre: string[];
+    foodStyle: "buffet" | "plated" | "family_style" | "cocktail";
+    formalityLevel: "casual" | "semi_formal" | "formal" | "black_tie";
+    photographyStyle: "candid" | "posed" | "artistic" | "documentary";
+  };
+  culturalBackground: {
+    ethnicity: string;
+    religion: string;
+    importantTraditions: string[];
+    languages: string[];
+  };
+}
+
+export interface EventSpecificData {
+  // Wedding specific
+  weddingSpecific?: {
+    ceremonyType: "religious" | "civil" | "traditional" | "destination";
+    receptionStyle: "seated_dinner" | "cocktail" | "buffet" | "garden_party";
+    specialMoments: string[];
+    weddingPartySize: {
+      bridesmaids: number;
+      groomsmen: number;
+      flowergirls: number;
+      ringbearers: number;
+    };
+    mustHaveVendors: string[];
+    weddingTraditions: string[];
+  };
+
+  // Corporate specific
+  corporateSpecific?: {
+    eventPurpose:
+      | "conference"
+      | "product_launch"
+      | "team_building"
+      | "awards"
+      | "networking";
+    companySize: "startup" | "small" | "medium" | "large" | "enterprise";
+    brandGuidelines: boolean;
+    techRequirements: string[];
+    businessObjectives: string[];
+    attendeeTypes: string[];
+  };
+
+  // Birthday specific
+  birthdaySpecific?: {
+    celebrantAge: number;
+    ageCategory: "child" | "teen" | "adult" | "milestone";
+    theme: string;
+    activities: string[];
+    giftPreferences: "registry" | "cash" | "experiences" | "charity" | "none";
+    surpriseElement: boolean;
+  };
+}
+
+export interface SpecialRequirementsData {
+  weatherConsiderations: {
+    outdoorElements: boolean;
+    weatherBackupPlan: boolean;
+    seasonalFactors: string;
+  };
+  logisticalNeeds: {
+    setupTime: "2_hours" | "4_hours" | "full_day";
+    cleanupRequirements: "basic" | "thorough" | "professional";
+    storageNeeds: "none" | "minimal" | "extensive";
+    securityNeeds: "none" | "basic" | "professional";
+  };
+  customRequirements: string;
+}
+
+// Legacy interfaces for backward compatibility
 export interface GuestClassData {
   ageGroups: AgeGroup[];
   formality: FormalityLevel;
@@ -98,14 +237,39 @@ export interface BudgetData {
   currency: Currency;
 }
 
+// Enhanced form data interface
 export interface EventPlanFormData {
+  // Step 1: Basic Information
   eventType: EventType;
   eventDate: Date;
   guestCount: number;
-  location: LocationData;
-  eventDescription: string;
-  guestClass: GuestClassData;
   budget: BudgetData;
+  location: LocationData;
+
+  // Step 2: Event Duration & Timing
+  eventDuration?: EventDurationData;
+
+  // Step 3: Venue Preferences
+  venuePreferences?: VenuePreferencesData;
+
+  // Step 4: Budget Breakdown & Priorities
+  budgetBreakdown?: BudgetBreakdownData;
+
+  // Step 5: Guest Profile & Requirements
+  guestProfile?: GuestProfileData;
+
+  // Step 6: Client Profile & Preferences
+  clientProfile?: ClientProfileData;
+
+  // Step 7: Event-Specific Requirements
+  eventSpecific?: EventSpecificData;
+
+  // Step 8: Special Requirements & Notes
+  specialRequirements?: SpecialRequirementsData;
+
+  // Legacy fields for backward compatibility
+  eventDescription?: string;
+  guestClass?: GuestClassData;
 }
 
 // ============================================================================
@@ -345,4 +509,4 @@ export type LoadingStep = {
   message: string;
 };
 
-export type FormStep = 1 | 2 | 3 | 4;
+export type FormStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;

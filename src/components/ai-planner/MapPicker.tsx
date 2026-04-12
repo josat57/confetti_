@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MapPin, Search, X, Loader2 } from "lucide-react";
 import { LocationData } from "@/types/ai-planner";
 import dynamic from "next/dynamic";
+import LeafletLoader from "@/components/shared/LeafletLoader";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
@@ -17,10 +18,6 @@ const Marker = dynamic(
   () => import("react-leaflet").then((mod) => mod.Marker),
   { ssr: false }
 );
-const useMapEvents = dynamic(
-  () => import("react-leaflet").then((mod) => mod.useMapEvents),
-  { ssr: false }
-);
 
 interface MapPickerProps {
   onLocationSelect: (location: LocationData) => void;
@@ -28,15 +25,30 @@ interface MapPickerProps {
   onToggleManualEntry: () => void;
 }
 
+// LocationMarker component that uses useMapEvents
 function LocationMarker({ position, setPosition }: any) {
-  const map = useMapEvents({
-    click(e) {
-      setPosition(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
-    },
-  });
+  // Import useMapEvents dynamically within the component
+  const [useMapEventsHook, setUseMapEventsHook] = useState<any>(null);
 
-  return position === null ? null : <Marker position={position} />;
+  useEffect(() => {
+    import("react-leaflet").then((mod) => {
+      setUseMapEventsHook(() => mod.useMapEvents);
+    });
+  }, []);
+
+  if (!useMapEventsHook) return null;
+
+  const MapEventsComponent = () => {
+    const map = useMapEventsHook({
+      click(e: any) {
+        setPosition(e.latlng);
+        map.flyTo(e.latlng, map.getZoom());
+      },
+    });
+    return position === null ? null : <Marker position={position} />;
+  };
+
+  return <MapEventsComponent />;
 }
 
 export default function MapPicker({
@@ -150,6 +162,7 @@ export default function MapPicker({
 
   return (
     <div className="space-y-4">
+      <LeafletLoader />
       <div className="space-y-2">
         <label className="flex items-center text-sm font-medium text-gray-700">
           <Search className="w-4 h-4 mr-2" />

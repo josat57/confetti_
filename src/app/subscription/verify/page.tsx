@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import Link from "next/link";
 
-export default function SubscriptionVerifyPage() {
-  const router = useRouter();
+function SubscriptionVerifyContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "failed">(
     "loading"
@@ -27,12 +26,6 @@ export default function SubscriptionVerifyPage() {
       const txRef = searchParams.get("tx_ref");
       const transactionId = searchParams.get("transaction_id");
 
-      console.log("Payment verification params:", {
-        status: paymentStatus,
-        reference,
-        tx_ref: txRef,
-        transaction_id: transactionId,
-      });
 
       // Get pending registration info from localStorage
       const pendingRegistration = localStorage.getItem("pendingRegistration");
@@ -42,8 +35,8 @@ export default function SubscriptionVerifyPage() {
         try {
           const data = JSON.parse(pendingRegistration);
           email = data.email;
-        } catch (error) {
-          console.error("Error parsing pending registration:", error);
+        } catch {
+          // ignore parse error
         }
       }
 
@@ -291,5 +284,19 @@ export default function SubscriptionVerifyPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function SubscriptionVerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <SubscriptionVerifyContent />
+    </Suspense>
   );
 }

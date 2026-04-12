@@ -28,9 +28,10 @@ export interface InviteTeamMemberData {
 export const teamService = {
   /**
    * Get all team members
+   * Note: This is used by vendor dashboard, uses /vendors/team endpoint
    */
   async getTeamMembers(): Promise<TeamMember[]> {
-    const response = await api.get("/team");
+    const response = await api.get("/vendors/team");
     return response.data.data?.members || response.data.members || [];
   },
 
@@ -38,7 +39,7 @@ export const teamService = {
    * Invite a new team member
    */
   async inviteTeamMember(data: InviteTeamMemberData): Promise<TeamMember> {
-    const response = await api.post("/team/invite", data);
+    const response = await api.post("/vendors/team/invite", data);
     return response.data.data.member;
   },
 
@@ -49,7 +50,9 @@ export const teamService = {
     memberId: string,
     role: "admin" | "manager" | "staff"
   ): Promise<TeamMember> {
-    const response = await api.patch(`/team/${memberId}/role`, { role });
+    const response = await api.patch(`/vendors/team/${memberId}/role`, {
+      role,
+    });
     return response.data.data.member;
   },
 
@@ -57,14 +60,14 @@ export const teamService = {
    * Remove team member
    */
   async removeMember(memberId: string): Promise<void> {
-    await api.delete(`/team/${memberId}`);
+    await api.delete(`/vendors/team/${memberId}`);
   },
 
   /**
    * Resend invitation
    */
   async resendInvitation(memberId: string): Promise<void> {
-    await api.post(`/team/${memberId}/resend-invite`);
+    await api.post(`/vendors/team/${memberId}/resend-invite`);
   },
 };
 

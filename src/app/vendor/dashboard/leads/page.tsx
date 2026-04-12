@@ -54,31 +54,31 @@ export default function LeadsPage() {
         </button>
       </div>
 
-      {/* Stats */}
-      {stats && (
+      {/* Stats - Calculate from leads data */}
+      {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600 mb-1">Total Leads</p>
             <p className="text-2xl font-bold text-gray-900">
-              {stats.total || 0}
+              {data.pagination?.total || 0}
             </p>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600 mb-1">New</p>
             <p className="text-2xl font-bold text-blue-600">
-              {stats.byStatus?.new || 0}
+              {data.leads.filter((lead) => lead.status === "new").length}
             </p>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600 mb-1">Won</p>
             <p className="text-2xl font-bold text-green-600">
-              {stats.byStatus?.won || 0}
+              {data.leads.filter((lead) => lead.status === "won").length}
             </p>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Conversion Rate</p>
+            <p className="text-sm text-gray-600 mb-1">Contacted</p>
             <p className="text-2xl font-bold text-purple-600">
-              {stats.conversionRate?.toFixed(1) || 0}%
+              {data.leads.filter((lead) => lead.status === "contacted").length}
             </p>
           </div>
         </div>
@@ -128,6 +128,7 @@ export default function LeadsPage() {
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
+          <option value="urgent">Urgent</option>
         </select>
       </div>
 
@@ -153,9 +154,18 @@ export default function LeadsPage() {
                   </p>
                   <p>Location: {lead.eventDetails.location}</p>
                   {lead.eventDetails.budget && (
-                    <p>Budget: ${lead.eventDetails.budget.toLocaleString()}</p>
+                    <p>Budget: ₦{lead.eventDetails.budget.toLocaleString()}</p>
+                  )}
+                  {lead.eventDetails.guestCount && (
+                    <p>Guests: {lead.eventDetails.guestCount}</p>
+                  )}
+                  {lead.estimatedValue && (
+                    <p>
+                      Estimated Value: ₦{lead.estimatedValue.toLocaleString()}
+                    </p>
                   )}
                 </div>
+                {/* Tags - Not available in Lead interface */}
               </div>
 
               <div className="flex flex-col items-end gap-2">
@@ -176,7 +186,7 @@ export default function LeadsPage() {
                 </select>
 
                 <span
-                  className={`px-3 py-1 rounded text-xs font-semibold ${
+                  className={`px-3 py-1 rounded text-xs font-semibold uppercase ${
                     lead.priority === "high"
                       ? "bg-red-100 text-red-800"
                       : lead.priority === "medium"

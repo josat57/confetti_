@@ -15,71 +15,80 @@ import {
   Phone,
   Calendar,
   Plus,
+  Loader2,
 } from "lucide-react";
+import eventPlannersService, {
+  EventPlanner as EventPlannerType,
+} from "@/services/admin/event-planners.service";
+import { toast } from "react-toastify";
 
+// Map backend EventPlanner to component EventPlanner
 interface EventPlanner {
   id: string;
   name: string;
   email: string;
   phone: string;
-  status: "active" | "inactive" | "suspended";
+  status: string;
   createdAt: string;
   lastLogin: string;
   profileImage?: string;
 }
 
-const mockPlanners: EventPlanner[] = [
-  {
-    id: "1",
-    name: "Emily Carter",
-    email: "emily.carter@events.com",
-    phone: "+1234567890",
-    status: "active",
-    createdAt: "2024-01-15",
-    lastLogin: "2024-01-20",
-  },
-  {
-    id: "2",
-    name: "Michael Lee",
-    email: "michael.lee@events.com",
-    phone: "+1234567891",
-    status: "inactive",
-    createdAt: "2024-01-10",
-    lastLogin: "2024-01-19",
-  },
-  {
-    id: "3",
-    name: "Sophia Turner",
-    email: "sophia.turner@events.com",
-    phone: "+1234567892",
-    status: "suspended",
-    createdAt: "2024-01-05",
-    lastLogin: "2024-01-15",
-  },
-];
+function mapBackendPlanner(planner: EventPlannerType): EventPlanner {
+  return {
+    id: planner._id,
+    name:
+      planner.fullName ||
+      `${planner.firstName || ""} ${planner.lastName || ""}`.trim() ||
+      planner.username,
+    email: planner.email,
+    phone: planner.phone || "N/A",
+    status: planner.status,
+    createdAt: new Date(planner.createdAt).toISOString(),
+    lastLogin: planner.lastLogin
+      ? new Date(planner.lastLogin).toISOString()
+      : new Date(planner.createdAt).toISOString(),
+    profileImage: planner.profilePicture,
+  };
+}
 
 export default function EventPlannersPage() {
   const [planners, setPlanners] = useState<EventPlanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedPlanner, setSelectedPlanner] = useState<EventPlanner | null>(null);
+  const [selectedPlanner, setSelectedPlanner] = useState<EventPlanner | null>(
+    null
+  );
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"view" | "edit" | "add">("view");
 
-  // Fetch planners (replace with real API call)
+  // Fetch planners from backend
   useEffect(() => {
-    setTimeout(() => {
-      setPlanners(mockPlanners);
-      setLoading(false);
-    }, 500);
-  }, []);
+    fetchPlanners();
+  }, [statusFilter]);
 
-  const filteredPlanners = planners.filter((planner) => {
+  const fetchPlanners = async () => {
+    try {
+      setLoading(true);
+      const response = await eventPlannersService.getEventPlanners({
+        status: statusFilter === "all" ? undefined : statusFilter,
+      });
+      setPlanners(response.users.map(mapBackendPlanner));
+    } catch (err: any) {
+      console.error("Error fetching event planners:", err);
+      toast.error("Failed to load event planners");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPlanners = (planners || []).filter((planner) => {
     const matchesSearch =
-      planner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      planner.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || planner.status === statusFilter;
+      planner.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      planner.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || planner.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -96,38 +105,44 @@ export default function EventPlannersPage() {
     }
   };
 
-  // Placeholder API actions
-  const handleAdd = (planner: EventPlanner) => {
-    setPlanners((prev) => [...prev, { ...planner, id: Date.now().toString() }]);
-    setShowModal(false);
+  // API actions
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await eventPlannersService.updateEventPlannerStatus(id, newStatus);
+      toast.success("Status updated successfully");
+      fetchPlanners();
+    } catch (err: any) {
+      console.error("Error updating status:", err);
+      toast.error("Failed to update status");
+    }
   };
-  const handleEdit = (planner: EventPlanner) => {
-    setPlanners((prev) => prev.map((p) => (p.id === planner.id ? planner : p)));
-    setShowModal(false);
-  };
-  const handleDelete = (id: string) => {
-    setPlanners((prev) => prev.filter((p) => p.id !== id));
-    setShowModal(false);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this event planner?")) {
+      return;
+    }
+
+    try {
+      await eventPlannersService.deleteEventPlanner(id);
+      toast.success("Event planner deleted successfully");
+      fetchPlanners();
+      setShowModal(false);
+    } catch (err: any) {
+      console.error("Error deleting planner:", err);
+      toast.error("Failed to delete event planner");
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow p-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Event Planners</h1>
-          <p className="text-gray-600 mt-1">Manage event planner accounts and status</p>
+          <p className="text-gray-600 mt-1">
+            Manage event planner accounts and status
+          </p>
         </div>
-        <button
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center"
-          onClick={() => {
-            setModalMode("add");
-            setSelectedPlanner(null);
-            setShowModal(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" /> Add New Planner
-        </button>
       </div>
 
       {/* Filters and Search */}
@@ -229,7 +244,11 @@ export default function EventPlannersPage() {
                       {planner.phone}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(planner.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          planner.status
+                        )}`}
+                      >
                         {planner.status}
                       </span>
                     </td>
@@ -244,26 +263,17 @@ export default function EventPlannersPage() {
                         <button
                           onClick={() => {
                             setSelectedPlanner(planner);
-                            setModalMode("view");
                             setShowModal(true);
                           }}
-                          className="text-gray-400 hover:text-gray-600"
+                          className="text-purple-600 hover:text-purple-800"
+                          title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedPlanner(planner);
-                            setModalMode("edit");
-                            setShowModal(true);
-                          }}
-                          className="text-gray-400 hover:text-blue-600"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
                           onClick={() => handleDelete(planner.id)}
-                          className="text-gray-400 hover:text-red-600"
+                          className="text-red-600 hover:text-red-800"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -277,18 +287,14 @@ export default function EventPlannersPage() {
         )}
       </div>
 
-      {/* Modal for View/Edit/Add */}
-      {showModal && (
+      {/* Modal for View */}
+      {showModal && selectedPlanner && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  {modalMode === "add"
-                    ? "Add Event Planner"
-                    : modalMode === "edit"
-                    ? "Edit Event Planner"
-                    : "Event Planner Details"}
+                  Event Planner Details
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -297,47 +303,86 @@ export default function EventPlannersPage() {
                   ×
                 </button>
               </div>
-              {modalMode === "view" && selectedPlanner && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  {selectedPlanner.profileImage ? (
+                    <img
+                      src={selectedPlanner.profileImage}
+                      alt={selectedPlanner.name}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
                     <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center">
                       <span className="text-lg font-medium text-white">
                         {selectedPlanner.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900">
-                        {selectedPlanner.name}
-                      </h4>
-                      <p className="text-sm text-gray-500">{selectedPlanner.email}</p>
-                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900">
+                      {selectedPlanner.name}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {selectedPlanner.email}
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{selectedPlanner.phone}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        Joined: {new Date(selectedPlanner.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {selectedPlanner.phone}
+                    </span>
                   </div>
-                  <div className="flex space-x-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedPlanner.status)}`}>
-                      {selectedPlanner.status}
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      Joined:{" "}
+                      {new Date(selectedPlanner.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      Last Login:{" "}
+                      {new Date(selectedPlanner.lastLogin).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
-              )}
-              {(modalMode === "edit" || modalMode === "add") && (
-                <PlannerForm
-                  initialData={modalMode === "edit" ? (selectedPlanner ?? undefined) : undefined}
-                  onSubmit={modalMode === "edit" ? handleEdit : handleAdd}
-                  onCancel={() => setShowModal(false)}
-                />
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={selectedPlanner.status}
+                    onChange={(e) => {
+                      handleStatusChange(selectedPlanner.id, e.target.value);
+                      setShowModal(false);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-2 pt-4 border-t">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDelete(selectedPlanner.id);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete Planner
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -345,89 +390,3 @@ export default function EventPlannersPage() {
     </div>
   );
 }
-
-// Planner Form Component
-function PlannerForm({ initialData, onSubmit, onCancel }: {
-  initialData?: EventPlanner;
-  onSubmit: (planner: EventPlanner) => void;
-  onCancel: () => void;
-}) {
-  const [form, setForm] = useState<EventPlanner>(
-    initialData || {
-      id: "",
-      name: "",
-      email: "",
-      phone: "",
-      status: "active",
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    }
-  );
-
-  return (
-    <form
-      className="space-y-4"
-      onSubmit={e => {
-        e.preventDefault();
-        onSubmit({ ...form, createdAt: form.createdAt || new Date().toISOString(), lastLogin: form.lastLogin || new Date().toISOString() });
-      }}
-    >
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input
-          type="email"
-          value={form.email}
-          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-        <input
-          type="text"
-          value={form.phone}
-          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <select
-          value={form.status}
-          onChange={e => setForm(f => ({ ...f, status: e.target.value as EventPlanner["status"] }))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
-        </select>
-      </div>
-      <div className="flex justify-end space-x-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-        >
-          {initialData ? "Save Changes" : "Add Planner"}
-        </button>
-      </div>
-    </form>
-  );
-} 

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -28,7 +28,9 @@ import {
   AlertTriangle,
   CreditCard,
   Mail,
-} from 'lucide-react';
+  Package,
+  Brain,
+} from "lucide-react";
 
 interface AdminSidebarProps {
   open: boolean;
@@ -45,89 +47,142 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
   {
-    name: 'Dashboard',
-    href: '/admin',
+    name: "Dashboard",
+    href: "/admin",
     icon: LayoutDashboard,
     current: true,
   },
   {
-    name: 'Authentication & Authorization',
+    name: "Authentication & Authorization",
     icon: Shield,
     children: [
-      { name: 'Admin Management', href: '/admin/auth/admins', icon: UserCheck },
-      { name: 'Role Management', href: '/admin/auth/roles', icon: Shield },
-      { name: 'Permissions', href: '/admin/auth/permissions', icon: Lock },
+      { name: "Admin Management", href: "/admin/auth/admins", icon: UserCheck },
+      { name: "Role Management", href: "/admin/auth/roles", icon: Shield },
+      { name: "Permissions", href: "/admin/auth/permissions", icon: Lock },
     ],
   },
   {
-    name: 'User Management',
-    href: '/admin/users',
+    name: "User Management",
+    href: "/admin/users",
     icon: Users,
   },
   {
-    name: 'Content Management',
-    href: '/admin/content',
+    name: "Content Management",
+    href: "/admin/content",
     icon: FileText,
   },
   {
-    name: 'System Configuration',
-    href: '/admin/settings',
+    name: "System Configuration",
+    href: "/admin/settings",
     icon: Settings,
   },
   {
-    name: 'Moderation',
+    name: "Moderation",
     icon: Flag,
     children: [
-      { name: 'Content Moderation', href: '/admin/moderation/content', icon: FileCheck },
-      { name: 'Reports', href: '/admin/moderation/reports', icon: AlertTriangle },
-      { name: 'Inappropriate Content', href: '/admin/moderation/inappropriate', icon: X },
+      {
+        name: "Content Moderation",
+        href: "/admin/moderation/content",
+        icon: FileCheck,
+      },
+      {
+        name: "Reports",
+        href: "/admin/moderation/reports",
+        icon: AlertTriangle,
+      },
+      {
+        name: "Inappropriate Content",
+        href: "/admin/moderation/inappropriate",
+        icon: X,
+      },
     ],
   },
   {
-    name: 'Support System',
-    href: '/admin/support',
+    name: "Support System",
+    href: "/admin/support",
     icon: HelpCircle,
   },
   {
-    name: 'Audit & Logging',
-    href: '/admin/audit',
+    name: "Audit & Logging",
+    href: "/admin/audit",
     icon: Activity,
   },
   {
-    name: 'Analytics',
-    href: '/admin/analytics',
+    name: "Analytics",
+    href: "/admin/analytics",
     icon: BarChart3,
   },
   {
-    name: 'Vendor Management',
-    href: '/admin/vendors',
+    name: "AI Event Planner",
+    href: "/admin/ai-planner",
+    icon: Brain,
+  },
+  {
+    name: "Vendor Management",
+    href: "/admin/vendors",
     icon: Store,
   },
   {
-    name: 'Event Planners',
-    href: '/admin/event-planners',
+    name: "Event Planners",
+    href: "/admin/event-planners",
     icon: Users,
   },
   {
-    name: 'Communication',
-    icon: Mail,
+    name: "Billing & Subscriptions",
+    icon: CreditCard,
     children: [
-      { name: 'Announcements', href: '/admin/communication/announcements', icon: Bell },
-      { name: 'Notifications', href: '/admin/communication/notifications', icon: Mail },
+      {
+        name: "Plans",
+        href: "/admin/dashboard/plans",
+        icon: Package,
+      },
+      {
+        name: "Subscriptions",
+        href: "/admin/dashboard/subscriptions",
+        icon: CreditCard,
+      },
     ],
   },
   {
-    name: 'Security & Compliance',
-    href: '/admin/security',
+    name: "Communication",
+    icon: Mail,
+    children: [
+      {
+        name: "Announcements",
+        href: "/admin/communication/announcements",
+        icon: Bell,
+      },
+      {
+        name: "Notifications",
+        href: "/admin/communication/notifications",
+        icon: Mail,
+      },
+    ],
+  },
+  {
+    name: "Security & Compliance",
+    href: "/admin/security",
     icon: Lock,
   },
   {
-    name: 'Financial Oversight',
+    name: "Financial Oversight",
     icon: DollarSign,
     children: [
-      { name: 'Financial Reports', href: '/admin/financial/reports', icon: FileText },
-      { name: 'Transactions', href: '/admin/financial/transactions', icon: CreditCard },
-      { name: 'Revenue Stats', href: '/admin/financial/revenue', icon: TrendingUp },
+      {
+        name: "Financial Reports",
+        href: "/admin/financial/reports",
+        icon: FileText,
+      },
+      {
+        name: "Transactions",
+        href: "/admin/financial/transactions",
+        icon: CreditCard,
+      },
+      {
+        name: "Revenue Stats",
+        href: "/admin/financial/revenue",
+        icon: TrendingUp,
+      },
     ],
   },
 ];
@@ -138,9 +193,9 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpanded = (name: string) => {
-    setExpandedItems(prev =>
+    setExpandedItems((prev) =>
       prev.includes(name)
-        ? prev.filter(item => item !== name)
+        ? prev.filter((item) => item !== name)
         : [...prev, name]
     );
   };
@@ -167,7 +222,7 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
         initial={{ x: -100 }}
         animate={{ x: 0 }}
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
+          open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
@@ -199,15 +254,15 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
                       onClick={() => toggleExpanded(item.name)}
                       className={`group flex w-full items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                         isExpanded
-                          ? 'bg-purple-50 text-purple-700'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? "bg-purple-50 text-purple-700"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
                       <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
                       {item.name}
                       <ChevronDown
                         className={`ml-auto h-4 w-4 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-180' : ''
+                          isExpanded ? "rotate-180" : ""
                         }`}
                       />
                     </button>
@@ -215,18 +270,18 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
                       {isExpanded && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
+                          animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
                           className="ml-8 mt-1 space-y-1"
                         >
                           {item.children!.map((child) => (
                             <Link
                               key={child.name}
-                              href={child.href || '#'}
+                              href={child.href || "#"}
                               className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                                isActive(child.href || '')
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                isActive(child.href || "")
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                               }`}
                             >
                               <child.icon className="mr-3 h-4 w-4 flex-shrink-0" />
@@ -243,11 +298,11 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
               return (
                 <Link
                   key={item.name}
-                  href={item.href || '#'}
+                  href={item.href || "#"}
                   className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    isActive(item.href || '')
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    isActive(item.href || "")
+                      ? "bg-purple-100 text-purple-700"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
                   <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
@@ -263,13 +318,13 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
-                    {user?.userName?.charAt(0).toUpperCase() || 'A'}
+                    {user?.username?.charAt(0).toUpperCase() || "A"}
                   </span>
                 </div>
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-700">
-                  {user?.userName || 'Admin'}
+                  {user?.username || "Admin"}
                 </p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
@@ -279,4 +334,4 @@ export default function AdminSidebar({ open, setOpen }: AdminSidebarProps) {
       </motion.div>
     </>
   );
-} 
+}

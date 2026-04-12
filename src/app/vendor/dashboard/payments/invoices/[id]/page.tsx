@@ -239,7 +239,7 @@ export default function InvoiceDetailsPage() {
             </div>
             <div className="text-right">
               <p className="font-semibold text-gray-900">
-                {user?.userName || "Your Business"}
+                {user?.username || "Your Business"}
               </p>
               <p className="text-sm text-gray-600">{user?.email}</p>
             </div>

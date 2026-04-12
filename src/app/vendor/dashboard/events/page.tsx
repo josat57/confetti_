@@ -60,10 +60,10 @@ export default function EventListingsPage() {
       try {
         // Fetch events from API
         const fetchedEvents = await eventService.getAll();
-        setEvents(fetchedEvents);
+        setEvents(fetchedEvents as any);
 
         // Get monthly count for Basic tier
-        if (user?.subscriptionTier === "basic") {
+        if ((user as any)?.subscriptionTier === "basic") {
           const count = await eventService.getMonthlyCount();
           setMonthlyListingsCount(count);
         }
@@ -147,7 +147,7 @@ export default function EventListingsPage() {
       </div>
 
       {/* Monthly Limit Banner for Basic Tier */}
-      {user?.subscriptionTier === "basic" && (
+      {(user as any)?.subscriptionTier === "basic" && (
         <div
           className={`mb-6 rounded-lg border p-4 ${
             monthlyListingsCount >= 5

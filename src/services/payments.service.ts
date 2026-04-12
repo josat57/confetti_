@@ -58,7 +58,7 @@ export const paymentsService = {
     page?: number;
     limit?: number;
   }): Promise<{ payments: Payment[]; total: number }> {
-    const response = await api.get("/payments", { params });
+    const response = await api.get("/vendors/payments", { params });
     return response.data.data || { payments: [], total: 0 };
   },
 
@@ -66,7 +66,7 @@ export const paymentsService = {
    * Get a single payment by ID
    */
   async getPaymentById(id: string): Promise<Payment> {
-    const response = await api.get(`/payments/${id}`);
+    const response = await api.get(`/vendors/payments/${id}`);
     return response.data.data.payment;
   },
 
@@ -74,7 +74,7 @@ export const paymentsService = {
    * Create a new payment/invoice
    */
   async createPayment(data: CreatePaymentData): Promise<Payment> {
-    const response = await api.post("/payments", data);
+    const response = await api.post("/vendors/payments", data);
     return response.data.data.payment;
   },
 
@@ -85,7 +85,9 @@ export const paymentsService = {
     id: string,
     status: "pending" | "paid" | "overdue" | "cancelled"
   ): Promise<Payment> {
-    const response = await api.patch(`/payments/${id}/status`, { status });
+    const response = await api.patch(`/vendors/payments/${id}/status`, {
+      status,
+    });
     return response.data.data.payment;
   },
 
@@ -93,14 +95,14 @@ export const paymentsService = {
    * Send payment reminder
    */
   async sendPaymentReminder(id: string): Promise<void> {
-    await api.post(`/payments/${id}/remind`);
+    await api.post(`/vendors/payments/${id}/remind`);
   },
 
   /**
    * Delete a payment
    */
   async deletePayment(id: string): Promise<void> {
-    await api.delete(`/payments/${id}`);
+    await api.delete(`/vendors/payments/${id}`);
   },
 
   /**
@@ -112,7 +114,7 @@ export const paymentsService = {
     overdue: number;
     totalInvoices: number;
   }> {
-    const response = await api.get("/payments/stats");
+    const response = await api.get("/vendors/payments/stats");
     return response.data.data;
   },
 };

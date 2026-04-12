@@ -71,43 +71,30 @@ export default function TeamPage() {
     const fetchTeamMembers = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const { default: teamService } = await import(
+          "@/services/team.service"
+        );
+        const members = await teamService.getTeamMembers();
 
-        const mockTeamMembers: TeamMember[] = [
-          {
-            id: "1",
-            name: user?.userName || "You",
-            email: user?.email || "",
-            role: "admin",
-            status: "active",
-            joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90),
-            lastActive: new Date(),
-          },
-          {
-            id: "2",
-            name: "Jane Smith",
-            email: "jane.smith@example.com",
-            role: "manager",
-            status: "active",
-            joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-            lastActive: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          },
-          {
-            id: "3",
-            name: "John Doe",
-            email: "john.doe@example.com",
-            role: "staff",
-            status: "active",
-            joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15),
-            lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24),
-          },
-        ];
+        // Transform backend data to match component interface
+        const transformedMembers: TeamMember[] = members.map((member: any) => ({
+          id: member._id,
+          name: member.name,
+          email: member.email,
+          role: member.role,
+          status: member.status,
+          joinedAt: new Date(member.joinedAt),
+          lastActive: member.lastActive
+            ? new Date(member.lastActive)
+            : undefined,
+        }));
 
-        setTeamMembers(mockTeamMembers);
-      } catch (error) {
+        setTeamMembers(transformedMembers);
+      } catch (error: any) {
         console.error("Error fetching team members:", error);
-        toast.error("Failed to load team members");
+        toast.error(
+          error.response?.data?.message || "Failed to load team members"
+        );
       } finally {
         setLoading(false);
       }
@@ -134,16 +121,22 @@ export default function TeamPage() {
     setInviting(true);
 
     try {
-      // TODO: Call API to send invitation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const newMember: TeamMember = {
-        id: Date.now().toString(),
-        name: inviteEmail.split("@")[0],
+      const { default: teamService } = await import("@/services/team.service");
+      const member = await teamService.inviteTeamMember({
         email: inviteEmail,
-        role: inviteRole,
-        status: "pending",
-        joinedAt: new Date(),
+        role: inviteRole as "admin" | "manager" | "staff",
+        message: "Join our team!",
+      });
+
+      // Transform the returned member to match component interface
+      const newMember: TeamMember = {
+        id: member._id,
+        name: member.name || inviteEmail.split("@")[0],
+        email: member.email,
+        role: member.role,
+        status: member.status,
+        joinedAt: new Date(member.joinedAt),
+        lastActive: member.lastActive ? new Date(member.lastActive) : undefined,
       };
 
       setTeamMembers([...teamMembers, newMember]);
@@ -151,9 +144,9 @@ export default function TeamPage() {
       setShowInviteModal(false);
       setInviteEmail("");
       setInviteRole("staff");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error inviting member:", error);
-      toast.error("Failed to send invitation");
+      toast.error(error.response?.data?.message || "Failed to send invitation");
     } finally {
       setInviting(false);
     }
@@ -163,14 +156,16 @@ export default function TeamPage() {
     if (!confirm("Are you sure you want to remove this team member?")) return;
 
     try {
-      // TODO: Call API to remove member
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: teamService } = await import("@/services/team.service");
+      await teamService.removeMember(memberId);
 
       setTeamMembers(teamMembers.filter((m) => m.id !== memberId));
       toast.success("Team member removed successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error removing member:", error);
-      toast.error("Failed to remove team member");
+      toast.error(
+        error.response?.data?.message || "Failed to remove team member"
+      );
     }
   };
 
@@ -179,8 +174,8 @@ export default function TeamPage() {
     newRole: TeamMember["role"]
   ) => {
     try {
-      // TODO: Call API to update role
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { default: teamService } = await import("@/services/team.service");
+      await teamService.updateMemberRole(memberId, newRole);
 
       setTeamMembers(
         teamMembers.map((m) =>
@@ -188,9 +183,9 @@ export default function TeamPage() {
         )
       );
       toast.success("Role updated successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating role:", error);
-      toast.error("Failed to update role");
+      toast.error(error.response?.data?.message || "Failed to update role");
     }
   };
 
@@ -298,83 +293,108 @@ export default function TeamPage() {
 
       {/* Team Members List */}
       <div className="space-y-4">
-        {teamMembers.map((member) => (
-          <div
-            key={member.id}
-            className="bg-white rounded-lg border border-gray-200 p-6"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-lg flex-shrink-0">
-                  {member.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">
-                      {member.name}
-                    </h3>
-                    {member.id === "1" && (
-                      <span className="text-xs text-gray-500">(You)</span>
-                    )}
+        {teamMembers.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No team members yet
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Invite team members to collaborate on managing your business
+            </p>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Invite Your First Member</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {teamMembers.map((member) => (
+              <div
+                key={member.id}
+                className="bg-white rounded-lg border border-gray-200 p-6"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-lg flex-shrink-0">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {member.name}
+                        </h3>
+                        {member.email === user?.email && (
+                          <span className="text-xs text-gray-500">(You)</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {member.email}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(
+                            member.role
+                          )}`}
+                        >
+                          {member.role.charAt(0).toUpperCase() +
+                            member.role.slice(1)}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(
+                            member.status
+                          )}`}
+                        >
+                          {member.status.charAt(0).toUpperCase() +
+                            member.status.slice(1)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Joined {member.joinedAt.toLocaleDateString()}
+                        {member.lastActive && (
+                          <>
+                            {" "}
+                            • Last active{" "}
+                            {member.lastActive.toLocaleDateString()}
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{member.email}</p>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(
-                        member.role
-                      )}`}
-                    >
-                      {member.role.charAt(0).toUpperCase() +
-                        member.role.slice(1)}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(
-                        member.status
-                      )}`}
-                    >
-                      {member.status.charAt(0).toUpperCase() +
-                        member.status.slice(1)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Joined {member.joinedAt.toLocaleDateString()}
-                    {member.lastActive && (
-                      <>
-                        {" "}
-                        • Last active {member.lastActive.toLocaleDateString()}
-                      </>
-                    )}
-                  </p>
+
+                  {member.email !== user?.email && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={member.role}
+                        onChange={(e) =>
+                          handleUpdateRole(
+                            member.id,
+                            e.target.value as TeamMember["role"]
+                          )
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="staff">Staff</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove team member"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {member.id !== "1" && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={member.role}
-                    onChange={(e) =>
-                      handleUpdateRole(
-                        member.id,
-                        e.target.value as TeamMember["role"]
-                      )
-                    }
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    onClick={() => handleRemoveMember(member.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+            ))}
+          </>
+        )}
       </div>
 
       {/* Role Permissions Info */}

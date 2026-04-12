@@ -145,7 +145,7 @@ const PaymentModal = ({
         customer: {
           email: user.email,
           phone_number: user.phone || "",
-          name: user.userName || user.email.split("@")[0],
+          name: user.username || user.email.split("@")[0],
         },
         customizations: {
           title: "Confetti Subscription",

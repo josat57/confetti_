@@ -84,9 +84,7 @@ export default function TeamMemberCard({
               <h3 className="font-semibold text-gray-900">
                 {member.user.name}
               </h3>
-              {isOwner && (
-                <Shield className="w-4 h-4 text-purple-600" title="Owner" />
-              )}
+              {isOwner && <Shield className="w-4 h-4 text-purple-600" />}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
               <Mail className="w-4 h-4" />

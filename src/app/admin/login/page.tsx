@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAdmin } from '../../../contexts/AdminContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Lock, Mail, Loader2, ShieldCheck, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
 
@@ -22,9 +22,9 @@ export default function AdminLogin() {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Redirect if already logged in as admin
     if (user?.role === 'admin') {
       router.push('/admin');
     }
@@ -32,27 +32,20 @@ export default function AdminLogin() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      console.log('Attempting admin login...');
-      // Use adminLogin from AdminContext
       const response = await adminLogin(formData.email, formData.password);
-      
-      console.log('Admin login response:', response);
-      
+
       if (response?.status === 'success') {
         toast.success('Welcome back, Administrator!');
-        console.log('Admin login successful, redirecting to /admin');
-        // Wait a bit for the user state to update
         setTimeout(() => {
           router.push('/admin');
         }, 500);
@@ -60,13 +53,12 @@ export default function AdminLogin() {
         setShowTwoFactor(true);
         toast.info('Please enter your two-factor authentication code');
       } else {
-        toast.error('Access denied. Admin privileges required.');
-        // Clear form
+        setError('Access denied. Admin privileges required.');
         setFormData(prev => ({ ...prev, password: '', twoFactorCode: '' }));
       }
-    } catch (error: any) {
-      console.error('Admin login error:', error);
-      toast.error(error.message || 'Admin login failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Admin login failed. Please try again.');
+      toast.error(err.message || 'Admin login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -75,66 +67,96 @@ export default function AdminLogin() {
   const handleTwoFactorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      // Use adminLogin with two-factor code
       const response = await adminLogin(formData.email, formData.password, formData.twoFactorCode);
-      
+
       if (response?.status === 'success') {
         toast.success('Two-factor authentication successful!');
         router.push('/admin');
       } else {
-        toast.error('Access denied. Admin privileges required.');
+        setError('Invalid authentication code. Please try again.');
       }
-    } catch (error: any) {
-      console.error('Two-factor error:', error);
-      toast.error(error.message || 'Two-factor authentication failed.');
+    } catch (err: any) {
+      setError(err.message || 'Two-factor authentication failed.');
+      toast.error(err.message || 'Two-factor authentication failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center py-12 px-4">
+
+      {/* Back link */}
+      <Link
+        href="/"
+        className="fixed top-5 left-5 flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to site
+      </Link>
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full space-y-8"
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md"
       >
         {/* Header */}
-        <div className="text-center">
-          <Link href="/" className="inline-block">
-            <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Confetti
-            </span>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600/20 border border-purple-500/30 rounded-2xl mb-5">
+            <ShieldCheck className="w-8 h-8 text-purple-400" />
+          </div>
+          <Link href="/" className="block">
+            <span className="text-2xl font-bold text-white tracking-tight">Confetti</span>
           </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Admin Portal
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <h2 className="mt-3 text-xl font-semibold text-white">Admin Portal</h2>
+          <p className="mt-1 text-sm text-white/50">
             Sign in to access the administrative dashboard
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg shadow-xl p-8"
+          className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl"
         >
-          <form onSubmit={showTwoFactor ? handleTwoFactorSubmit : handleSubmit} className="space-y-6">
+          {/* Error */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl text-sm mb-6"
+              >
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
             {!showTwoFactor ? (
-              <>
-                {/* Email Field */}
+              <motion.form
+                key="login"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                onSubmit={handleSubmit}
+                className="space-y-5"
+              >
+                {/* Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-white/70 mb-1.5">
                     Email Address
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                    </div>
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
                     <input
                       id="email"
                       name="email"
@@ -143,21 +165,19 @@ export default function AdminLogin() {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/25 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       placeholder="admin@confetti.com"
                     />
                   </div>
                 </div>
 
-                {/* Password Field */}
+                {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-1.5">
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400" />
-                    </div>
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
                     <input
                       id="password"
                       name="password"
@@ -166,128 +186,115 @@ export default function AdminLogin() {
                       required
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="block w-full pl-10 pr-11 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/25 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       placeholder="Enter your password"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      name="remember-me"
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                      Remember me
-                    </label>
-                  </div>
+                {/* Remember me */}
+                <div className="flex items-center gap-2">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-white/20 bg-white/5 accent-purple-500"
+                  />
+                  <label htmlFor="remember-me" className="text-sm text-white/50">
+                    Remember me
+                  </label>
                 </div>
-              </>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-900/40"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {loading ? 'Signing in…' : 'Sign In'}
+                </button>
+              </motion.form>
             ) : (
-              <>
-                {/* Two-Factor Authentication */}
+              <motion.form
+                key="2fa"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                onSubmit={handleTwoFactorSubmit}
+                className="space-y-5"
+              >
+                {/* 2FA header */}
                 <div className="text-center">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100">
-                    <Lock className="h-6 w-6 text-purple-600" />
+                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-purple-600/20 border border-purple-500/30 mb-4">
+                    <Lock className="h-6 w-6 text-purple-400" />
                   </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">
-                    Two-Factor Authentication
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-white">Two-Factor Authentication</h3>
+                  <p className="mt-1 text-sm text-white/50">
                     Enter the 6-digit code from your authenticator app
                   </p>
                 </div>
 
+                {/* Code input */}
                 <div>
-                  <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="twoFactorCode" className="block text-sm font-medium text-white/70 mb-1.5">
                     Authentication Code
                   </label>
                   <input
                     id="twoFactorCode"
                     name="twoFactorCode"
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     maxLength={6}
                     value={formData.twoFactorCode}
                     onChange={handleInputChange}
-                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center text-lg tracking-widest"
+                    className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/25 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     placeholder="000000"
+                    autoFocus
                   />
                 </div>
 
                 <button
+                  type="submit"
+                  disabled={loading || formData.twoFactorCode.length !== 6}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-900/40"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {loading ? 'Verifying…' : 'Verify Code'}
+                </button>
+
+                <button
                   type="button"
-                  onClick={() => setShowTwoFactor(false)}
-                  className="text-sm text-purple-600 hover:text-purple-500"
+                  onClick={() => { setShowTwoFactor(false); setError(null); }}
+                  className="w-full text-sm text-white/40 hover:text-white/70 transition-colors"
                 >
                   ← Back to login
                 </button>
-              </>
+              </motion.form>
             )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                showTwoFactor ? 'Verify Code' : 'Sign In'
-              )}
-            </button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              This portal is restricted to authorized administrators only.
-            </p>
-            <Link href="/" className="text-sm text-purple-600 hover:text-purple-500 mt-2 inline-block">
-              ← Back to main site
-            </Link>
-          </div>
+          </AnimatePresence>
         </motion.div>
 
-        {/* Security Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                Security Notice
-              </h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  This is a secure administrative portal. All activities are logged and monitored.
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Security notice */}
+        <div className="mt-5 flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
+          <ShieldCheck className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-blue-300/80 leading-relaxed">
+            This is a secure administrative portal. All activities are logged and monitored. Unauthorized access attempts will be reported.
+          </p>
         </div>
       </motion.div>
     </div>
   );
-} 
+}

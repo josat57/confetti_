@@ -1,39 +1,58 @@
-import axios from 'axios';
+import axios from "axios";
+
+/**
+ * @deprecated This file is deprecated. Please use the service files in src/services/admin/ instead.
+ *
+ * New service files provide:
+ * - Proper TypeScript types
+ * - Consistent error handling
+ * - Better organization
+ * - Up-to-date endpoints
+ *
+ * Migration guide:
+ * - AdminAPI.getDashboardStats() → analyticsService.getDashboardMetrics()
+ * - AdminAPI.getUsers() → usersService.getUsers()
+ * - AdminAPI.getVendors() → vendorsService.getVendors()
+ */
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9600/api/v1',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    withCredentials: true,
-  });
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
 
 // Admin API functions
 export const AdminAPI = {
   // Authentication & Authorization
-  adminLogin: async (credentials: { email: string; password: string; twoFactorCode?: string }) => {
-    const response = await api.post('/admin/login', credentials);
+  adminLogin: async (credentials: {
+    email: string;
+    password: string;
+    twoFactorCode?: string;
+  }) => {
+    const response = await api.post("/admin/login", credentials);
     return response.data;
   },
 
   adminLogout: async () => {
-    const response = await api.post('/admin/logout');
+    const response = await api.post("/admin/logout");
     return response.data;
   },
 
   verifyAdminAccess: async () => {
-    const response = await api.get('/admin/verify');
+    const response = await api.get("/admin/verify");
     return response.data;
   },
 
   // Admin Management
   getAdmins: async () => {
-    const response = await api.get('/admin/admins');
+    const response = await api.get("/admin/admins");
     return response.data;
   },
 
   createAdmin: async (adminData: any) => {
-    const response = await api.post('/admin/admins', adminData);
+    const response = await api.post("/admin/admins", adminData);
     return response.data;
   },
 
@@ -49,7 +68,7 @@ export const AdminAPI = {
 
   // User Management
   getUsers: async (params?: any) => {
-    const response = await api.get('/admin/users', { params });
+    const response = await api.get("/admin/users", { params });
     return response.data;
   },
 
@@ -70,7 +89,7 @@ export const AdminAPI = {
 
   // Vendor Management
   getVendors: async (params?: any) => {
-    const response = await api.get('/admin/vendors', { params });
+    const response = await api.get("/admin/vendors", { params });
     return response.data;
   },
 
@@ -80,12 +99,17 @@ export const AdminAPI = {
   },
 
   verifyVendor: async (vendorId: string, verificationData: any) => {
-    const response = await api.put(`/admin/vendors/${vendorId}/verify`, verificationData);
+    const response = await api.put(
+      `/admin/vendors/${vendorId}/verify`,
+      verificationData
+    );
     return response.data;
   },
 
   updateVendorStatus: async (vendorId: string, status: string) => {
-    const response = await api.put(`/admin/vendors/${vendorId}/status`, { status });
+    const response = await api.put(`/admin/vendors/${vendorId}/status`, {
+      status,
+    });
     return response.data;
   },
 
@@ -96,7 +120,7 @@ export const AdminAPI = {
 
   // Content Management
   getContent: async (params?: any) => {
-    const response = await api.get('/admin/content', { params });
+    const response = await api.get("/admin/content", { params });
     return response.data;
   },
 
@@ -112,44 +136,54 @@ export const AdminAPI = {
 
   // System Configuration
   getSystemSettings: async () => {
-    const response = await api.get('/admin/settings');
+    const response = await api.get("/admin/settings");
     return response.data;
   },
 
   updateSystemSettings: async (settings: any) => {
-    const response = await api.put('/admin/settings', settings);
+    const response = await api.put("/admin/settings", settings);
     return response.data;
   },
 
   getFeatureFlags: async () => {
-    const response = await api.get('/admin/feature-flags');
+    const response = await api.get("/admin/feature-flags");
     return response.data;
   },
 
   updateFeatureFlags: async (flags: any) => {
-    const response = await api.put('/admin/feature-flags', flags);
+    const response = await api.put("/admin/feature-flags", flags);
     return response.data;
   },
 
   // Moderation
   getReports: async (params?: any) => {
-    const response = await api.get('/admin/reports', { params });
+    const response = await api.get("/admin/reports", { params });
     return response.data;
   },
 
   handleReport: async (reportId: string, action: string, reason?: string) => {
-    const response = await api.put(`/admin/reports/${reportId}`, { action, reason });
+    const response = await api.put(`/admin/reports/${reportId}`, {
+      action,
+      reason,
+    });
     return response.data;
   },
 
-  moderateContent: async (contentId: string, action: string, reason?: string) => {
-    const response = await api.put(`/admin/content/${contentId}/moderate`, { action, reason });
+  moderateContent: async (
+    contentId: string,
+    action: string,
+    reason?: string
+  ) => {
+    const response = await api.put(`/admin/content/${contentId}/moderate`, {
+      action,
+      reason,
+    });
     return response.data;
   },
 
   // Support System
   getSupportTickets: async (params?: any) => {
-    const response = await api.get('/admin/support-tickets', { params });
+    const response = await api.get("/admin/support-tickets", { params });
     return response.data;
   },
 
@@ -158,51 +192,65 @@ export const AdminAPI = {
     return response.data;
   },
 
-  updateTicketStatus: async (ticketId: string, status: string, response?: string) => {
-    const responseData = await api.put(`/admin/support-tickets/${ticketId}`, { status, response });
+  updateTicketStatus: async (
+    ticketId: string,
+    status: string,
+    response?: string
+  ) => {
+    const responseData = await api.put(`/admin/support-tickets/${ticketId}`, {
+      status,
+      response,
+    });
     return responseData.data;
   },
 
   // Audit & Logging
   getAuditLogs: async (params?: any) => {
-    const response = await api.get('/admin/audit-logs', { params });
+    const response = await api.get("/admin/audit-logs", { params });
     return response.data;
   },
 
   getAdminActions: async (params?: any) => {
-    const response = await api.get('/admin/admin-actions', { params });
+    const response = await api.get("/admin/admin-actions", { params });
     return response.data;
   },
 
   // Analytics
   getAnalytics: async (params?: any) => {
-    const response = await api.get('/admin/analytics', { params });
+    const response = await api.get("/admin/analytics", { params });
     return response.data;
   },
 
   getDashboardStats: async () => {
-    const response = await api.get('/admin/dashboard-stats');
+    // ✅ CORRECT: Updated to match backend endpoint
+    const response = await api.get("/admin/dashboard/metrics");
     return response.data;
   },
 
   generateReport: async (reportType: string, dateRange: any) => {
-    const response = await api.post('/admin/reports/generate', { reportType, dateRange });
+    const response = await api.post("/admin/reports/generate", {
+      reportType,
+      dateRange,
+    });
     return response.data;
   },
 
   // Communication
   sendAnnouncement: async (announcement: any) => {
-    const response = await api.post('/admin/announcements', announcement);
+    const response = await api.post("/admin/announcements", announcement);
     return response.data;
   },
 
   getAnnouncements: async () => {
-    const response = await api.get('/admin/announcements');
+    const response = await api.get("/admin/announcements");
     return response.data;
   },
 
   updateAnnouncement: async (announcementId: string, announcement: any) => {
-    const response = await api.put(`/admin/announcements/${announcementId}`, announcement);
+    const response = await api.put(
+      `/admin/announcements/${announcementId}`,
+      announcement
+    );
     return response.data;
   },
 
@@ -213,46 +261,46 @@ export const AdminAPI = {
 
   // Security & Compliance
   getSecurityLogs: async (params?: any) => {
-    const response = await api.get('/admin/security-logs', { params });
+    const response = await api.get("/admin/security-logs", { params });
     return response.data;
   },
 
   getComplianceReports: async () => {
-    const response = await api.get('/admin/compliance-reports');
+    const response = await api.get("/admin/compliance-reports");
     return response.data;
   },
 
   updateSecuritySettings: async (settings: any) => {
-    const response = await api.put('/admin/security-settings', settings);
+    const response = await api.put("/admin/security-settings", settings);
     return response.data;
   },
 
   // Financial Oversight
   getFinancialReports: async (params?: any) => {
-    const response = await api.get('/admin/financial-reports', { params });
+    const response = await api.get("/admin/financial-reports", { params });
     return response.data;
   },
 
   getTransactions: async (params?: any) => {
-    const response = await api.get('/admin/transactions', { params });
+    const response = await api.get("/admin/transactions", { params });
     return response.data;
   },
 
   getRevenueStats: async (params?: any) => {
-    const response = await api.get('/admin/revenue-stats', { params });
+    const response = await api.get("/admin/revenue-stats", { params });
     return response.data;
   },
 
   // Notifications
   sendNotification: async (notification: any) => {
-    const response = await api.post('/admin/notifications', notification);
+    const response = await api.post("/admin/notifications", notification);
     return response.data;
   },
 
   getNotificationHistory: async (params?: any) => {
-    const response = await api.get('/admin/notifications', { params });
+    const response = await api.get("/admin/notifications", { params });
     return response.data;
   },
 };
 
-export default AdminAPI; 
+export default AdminAPI;

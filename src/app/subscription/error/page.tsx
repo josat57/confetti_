@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ExclamationTriangleIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
+import { Loader2 } from "lucide-react";
 
-const SubscriptionErrorPage: React.FC = () => {
+const SubscriptionErrorContent: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
@@ -97,6 +98,20 @@ const SubscriptionErrorPage: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const SubscriptionErrorPage: React.FC = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <SubscriptionErrorContent />
+    </Suspense>
   );
 };
 

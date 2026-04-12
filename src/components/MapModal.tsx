@@ -12,12 +12,16 @@ interface MapModalProps {
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
     initMap?: () => void;
   }
 }
 
-export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModalProps) {
+export default function MapModal({
+  isOpen,
+  onClose,
+  onLocationSelect,
+}: MapModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +41,11 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
       }
 
       // If not loaded, add the script
-      if (!document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
+      if (
+        !document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]'
+        )
+      ) {
         const script = document.createElement("script");
         scriptRef.current = script;
         // Updated to use the newer Places API
@@ -45,7 +53,9 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
         script.async = true;
         script.defer = true;
         script.onerror = () => {
-          setError("Failed to load Google Maps. Please check your API key and API activation status.");
+          setError(
+            "Failed to load Google Maps. Please check your API key and API activation status."
+          );
         };
         document.head.appendChild(script);
 
@@ -55,8 +65,10 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
             initializeMap();
             setIsMapLoaded(true);
           } catch (err) {
-            console.error('Map initialization error:', err);
-            setError("Failed to initialize Google Maps. Please check your API key and API activation status.");
+            console.error("Map initialization error:", err);
+            setError(
+              "Failed to initialize Google Maps. Please check your API key and API activation status."
+            );
           }
         };
 
@@ -78,7 +90,7 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
     }
 
     // Nigeria's coordinates
-    const defaultLocation = { lat: 9.0820, lng: 8.6753 };
+    const defaultLocation = { lat: 9.082, lng: 8.6753 };
     const mapElement = document.getElementById("map");
 
     if (!mapElement) {
@@ -96,18 +108,22 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
 
       // Initialize search box with newer Places API
       const input = document.createElement("input");
-      input.className = "w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent";
+      input.className =
+        "w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent";
       input.placeholder = "Search for a location...";
       input.value = searchQuery;
-      input.oninput = (e) => setSearchQuery((e.target as HTMLInputElement).value);
+      input.oninput = (e) =>
+        setSearchQuery((e.target as HTMLInputElement).value);
 
       // Create a new instance of the Places service
-      const placesService = new window.google.maps.places.PlacesService(mapRef.current);
+      const placesService = new window.google.maps.places.PlacesService(
+        mapRef.current
+      );
       searchBoxRef.current = new window.google.maps.places.SearchBox(input);
       mapElement.parentElement?.insertBefore(input, mapElement);
 
       // Add search box listener
-      searchBoxRef.current.addListener("places_changed", () => {
+      searchBoxRef.current?.addListener("places_changed", () => {
         const places = searchBoxRef.current?.getPlaces();
         if (!places || places.length === 0) return;
 
@@ -137,7 +153,7 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
       });
 
       // Add click listener to map
-      mapRef.current.addListener("click", (e: google.maps.MapMouseEvent) => {
+      mapRef.current?.addListener("click", (e: google.maps.MapMouseEvent) => {
         const latLng = e.latLng;
         if (!latLng) return;
 
@@ -154,23 +170,32 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
 
         // Use Places service for reverse geocoding
         const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ location: latLng }, (results: any, status: string) => {
-          if (status === "OK" && results[0]) {
-            const address = results[0].formatted_address;
-            setSelectedLocation(address);
-            onLocationSelect(address);
-            onClose();
-          } else {
-            setError("Failed to get address for selected location. Please try searching instead.");
-            // Set a temporary location based on coordinates
-            const tempLocation = `${latLng.lat().toFixed(6)}, ${latLng.lng().toFixed(6)}`;
-            setSelectedLocation(tempLocation);
+        geocoder.geocode(
+          { location: latLng },
+          (results: any, status: string) => {
+            if (status === "OK" && results[0]) {
+              const address = results[0].formatted_address;
+              setSelectedLocation(address);
+              onLocationSelect(address);
+              onClose();
+            } else {
+              setError(
+                "Failed to get address for selected location. Please try searching instead."
+              );
+              // Set a temporary location based on coordinates
+              const tempLocation = `${latLng.lat().toFixed(6)}, ${latLng
+                .lng()
+                .toFixed(6)}`;
+              setSelectedLocation(tempLocation);
+            }
           }
-        });
+        );
       });
     } catch (err) {
-      console.error('Error initializing map:', err);
-      setError("Failed to initialize Google Maps. Please check your API key and API activation status.");
+      console.error("Error initializing map:", err);
+      setError(
+        "Failed to initialize Google Maps. Please check your API key and API activation status."
+      );
       throw err;
     }
   };
@@ -194,7 +219,9 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
         >
           {/* Header */}
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Select Location</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Select Location
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -205,9 +232,7 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-50 text-red-600 border-b">
-              {error}
-            </div>
+            <div className="p-4 bg-red-50 text-red-600 border-b">{error}</div>
           )}
 
           {/* Map Container */}
@@ -240,4 +265,4 @@ export default function MapModal({ isOpen, onClose, onLocationSelect }: MapModal
       </motion.div>
     </AnimatePresence>
   );
-} 
+}

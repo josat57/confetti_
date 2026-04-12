@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import NotificationSystem, { useNotifications } from './NotificationSystem';
+import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import NotificationSystem, { useNotifications } from "./NotificationSystem";
 import {
   Menu,
   Search,
@@ -10,8 +10,8 @@ import {
   LogOut,
   Settings,
   ChevronDown,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -19,15 +19,21 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { user, logout } = useAuth();
-  const { notifications, markAsRead, markAllAsRead, deleteNotification, deleteAll } = useNotifications();
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    deleteAll,
+  } = useNotifications();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleLogout = async () => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -42,7 +48,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           >
             <Menu className="h-6 w-6" />
           </button>
-          
+
           {/* Search */}
           <div className="ml-4 flex-1 max-w-lg">
             <div className="relative">
@@ -77,12 +83,12 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             >
               <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center">
                 <span className="text-sm font-medium text-white">
-                  {user?.userName?.charAt(0).toUpperCase() || 'A'}
+                  {user?.username?.charAt(0).toUpperCase() || "A"}
                 </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-700">
-                  {user?.userName || 'Admin'}
+                  {user?.username || "Admin"}
                 </p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
@@ -99,23 +105,23 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 >
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
-                      {user?.userName || 'Admin'}
+                      {user?.username || "Admin"}
                     </p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
-                  
+
                   <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                     <User className="mr-3 h-4 w-4" />
                     Profile
                   </button>
-                  
+
                   <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                     <Settings className="mr-3 h-4 w-4" />
                     Settings
                   </button>
-                  
+
                   <div className="border-t border-gray-100 my-1"></div>
-                  
+
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -131,4 +137,4 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       </div>
     </header>
   );
-} 
+}

@@ -1,0 +1,114 @@
+{
+  "states": [
+    {
+      "name": "Lagos State",
+      "code": "LA",
+      "capital": "Ikeja",
+      "cities": [
+        "Lagos", "Ikeja", "Surulere", "Ikorodu", "Epe", "Badagry", "Alimosho", "Agege", "Ifako-Ijaiye", "Kosofe", "Mushin", "Oshodi-Isolo", "Shomolu", "Ajeromi-Ifelodun", "Amuwo-Odofin", "Apapa", "Eti-Osa", "Lagos Island", "Lagos Mainland", "Somolu"
+      ],
+      "lgas": [
+        "Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Epe", "Eti-Osa", "Ibeju-Lekki", "Ifako-Ijaiye", "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", "Mushin", "Ojo", "Oshodi-Isolo", "Shomolu", "Surulere"
+      ]
+    },
+    {
+      "name": "Abuja (FCT)",
+      "code": "FC",
+      "capital": "Abuja",
+      "cities": [
+        "Abuja", "Gwagwalada", "Kuje", "Bwari", "Kwali", "Abaji"
+      ],
+      "lgas": [
+        "Abaji", "Bwari", "Gwagwalada", "Kuje", "Kwali", "Municipal Area Council"
+      ]
+    },
+    {
+      "name": "Kano State",
+      "code": "KN",
+      "capital": "Kano",
+      "cities": [
+        "Kano", "Wudil", "Garko", "Gezawa", "Gwarzo", "Kiru", "Karaye", "Rimin Gado", "Shanono", "Tsanyawa", "Kunchi", "Makoda", "Minjibir", "Nassarawa", "Rano", "Kibiya", "Tudun Wada", "Doguwa", "Kabo", "Rogo", "Gaya", "Ajingi", "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Dawakin Kudu", "Dawakin Tofa", "Fagge", "Gabasawa", "Garko", "Garun Mallam", "Gaya", "Gezawa", "Gwale", "Gwarzo", "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", "Kura", "Madobi", "Makoda", "Minjibir", "Nassarawa", "Rano", "Rimin Gado", "Rogo", "Shanono", "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada", "Ungogo", "Warawa", "Wudil"
+      ],
+      "lgas": [
+        "Ajingi", "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Dawakin Kudu", "Dawakin Tofa", "Doguwa", "Fagge", "Gabasawa", "Garko", "Garun Mallam", "Gaya", "Gezawa", "Gwale", "Gwarzo", "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", "Kura", "Madobi", "Makoda", "Minjibir", "Nassarawa", "Rano", "Rimin Gado", "Rogo", "Shanono", "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada", "Ungogo", "Warawa", "Wudil"
+      ]
+    },
+    {
+      "name": "Rivers State",
+      "code": "RI",
+      "capital": "Port Harcourt",
+      "cities": [
+        "Port Harcourt", "Obio-Akpor", "Okrika", "Ogu–Bolo", "Eleme", "Tai", "Gokana", "Khana", "Oyigbo", "Opobo–Nkoro", "Andoni", "Bonny", "Degema", "Asari-Toru", "Akuku-Toru", "Abua–Odual", "Ahoada West", "Ahoada East", "Ogba–Egbema–Ndoni", "Emohua", "Ikwerre", "Etche", "Omuma"
+      ],
+      "lgas": [
+        "Abua–Odual", "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Asari-Toru", "Bonny", "Degema", "Eleme", "Emohua", "Etche", "Gokana", "Ikwerre", "Khana", "Obio-Akpor", "Ogba–Egbema–Ndoni", "Ogu–Bolo", "Okrika", "Omuma", "Opobo–Nkoro", "Oyigbo", "Port Harcourt", "Tai"
+      ]
+    },
+    {
+      "name": "Oyo State",
+      "code": "OY",
+      "capital": "Ibadan",
+      "cities": [
+        "Ibadan", "Ogbomoso", "Iseyin", "Oyo", "Shaki", "Igboho", "Eruwa", "Igbo-Ora", "Lalupon", "Jobele", "Iganna", "Iwere-Ile", "Kishi", "Fiditi", "Ago-Are", "Tede", "Igbeti", "Sepeteri", "Ilero", "Alaga", "Lanlate", "Otu", "Papalanto", "Komu", "Igbojaiye", "Ajasse-Ipo", "Ibarapa", "Kajola", "Iwajowa"
+      ],
+      "lgas": [
+        "Afijio", "Akinyele", "Atiba", "Atisbo", "Egbeda", "Ibadan North", "Ibadan North-East", "Ibadan North-West", "Ibadan South-East", "Ibadan South-West", "Ibarapa Central", "Ibarapa East", "Ibarapa North", "Ido", "Irepo", "Iseyin", "Itesiwaju", "Iwajowa", "Kajola", "Lagelu", "Ogbomoso North", "Ogbomoso South", "Ogo Oluwa", "Olorunsogo", "Oluyole", "Ona Ara", "Orelope", "Ori Ire", "Oyo East", "Oyo West", "Saki East", "Saki West", "Surulere"
+      ]
+    },
+    {
+      "name": "Kaduna State",
+      "code": "KD",
+      "capital": "Kaduna",
+      "cities": [
+        "Kaduna", "Zaria", "Kafanchan", "Kagoro", "Zonkwa", "Makarfi", "Sabon Gari", "Igabi", "Giwa", "Kubau", "Kudan", "Lere", "Sabongari", "Soba", "Zangon Kataf", "Jaba", "Jema'a", "Kachia", "Kajuru", "Chikun", "Kagarko", "Kaura", "Kauru", "Birnin Gwari", "Sanga"
+      ],
+      "lgas": [
+        "Birnin Gwari", "Chikun", "Giwa", "Igabi", "Ikara", "Jaba", "Jema'a", "Kachia", "Kaduna North", "Kaduna South", "Kagarko", "Kajuru", "Kaura", "Kauru", "Kubau", "Kudan", "Lere", "Makarfi", "Sabongari", "Sanga", "Soba", "Zangon Kataf", "Zaria"
+      ]
+    }
+  ],
+  "majorCities": [
+    {
+      "name": "Lagos",
+      "state": "Lagos State",
+      "coordinates": { "lat": 6.5244, "lng": 3.3792 },
+      "isCapital": false,
+      "isMajor": true
+    },
+    {
+      "name": "Abuja",
+      "state": "Abuja (FCT)",
+      "coordinates": { "lat": 9.0765, "lng": 7.3986 },
+      "isCapital": true,
+      "isMajor": true
+    },
+    {
+      "name": "Kano",
+      "state": "Kano State", 
+      "coordinates": { "lat": 12.0022, "lng": 8.5920 },
+      "isCapital": false,
+      "isMajor": true
+    },
+    {
+      "name": "Port Harcourt",
+      "state": "Rivers State",
+      "coordinates": { "lat": 4.8156, "lng": 7.0498 },
+      "isCapital": false,
+      "isMajor": true
+    },
+    {
+      "name": "Ibadan",
+      "state": "Oyo State",
+      "coordinates": { "lat": 7.3775, "lng": 3.9470 },
+      "isCapital": false,
+      "isMajor": true
+    },
+    {
+      "name": "Kaduna",
+      "state": "Kaduna State",
+      "coordinates": { "lat": 10.5222, "lng": 7.4383 },
+      "isCapital": false,
+      "isMajor": true
+    }
+  ]
+}

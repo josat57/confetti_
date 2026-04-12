@@ -70,7 +70,7 @@ export default function LeadDetailsPage() {
             {
               id: "1",
               text: "Client is interested in full-day coverage",
-              createdBy: user?.userName || "You",
+              createdBy: user?.username || "You",
               createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
             },
           ],
@@ -120,7 +120,7 @@ export default function LeadDetailsPage() {
       const note = {
         id: Date.now().toString(),
         text: newNote,
-        createdBy: user?.userName || "You",
+        createdBy: user?.username || "You",
         createdAt: new Date(),
       };
 

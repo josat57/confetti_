@@ -49,6 +49,7 @@ export interface ReportFilters {
   endDate?: string;
   eventType?: string;
   clientId?: string;
+  eventId?: string;
 }
 
 export interface ChartData {
@@ -66,7 +67,9 @@ const reportsService = {
     filters?: ReportFilters
   ): Promise<DashboardReport> => {
     try {
-      console.log("📡 Making API request to: /planner/reports/dashboard");
+      console.log(
+        "📡 Making API request to: /planner/reports/dashboard"
+      );
       console.log("📋 Request params:", filters);
       const response = await api.get("/planner/reports/dashboard", {
         params: filters,

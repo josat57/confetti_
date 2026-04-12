@@ -20,7 +20,7 @@ import {
 
 interface User {
   id: string;
-  userName: string;
+  username: string;
   email: string;
   phone: string;
   role: "user" | "admin" | "vendor" | "event-planner";
@@ -44,16 +44,16 @@ export default function UserManagement() {
     const fetchUsers = async () => {
       try {
         const response = await getUsers();
-        if (response?.data) {
-          setUsers(response.data);
-        }
+        // Handle different response structures
+        const usersData = response?.data?.users || response?.data || [];
+        setUsers(Array.isArray(usersData) ? usersData : []);
       } catch (error) {
         console.error("Error fetching users:", error);
         // Fallback to mock data if API fails
         const mockUsers: User[] = [
           {
             id: "1",
-            userName: "John Doe",
+            username: "John Doe",
             email: "john.doe@example.com",
             phone: "+1234567890",
             role: "user",
@@ -63,7 +63,7 @@ export default function UserManagement() {
           },
           {
             id: "2",
-            userName: "Jane Smith",
+            username: "Jane Smith",
             email: "jane.smith@example.com",
             phone: "+1234567891",
             role: "vendor",
@@ -73,7 +73,7 @@ export default function UserManagement() {
           },
           {
             id: "3",
-            userName: "Bob Johnson",
+            username: "Bob Johnson",
             email: "bob.johnson@example.com",
             phone: "+1234567892",
             role: "event-planner",
@@ -83,7 +83,7 @@ export default function UserManagement() {
           },
           {
             id: "4",
-            userName: "Alice Brown",
+            username: "Alice Brown",
             email: "alice.brown@example.com",
             phone: "+1234567893",
             role: "user",
@@ -99,10 +99,10 @@ export default function UserManagement() {
     fetchUsers();
   }, [getUsers]);
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = (users || []).filter((user) => {
     const matchesSearch =
-      user.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || user.status === statusFilter;
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
@@ -144,9 +144,8 @@ export default function UserManagement() {
         await deleteUser(userId);
         // Refresh users list
         const response = await getUsers();
-        if (response?.data) {
-          setUsers(response.data);
-        }
+        const usersData = response?.data?.users || response?.data || [];
+        setUsers(Array.isArray(usersData) ? usersData : []);
       } else if (action === "edit") {
         // Handle edit action
         console.log(`Edit user ${userId}`);
@@ -270,12 +269,12 @@ export default function UserManagement() {
                       <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center">
                           <span className="text-sm font-medium text-white">
-                            {user.userName.charAt(0).toUpperCase()}
+                            {user.username.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {user.userName}
+                            {user.username}
                           </div>
                           <div className="text-sm text-gray-500">
                             {user.email}
@@ -361,12 +360,12 @@ export default function UserManagement() {
                 <div className="flex items-center space-x-3">
                   <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center">
                     <span className="text-lg font-medium text-white">
-                      {selectedUser.userName.charAt(0).toUpperCase()}
+                      {selectedUser.username.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <h4 className="text-lg font-medium text-gray-900">
-                      {selectedUser.userName}
+                      {selectedUser.username}
                     </h4>
                     <p className="text-sm text-gray-500">
                       {selectedUser.email}

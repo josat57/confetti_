@@ -125,22 +125,6 @@ class EventsService {
   }
 
   /**
-   * Bulk delete events
-   */
-  async bulkDelete(eventIds: string[]): Promise<boolean> {
-    try {
-      await api.post(`${this.baseUrl}/bulk-action`, {
-        eventIds,
-        action: "delete",
-      });
-      return true;
-    } catch (error) {
-      console.error("Failed to bulk delete events:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Bulk update event status
    */
   async bulkUpdateStatus(
@@ -148,7 +132,7 @@ class EventsService {
     status: Event["status"]
   ): Promise<boolean> {
     try {
-      await api.post(`${this.baseUrl}/bulk-action`, {
+      await api.post("/planner/events/bulk-action", {
         eventIds,
         action: "status-change",
         data: { status },
@@ -156,6 +140,22 @@ class EventsService {
       return true;
     } catch (error) {
       console.error("Failed to bulk update event status:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk delete events
+   */
+  async bulkDelete(eventIds: string[]): Promise<boolean> {
+    try {
+      await api.post("/planner/events/bulk-action", {
+        eventIds,
+        action: "delete",
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to bulk delete events:", error);
       throw error;
     }
   }

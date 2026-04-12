@@ -62,15 +62,29 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     router.push(routes[result.type]);
   };
 
-  const highlightText = (text: string, highlights: string[]) => {
-    if (!highlights || highlights.length === 0) return text;
+  const escapeRegex = (str: string) =>
+    str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    let highlightedText = text;
+  const escapeHTML = (str: string) =>
+    str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const highlightText = (text: string, highlights: string[]) => {
+    if (!highlights || highlights.length === 0) return <span>{text}</span>;
+
+    const safeText = escapeHTML(text);
+    let highlightedText = safeText;
+
     highlights.forEach((highlight) => {
-      const regex = new RegExp(`(${highlight})`, "gi");
+      const safeHighlight = escapeHTML(escapeRegex(highlight));
+      const regex = new RegExp(`(${safeHighlight})`, "gi");
       highlightedText = highlightedText.replace(
         regex,
-        '<mark class="bg-yellow-200">$1</mark>'
+        '<mark class="bg-yellow-200 rounded-sm">$1</mark>'
       );
     });
 

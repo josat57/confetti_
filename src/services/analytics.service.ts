@@ -92,25 +92,28 @@ export const analyticsService = {
    * Get summary stats for dashboard
    */
   async getSummary(): Promise<AnalyticsSummary> {
-    const response = await api.get("/vendors/analytics/summary");
+    const response = await api.get("/vendors/dashboard/summary");
     return response.data.data;
   },
 
   /**
    * Get profile views over time
+   * Note: Profile views data is included in the dashboard summary endpoint
+   * Use getSummary() instead to get profileViews data
    */
   async getViews(period: "week" | "month" | "year"): Promise<ViewsData[]> {
-    const response = await api.get("/vendors/analytics/views", {
-      params: { period },
-    });
-    return response.data.data.views;
+    // This endpoint doesn't exist - views data comes from /vendors/dashboard/summary
+    // Keeping this method for backwards compatibility but it should not be used
+    throw new Error(
+      "Use getSummary() to get profile views data from /vendors/dashboard/summary"
+    );
   },
 
   /**
    * Get lead statistics
    */
   async getLeadStats(): Promise<LeadStats> {
-    const response = await api.get("/vendors/analytics/leads");
+    const response = await api.get("/vendors/leads/stats");
     return response.data.data;
   },
 

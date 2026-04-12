@@ -315,7 +315,7 @@ export default function PaymentsPage() {
         <div className="space-y-4">
           {filteredPayments.map((payment) => (
             <div
-              key={payment.id}
+              key={payment._id || (payment as any).id}
               className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between mb-4">
@@ -359,7 +359,9 @@ export default function PaymentsPage() {
 
                 <div className="flex gap-2">
                   <Link
-                    href={`/vendor/dashboard/payments/invoices/${payment.id}`}
+                    href={`/vendor/dashboard/payments/invoices/${
+                      payment._id || (payment as any).id
+                    }`}
                     className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                   >
                     <Eye className="w-4 h-4" />
@@ -368,7 +370,7 @@ export default function PaymentsPage() {
                   {payment.status === "pending" && (
                     <button
                       onClick={() =>
-                        handleSendReminder(payment.id || payment._id)
+                        handleSendReminder((payment as any).id || payment._id)
                       }
                       className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
                     >

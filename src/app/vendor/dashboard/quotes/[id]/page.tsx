@@ -41,49 +41,42 @@ export default function QuoteDetailsPage() {
     const fetchQuote = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const { default: quoteService } = await import(
+          "@/services/quote.service"
+        );
+        const quoteData = await quoteService.getById(params.id as string);
 
-        const mockQuote: Quote = {
-          id: params.id as string,
-          clientName: "Sarah Johnson",
-          clientEmail: "sarah.j@email.com",
-          eventType: "Wedding Photography",
-          eventDate: new Date("2024-06-15"),
-          lineItems: [
-            {
-              id: "1",
-              description: "Full Day Photography Coverage",
-              quantity: 1,
-              rate: 300000,
-              amount: 300000,
-            },
-            {
-              id: "2",
-              description: "Photo Album (Premium)",
-              quantity: 2,
-              rate: 75000,
-              amount: 150000,
-            },
-            {
-              id: "3",
-              description: "Digital Photo Editing",
-              quantity: 1,
-              rate: 50000,
-              amount: 50000,
-            },
-          ],
-          notes:
-            "Payment terms: 50% deposit required to secure booking, balance due 7 days before event.",
-          status: "sent",
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-          sentAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        // Transform backend data to match component interface
+        const transformedQuote: Quote = {
+          id: quoteData._id,
+          clientName: quoteData.customer?.name || "N/A",
+          clientEmail: quoteData.customer?.email || "N/A",
+          eventType: "Event", // lead is just an ID, not an object
+          eventDate: undefined, // lead details not available directly
+          lineItems: (quoteData.items || []).map((item: any) => ({
+            id: item._id,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.unitPrice,
+            amount: item.total,
+          })),
+          notes: quoteData.notes || "",
+          status:
+            quoteData.status === "viewed" || quoteData.status === "expired"
+              ? "sent"
+              : (quoteData.status as
+                  | "draft"
+                  | "sent"
+                  | "accepted"
+                  | "rejected"),
+          createdAt: new Date(quoteData.createdAt),
+          sentAt: quoteData.sentAt ? new Date(quoteData.sentAt) : undefined,
         };
 
-        setQuote(mockQuote);
-      } catch (error) {
+        setQuote(transformedQuote);
+      } catch (error: any) {
         console.error("Error fetching quote:", error);
-        toast.error("Failed to load quote");
+        toast.error(error.response?.data?.message || "Failed to load quote");
         router.push("/vendor/dashboard/quotes");
       } finally {
         setLoading(false);
@@ -113,14 +106,22 @@ export default function QuoteDetailsPage() {
 
     setSending(true);
     try {
-      // TODO: Call API to send quote
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { default: quoteService } = await import(
+        "@/services/quote.service"
+      );
+      const updatedQuote = await quoteService.send(quote.id);
 
-      setQuote({ ...quote, status: "sent", sentAt: new Date() });
+      setQuote({
+        ...quote,
+        status: "sent",
+        sentAt: updatedQuote.sentAt
+          ? new Date(updatedQuote.sentAt)
+          : new Date(),
+      });
       toast.success("Quote sent successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending quote:", error);
-      toast.error("Failed to send quote");
+      toast.error(error.response?.data?.message || "Failed to send quote");
     } finally {
       setSending(false);
     }
@@ -224,7 +225,7 @@ export default function QuoteDetailsPage() {
             </div>
             <div className="text-right">
               <p className="font-semibold text-gray-900">
-                {user?.userName || "Your Business"}
+                {user?.username || "Your Business"}
               </p>
               <p className="text-sm text-gray-600">{user?.email}</p>
             </div>

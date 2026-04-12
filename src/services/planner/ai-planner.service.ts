@@ -2,45 +2,109 @@ import api from "@/api/api";
 
 export interface AIPlanRequest {
   eventType: string;
-  date: string;
-  location: string;
+  eventDate: string;
+  location: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
   guestCount: number;
-  budget: number;
-  guestClass?: string;
-  preferences?: string[];
+  budget: {
+    amount: number;
+    currency: string;
+  };
+  eventDescription: string;
+  guestClass: {
+    formality: string;
+    ageGroups: string[];
+    socialStatus: string[];
+    specialRequirements: string[];
+    additionalDetails: string;
+  };
 }
 
-export interface TimelineItem {
-  task: string;
-  dueDate: string;
-  priority: "High" | "Medium" | "Low";
-  category: string;
-  description?: string;
+export interface EventSummary {
+  eventType: string;
+  eventDate: string;
+  location: string;
+  guestCount: number;
+  totalBudget: number;
+  currency: string;
+  formality: string;
 }
 
 export interface BudgetCategory {
-  category: string;
-  amount: number;
+  name: string;
   percentage: number;
-  description?: string;
+  amount: number;
+  confidence?: number;
+  description: string;
 }
 
-export interface VendorRecommendation {
+export interface BudgetBreakdown {
+  categories: BudgetCategory[];
+  totalAllocated: number;
+  contingency: number;
+  feasibilityScore?: number;
+}
+
+export interface VendorCategory {
+  name: string;
   category: string;
-  vendors: Array<{
-    name: string;
-    rating: number;
-    priceRange: string;
-    estimatedCost?: number;
-  }>;
+  description: string;
+  estimatedCost: {
+    min: number;
+    max: number;
+  };
+  allocatedAmount?: number;
+  priority: string;
+  locked: boolean;
+  vendorCount: number;
+}
+
+export interface TimelineMilestone {
+  title: string;
+  timeframe: string;
+  description: string;
+  status?: string;
+}
+
+export interface EventDayHighlight {
+  time: string;
+  activity: string;
+}
+
+export interface Timeline {
+  planningMilestones: TimelineMilestone[];
+  eventDayHighlights: EventDayHighlight[];
+  detailedTimelineLocked: boolean;
+  metadata?: {
+    generatedAt: string;
+    processingTime: number;
+    daysUntilEvent: number;
+  };
 }
 
 export interface AIPlanResult {
-  timeline: TimelineItem[];
-  budgetBreakdown: BudgetCategory[];
-  vendorRecommendations: VendorRecommendation[];
-  tips: string[];
-  estimatedTotalCost?: number;
+  eventSummary: EventSummary;
+  budgetBreakdown: BudgetBreakdown;
+  vendorCategories: VendorCategory[];
+  timeline: Timeline;
+  recommendations: string[];
+  aiInsights?: {
+    sentiment?: {
+      score: number;
+      label: string;
+    };
+    keywords?: string[];
+    feasibilityScore?: number;
+    budgetLevel?: string;
+  };
 }
 
 export interface AIPlanResponse {
@@ -49,14 +113,19 @@ export interface AIPlanResponse {
 }
 
 class AIPlannerService {
-  private baseUrl = "/planner/ai";
+  private baseUrl = "/ai-planner";
 
   /**
    * Generate AI event plan
    */
   async generatePlan(request: AIPlanRequest): Promise<AIPlanResponse> {
-    const response = await api.post(`${this.baseUrl}/generate-plan`, request);
-    return response.data;
+    const response = await api.post(`${this.baseUrl}/generate`, request);
+
+    // Map backend response to expected format
+    return {
+      plan: response.data.data.eventPlan,
+      sessionId: response.data.data.sessionToken,
+    };
   }
 
   /**
@@ -67,8 +136,8 @@ class AIPlannerService {
     category: string,
     budget: number,
     location: string
-  ): Promise<{ vendors: VendorRecommendation[] }> {
-    const response = await api.post(`${this.baseUrl}/suggest-vendors`, {
+  ): Promise<{ vendors: any[] }> {
+    const response = await api.post(`${this.baseUrl}/recommend-vendors`, {
       eventId,
       category,
       budget,
@@ -105,10 +174,10 @@ class AIPlannerService {
   }
 
   /**
-   * Get AI usage statistics
+   * Get user's AI plans
    */
-  async getUsage(): Promise<{ usage: any }> {
-    const response = await api.get(`${this.baseUrl}/usage`);
+  async getMyPlans(): Promise<{ plans: any[] }> {
+    const response = await api.get(`${this.baseUrl}/my-plans`);
     return response.data;
   }
 }

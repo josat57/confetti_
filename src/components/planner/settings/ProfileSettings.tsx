@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Camera, Loader2, Save, X, Upload } from "lucide-react";
 import { User } from "@/api/api";
 import { settingsService } from "@/services/planner/settings.service";
+import { toast } from "react-toastify";
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(false);
@@ -13,12 +14,16 @@ export default function ProfileSettings() {
   const [profileImage, setProfileImage] = useState<string>("");
   const [coverPhoto, setCoverPhoto] = useState<string>("");
   const [formData, setFormData] = useState({
-    userName: "",
+    firstName: "",
+    lastName: "",
+    otherName: "",
     email: "",
     phone: "",
-    companyName: "",
-    address: "",
-    website: "",
+    aboutMe: "",
+    street: "",
+    city: "",
+    state: "",
+    nationality: "",
   });
 
   useEffect(() => {
@@ -42,12 +47,16 @@ export default function ProfileSettings() {
       }
 
       setFormData({
-        userName: profile.userName || "",
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        otherName: profile.otherName || "",
         email: profile.email || "",
         phone: profile.phone || "",
-        companyName: profile.companyName || "",
-        address: profile.address || "",
-        website: profile.website || "",
+        aboutMe: profile.aboutMe || profile.bio || "",
+        street: profile.street || profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        nationality: profile.nationality || profile.country || "",
       });
 
       // Handle base64 or URL images - try multiple field names
@@ -83,13 +92,13 @@ export default function ProfileSettings() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast.error("Please upload an image file");
       return;
     }
 
     // Validate file size (max 1MB as per backend)
     if (file.size > 1 * 1024 * 1024) {
-      alert("Image size should be less than 1MB");
+      toast.error("Image size should be less than 1MB");
       return;
     }
 
@@ -137,10 +146,10 @@ export default function ProfileSettings() {
       // This handles cases where the response structure is different
       await fetchProfile();
 
-      alert("Profile image updated successfully!");
+      toast.success("Profile image updated successfully!");
     } catch (error) {
       console.error("Failed to upload profile image:", error);
-      alert("Failed to upload profile image");
+      toast.error("Failed to upload profile image");
       // Revert on error
       await fetchProfile();
     } finally {
@@ -156,13 +165,13 @@ export default function ProfileSettings() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast.error("Please upload an image file");
       return;
     }
 
     // Validate file size (max 1MB as per backend)
     if (file.size > 1 * 1024 * 1024) {
-      alert("Image size should be less than 1MB");
+      toast.error("Image size should be less than 1MB");
       return;
     }
 
@@ -208,10 +217,10 @@ export default function ProfileSettings() {
       // This handles cases where the response structure is different
       await fetchProfile();
 
-      alert("Cover photo updated successfully!");
+      toast.success("Cover photo updated successfully!");
     } catch (error) {
       console.error("Failed to upload cover photo:", error);
-      alert("Failed to upload cover photo");
+      toast.error("Failed to upload cover photo");
       // Revert on error
       await fetchProfile();
     } finally {
@@ -225,10 +234,10 @@ export default function ProfileSettings() {
     try {
       await User.deleteProfileImage();
       setProfileImage("");
-      alert("Profile image removed successfully!");
+      toast.success("Profile image removed successfully!");
     } catch (error) {
       console.error("Failed to delete profile image:", error);
-      alert("Failed to delete profile image");
+      toast.error("Failed to delete profile image");
     }
   };
 
@@ -238,10 +247,10 @@ export default function ProfileSettings() {
     try {
       await User.deleteCoverPhoto();
       setCoverPhoto("");
-      alert("Cover photo removed successfully!");
+      toast.success("Cover photo removed successfully!");
     } catch (error) {
       console.error("Failed to delete cover photo:", error);
-      alert("Failed to delete cover photo");
+      toast.error("Failed to delete cover photo");
     }
   };
 
@@ -250,10 +259,10 @@ export default function ProfileSettings() {
     try {
       setSaving(true);
       await settingsService.updateProfile(formData);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("Failed to update profile");
+      toast.error("Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -378,61 +387,211 @@ export default function ProfileSettings() {
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Personal Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              htmlFor="userName"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="userName"
-              value={formData.userName}
-              onChange={(e) =>
-                setFormData({ ...formData, userName: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              required
-            />
-          </div>
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">
+            Personal Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                htmlFor="firstName"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                First Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                required
+                placeholder="John"
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              required
-            />
-          </div>
+            <div>
+              <label
+                htmlFor="lastName"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Last Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                required
+                placeholder="Doe"
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="phone"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            />
+            <div>
+              <label
+                htmlFor="otherName"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Other Name
+              </label>
+              <input
+                type="text"
+                id="otherName"
+                value={formData.otherName}
+                onChange={(e) =>
+                  setFormData({ ...formData, otherName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Middle name or nickname"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                required
+                placeholder="john.doe@example.com"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="+234 800 000 0000"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="nationality"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Nationality
+              </label>
+              <input
+                type="text"
+                id="nationality"
+                value={formData.nationality}
+                onChange={(e) =>
+                  setFormData({ ...formData, nationality: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Nigerian"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label
+                htmlFor="aboutMe"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                About Me
+              </label>
+              <textarea
+                id="aboutMe"
+                value={formData.aboutMe}
+                onChange={(e) =>
+                  setFormData({ ...formData, aboutMe: e.target.value })
+                }
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Tell us about yourself, your experience, and what makes you unique..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Address Information */}
+        <div className="pt-6 border-t border-gray-200">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">
+            Address Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label
+                htmlFor="street"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Street Address
+              </label>
+              <input
+                type="text"
+                id="street"
+                value={formData.street}
+                onChange={(e) =>
+                  setFormData({ ...formData, street: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="123 Main Street"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="city"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                City
+              </label>
+              <input
+                type="text"
+                id="city"
+                value={formData.city}
+                onChange={(e) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Lagos"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="state"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                State
+              </label>
+              <input
+                type="text"
+                id="state"
+                value={formData.state}
+                onChange={(e) =>
+                  setFormData({ ...formData, state: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Lagos State"
+              />
+            </div>
           </div>
         </div>
 

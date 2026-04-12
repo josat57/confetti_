@@ -23,8 +23,21 @@ const initialFormData: EventPlanFormData = {
     address: "",
     city: "",
     state: "",
-    country: "USA",
+    country: "Nigeria",
   },
+  budget: {
+    amount: 0,
+    currency: Currency.NGN,
+  },
+  // Optional enhanced fields
+  eventDuration: undefined,
+  venuePreferences: undefined,
+  budgetBreakdown: undefined,
+  guestProfile: undefined,
+  clientProfile: undefined,
+  eventSpecific: undefined,
+  specialRequirements: undefined,
+  // Legacy fields for backward compatibility
   eventDescription: "",
   guestClass: {
     ageGroups: [],
@@ -32,10 +45,6 @@ const initialFormData: EventPlanFormData = {
     socialStatus: [],
     specialRequirements: [],
     additionalDetails: "",
-  },
-  budget: {
-    amount: 0,
-    currency: Currency.USD,
   },
 };
 
@@ -95,55 +104,60 @@ export const useEventPlanForm = (
       const stepErrors: Record<string, string> = {};
 
       switch (step) {
-        case 1: // Event Basics
+        case 1: // Basic Information
           if (!formData.eventType) {
             stepErrors.eventType = "Please select an event type";
           }
-          if (!formData.eventDate || formData.eventDate < new Date()) {
-            stepErrors.eventDate = "Please select a future date";
+          if (!formData.eventDate) {
+            stepErrors.eventDate = "Please select an event date";
+          } else {
+            // Allow past dates for testing, but warn about future dates in production
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const eventDate = new Date(formData.eventDate);
+            eventDate.setHours(0, 0, 0, 0);
+
+            if (eventDate < today) {
+              stepErrors.eventDate = "Please select a future date";
+            }
           }
           if (!formData.guestCount || formData.guestCount < 1) {
             stepErrors.guestCount = "Please enter number of guests";
           }
-          break;
-
-        case 2: // Location
-          if (!formData.location.address) {
-            stepErrors.locationAddress = "Address is required";
+          if (!formData.budget.amount || formData.budget.amount < 100) {
+            stepErrors.budgetAmount = "Minimum budget is ₦100";
           }
           if (!formData.location.city) {
             stepErrors.locationCity = "City is required";
           }
-          if (!formData.location.state) {
-            stepErrors.locationState = "State is required";
-          }
           break;
 
-        case 3: // Event Details
-          if (
-            !formData.eventDescription ||
-            formData.eventDescription.length < 50
-          ) {
-            stepErrors.eventDescription =
-              "Please provide at least 50 characters";
-          }
-          if (formData.guestClass.ageGroups.length === 0) {
-            stepErrors.guestClassAgeGroups =
-              "Please select at least one age group";
-          }
-          if (!formData.guestClass.formality) {
-            stepErrors.guestClassFormality = "Please select formality level";
-          }
-          if (formData.guestClass.socialStatus.length === 0) {
-            stepErrors.guestClassSocialStatus =
-              "Please select at least one option";
-          }
+        case 2: // Event Duration & Timing
+          // Optional validation - these fields enhance the plan but aren't required
           break;
 
-        case 4: // Budget
-          if (!formData.budget.amount || formData.budget.amount < 100) {
-            stepErrors.budgetAmount = "Minimum budget is $100";
-          }
+        case 3: // Venue Preferences
+          // Optional validation
+          break;
+
+        case 4: // Budget Breakdown & Priorities
+          // Optional validation
+          break;
+
+        case 5: // Guest Profile & Requirements
+          // Optional validation
+          break;
+
+        case 6: // Client Profile & Preferences
+          // Optional validation
+          break;
+
+        case 7: // Event-Specific Requirements
+          // Optional validation
+          break;
+
+        case 8: // Special Requirements & Notes
+          // Optional validation - this is the final step
           break;
       }
 
@@ -162,7 +176,10 @@ export const useEventPlanForm = (
   }, [currentStep, validateStep]);
 
   const nextStep = useCallback((): boolean => {
+    console.log("nextStep called, currentStep:", currentStep);
+
     if (!validateStep(currentStep)) {
+      console.log("Step validation failed for step:", currentStep);
       return false;
     }
 
@@ -170,8 +187,11 @@ export const useEventPlanForm = (
       setCompletedSteps((prev) => [...prev, currentStep]);
     }
 
-    if (currentStep < 4) {
+    if (currentStep < 8) {
+      console.log("Moving from step", currentStep, "to step", currentStep + 1);
       setCurrentStep((currentStep + 1) as FormStep);
+    } else {
+      console.log("Already on final step (8), not advancing");
     }
 
     return true;
@@ -197,14 +217,44 @@ export const useEventPlanForm = (
 
   const submitForm = useCallback(
     async (onSubmit: (data: EventPlanFormData) => Promise<void>) => {
+      console.log("submitForm called with formData:", formData);
+
+      // Ensure legacy fields are populated for backward compatibility
+      const enhancedFormData: EventPlanFormData = {
+        ...formData,
+        // Generate eventDescription from enhanced data if not provided
+        eventDescription:
+          formData.eventDescription ||
+          `Planning a ${formData.eventType} event for ${
+            formData.guestCount
+          } guests in ${formData.location.city}, ${
+            formData.location.state
+          }. This event will be held on ${formData.eventDate.toDateString()} with a budget of ${
+            formData.budget.currency
+          } ${formData.budget.amount.toLocaleString()}. Looking for comprehensive planning assistance including venue, catering, entertainment, and all necessary services to make this event memorable and successful.`,
+        // Provide minimal guestClass for backward compatibility (not validated)
+        guestClass: {
+          ageGroups: [AgeGroup.ADULTS],
+          formality: "casual" as FormalityLevel,
+          socialStatus: [SocialStatus.MIDDLE_CLASS],
+          specialRequirements: [],
+          additionalDetails: "Auto-generated from enhanced form data",
+        },
+      };
+
+      console.log("Enhanced form data:", enhancedFormData);
+
       // Validate all steps
-      const allErrors = validateEventPlanForm(formData);
+      const allErrors = validateEventPlanForm(enhancedFormData);
+      console.log("Validation errors:", allErrors);
 
       if (hasErrors(allErrors)) {
+        console.log("Form has validation errors, not submitting");
         setErrors(allErrors);
         // Go to first step with errors
-        for (let step = 1; step <= 4; step++) {
+        for (let step = 1; step <= 8; step++) {
           if (!validateStep(step as FormStep)) {
+            console.log("Going to step with errors:", step);
             setCurrentStep(step as FormStep);
             break;
           }
@@ -212,9 +262,11 @@ export const useEventPlanForm = (
         return;
       }
 
+      console.log("Form validation passed, submitting...");
       setIsSubmitting(true);
       try {
-        await onSubmit(formData);
+        await onSubmit(enhancedFormData);
+        console.log("Form submission completed successfully");
       } catch (error) {
         console.error("Form submission error:", error);
         throw error;

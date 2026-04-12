@@ -39,7 +39,7 @@ export default function TaskForm({
 
   const fetchEvents = async () => {
     try {
-      const response = await eventsService.getEvents({ limit: 100 });
+      const response = await eventsService.getEvents({}, undefined, 1, 100);
       setEvents(response.events);
     } catch (error) {
       console.error("Error fetching events:", error);

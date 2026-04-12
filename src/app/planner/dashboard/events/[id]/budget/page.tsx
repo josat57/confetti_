@@ -59,16 +59,23 @@ export default function EventBudgetPage() {
     try {
       setLoading(true);
       const response = await budgetService.getEventBudget(eventId);
-      setData(
-        response || {
-          eventId,
-          eventName: "Event",
-          totalBudget: 0,
-          totalSpent: 0,
-          categories: [],
-          recentExpenses: [],
-        }
-      );
+      const budgetData = response.budget;
+
+      // Transform the budget data to match our component's expected structure
+      setData({
+        eventId,
+        eventName: "Event", // We'll need to fetch event details separately if needed
+        totalBudget: budgetData.total || 0,
+        totalSpent: budgetData.totalSpent || 0,
+        categories:
+          budgetData.categories?.map((cat) => ({
+            _id: cat.category,
+            name: cat.category,
+            allocated: cat.allocated || 0,
+            spent: cat.spent || 0,
+          })) || [],
+        recentExpenses: budgetData.expenses || [],
+      });
     } catch (error) {
       console.error("Error fetching event budget:", error);
       setData({

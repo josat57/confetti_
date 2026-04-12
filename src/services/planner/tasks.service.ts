@@ -8,7 +8,7 @@ import {
 } from "@/types/planner";
 
 class TasksService {
-  private baseUrl = "/api/v1/planner/tasks";
+  private baseUrl = "/planner/tasks";
 
   /**
    * Get all tasks with filters
@@ -96,6 +96,27 @@ class TasksService {
   async getOverdueTasks(): Promise<{ tasks: Task[] }> {
     const response = await api.get(`${this.baseUrl}/overdue`);
     return response.data;
+  }
+
+  /**
+   * Bulk operations on tasks
+   */
+  async bulkAction(
+    taskIds: string[],
+    action: "complete" | "delete" | "updatePriority" | "updateDueDate",
+    data?: any
+  ): Promise<boolean> {
+    try {
+      await api.post("/planner/tasks/bulk-action", {
+        taskIds,
+        action,
+        data,
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to perform bulk action on tasks:", error);
+      throw error;
+    }
   }
 }
 

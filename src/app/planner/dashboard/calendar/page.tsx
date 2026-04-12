@@ -200,10 +200,13 @@ export default function CalendarPage() {
       {!isLoading && !error && data && (
         <div className="flex-1 overflow-hidden">
           {view === "agenda" ? (
-            <AgendaView events={data.events} onEventClick={handleEventClick} />
+            <AgendaView
+              events={data.events || []}
+              onEventClick={handleEventClick}
+            />
           ) : (
             <CalendarView
-              events={data.events}
+              events={data.events || []}
               view={view}
               currentDate={currentDate}
               onDateChange={setCurrentDate}

@@ -111,16 +111,41 @@ export default function NewQuotePage() {
     action(true);
 
     try {
-      // TODO: Call API to save quote
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { default: quoteService } = await import(
+        "@/services/quote.service"
+      );
+
+      // Prepare quote data
+      const quoteData = {
+        customer: {
+          name: formData.clientName,
+          email: formData.clientEmail,
+          phone: "", // Required by Customer interface
+        },
+        items: lineItems.map((item: any) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.rate,
+          total: item.quantity * item.rate,
+        })),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        notes: formData.notes,
+      };
+
+      const newQuote = await quoteService.create(quoteData);
+
+      // If sending, also send the quote
+      if (status === "sent") {
+        await quoteService.send(newQuote._id);
+      }
 
       toast.success(
         status === "draft" ? "Quote saved as draft" : "Quote sent successfully!"
       );
       router.push("/vendor/dashboard/quotes");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving quote:", error);
-      toast.error("Failed to save quote");
+      toast.error(error.response?.data?.message || "Failed to save quote");
     } finally {
       action(false);
     }

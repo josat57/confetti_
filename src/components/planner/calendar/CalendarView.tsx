@@ -30,7 +30,7 @@ interface CalendarViewProps {
 }
 
 export default function CalendarView({
-  events,
+  events = [],
   view,
   currentDate,
   onDateChange,
@@ -55,6 +55,9 @@ export default function CalendarView({
   };
 
   const getEventsForDate = (date: Date) => {
+    if (!events || !Array.isArray(events)) {
+      return [];
+    }
     return events.filter((event) => {
       const eventDate = new Date(event.start);
       return isSameDay(eventDate, date);
