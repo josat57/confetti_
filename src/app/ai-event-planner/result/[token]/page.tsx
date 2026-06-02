@@ -19,6 +19,7 @@ import { EventPlanTeaser } from "@/types/ai-planner";
 import { getEventPlanResult } from "@/lib/api/ai-planner";
 import { toast } from "react-toastify";
 import { formatCurrency, formatDate } from "@/lib/utils/formValidation";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Smart category mapper - converts generic "Other" to specific categories based on percentage
 const mapGenericCategory = (
@@ -164,6 +165,7 @@ export default function ResultPage() {
   const router = useRouter();
   const params = useParams();
   const token = params.token as string;
+  const { isAuthenticated } = useAuth();
 
   const [eventPlan, setEventPlan] = useState<EventPlanTeaser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -392,14 +394,8 @@ export default function ResultPage() {
       };
 
   // Extract actual backend data for detailed sections
-  const clientAnalysis: any = backendData.clientAnalysis || null;
   const visualSuggestions: any = backendData.visualSuggestions || null;
   const riskAnalysis: any = backendData.riskAnalysis || null;
-
-  // Check if user is authenticated (for showing/hiding vendor details)
-  const isAuthenticated =
-    typeof window !== "undefined" && localStorage.getItem("authToken");
-  const userType = "guest"; // EventPlanTeaser doesn't have userType property
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50 to-pink-50">

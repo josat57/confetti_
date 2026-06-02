@@ -2,21 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Light mode semantic tokens ────────────────────────────────────────────── */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* Surface */
+  --color-surface:           #ffffff;
+  --color-surface-secondary: #f9fafb;  /* gray-50 */
+  --color-surface-elevated:  #ffffff;
+  --color-surface-border:    #e5e7eb;  /* gray-200 */
+
+  /* Content */
+  --color-content:           #111827;  /* gray-900 */
+  --color-content-secondary: #4b5563;  /* gray-600 */
+  --color-content-muted:     #9ca3af;  /* gray-400 */
+
+  /* Brand (default = user/purple) */
+  --color-brand-50:  #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
 }
 
+/* ── Dark mode semantic tokens ─────────────────────────────────────────────── */
+.dark {
+  --color-surface:           #111827;  /* gray-900 */
+  --color-surface-secondary: #1f2937;  /* gray-800 */
+  --color-surface-elevated:  #1f2937;  /* gray-800 */
+  --color-surface-border:    #374151;  /* gray-700 */
+
+  --color-content:           #f9fafb;  /* gray-50 */
+  --color-content-secondary: #d1d5db;  /* gray-300 */
+  --color-content-muted:     #6b7280;  /* gray-500 */
+}
+
+/* ── Per-role brand overrides ───────────────────────────────────────────────
+   Applied via data-brand="teal|purple|indigo" on the layout root.
+   Overrides only the brand token, not surfaces or text.
+   ─────────────────────────────────────────────────────────────────────────── */
+[data-brand="purple"] {
+  --color-brand-50:  #faf5ff;
+  --color-brand-100: #f3e8ff;
+  --color-brand-200: #e9d5ff;
+  --color-brand-500: #a855f7;
+  --color-brand-600: #9333ea;
+  --color-brand-700: #7e22ce;
+}
+
+[data-brand="teal"] {
+  --color-brand-50:  #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+}
+
+[data-brand="indigo"] {
+  --color-brand-50:  #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+}
+
+/* ── Base styles ──────────────────────────────────────────────────────────── */
 html, body {
   overflow-x: hidden;
   max-width: 100vw;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-end-rgb));
   @apply text-gray-900 bg-white antialiased;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-50;
 }
 
 @layer base {
@@ -26,30 +89,6 @@ body {
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
-  }
-
-  h1 {
-    @apply text-4xl sm:text-5xl md:text-6xl;
-  }
-
-  h2 {
-    @apply text-3xl sm:text-4xl md:text-5xl;
-  }
-
-  h3 {
-    @apply text-2xl sm:text-3xl md:text-4xl;
-  }
-
-  h4 {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
-
-  h5 {
-    @apply text-lg sm:text-xl md:text-2xl;
-  }
-
-  h6 {
-    @apply text-base sm:text-lg md:text-xl;
   }
 }
 
@@ -69,22 +108,32 @@ body {
   .btn-secondary {
     @apply btn bg-primary-100 text-primary-600 hover:bg-primary-200;
   }
+
+  /* ── Dark-aware card ─────────────────────────────────────────────────────── */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700;
+  }
+
+  /* ── Dashboard page wrapper ──────────────────────────────────────────────── */
+  .dashboard-bg {
+    @apply bg-gray-50 dark:bg-gray-900 min-h-screen;
+  }
 }
 
-/* Custom scrollbar */
+/* ── Custom scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-gray-100 dark:bg-gray-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full hover:bg-gray-500;
+  @apply bg-gray-400 dark:bg-gray-600 rounded-full;
 }
 
-/* Leaflet Map Fixes */
+/* ── Leaflet ──────────────────────────────────────────────────────────────── */
 .leaflet-container {
   font-family: inherit;
   height: 100%;
@@ -100,32 +149,24 @@ body {
   background: white;
 }
 
-/* Custom marker styling */
 .custom-marker {
   background: transparent;
   border: none;
 }
-/* Pricing section mobile scroll improvements */
+
+/* ── Pricing scroll ───────────────────────────────────────────────────────── */
 .pricing-scroll {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pricing-scroll::-webkit-scrollbar {
-  display: none; /* WebKit */
-}
-
-/* Smooth scroll snap for pricing cards */
-.pricing-scroll {
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
+  display: none;
 }
 
 .pricing-card {
   scroll-snap-align: center;
-}
-
-/* Better touch scrolling on iOS */
-.pricing-scroll {
-  -webkit-overflow-scrolling: touch;
 }

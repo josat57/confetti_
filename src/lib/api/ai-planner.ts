@@ -363,7 +363,7 @@ export const getEventPlanResult = async (
  * Save event plan to user account (requires authentication)
  */
 export const saveEventPlan = async (sessionToken: string): Promise<any> => {
-  const response = await apiClient.post<APIResponse<any>>("/ai-planner/save", {
+  const response = await apiClient.post<APIResponse<any>>("/ai-planner/save-plan", {
     sessionToken,
   });
 
@@ -447,11 +447,12 @@ export const refineEventPlan = async (
 };
 
 /**
- * Convert guest session to authenticated account
+ * Convert guest session to authenticated account.
+ * Auth is handled via httpOnly cookie automatically.
  */
-export const convertGuestSession = async (authToken: string): Promise<any> => {
+export const convertGuestSession = async (): Promise<any> => {
   try {
-    const result = await guestSessionService.convertGuestSession(authToken);
+    const result = await guestSessionService.convertGuestSession();
     return result;
   } catch (error: any) {
     console.error("Failed to convert guest session:", error);
