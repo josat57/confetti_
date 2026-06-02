@@ -20,9 +20,6 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init
-
 # Copy package files
 COPY package.json package-lock.json ./
 
@@ -41,6 +38,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Use dumb-init to run the app
-ENTRYPOINT ["/sbin/dumb-init", "--"]
+# Run the app
 CMD ["npm", "start"]
