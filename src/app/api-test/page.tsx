@@ -8,7 +8,7 @@ export default function APITestPage() {
   const [results, setResults] = useState<any[]>([]);
 
   const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1";
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:9601/api/v1";
 
   const tests = [
     {

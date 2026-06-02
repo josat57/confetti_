@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9601/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -81,7 +81,7 @@ api.interceptors.response.use(
           // Try to refresh the token using a separate axios instance to avoid interceptor loops
           const refreshApi = axios.create({
             baseURL:
-              process.env.NEXT_PUBLIC_API_URL || "http://localhost:9600/api/v1",
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:9601/api/v1",
             withCredentials: true,
             headers: {
               "Content-Type": "application/json",
