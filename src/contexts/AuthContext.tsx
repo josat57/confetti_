@@ -20,7 +20,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   fullName?: string;
-  role: "admin" | "event-planner" | "vendor" | "user";
+  role: "admin" | "super_admin" | "event-planner" | "vendor" | "user";
   status: "pending_payment" | "pending_verification" | "active" | "suspended";
   subscription: string | Subscription; // Can be ObjectId or populated object
   phone?: string;
@@ -113,7 +113,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const hydrateAndVerify = async () => {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+        let parsedUser: User | null = null;
+        try {
+          parsedUser = JSON.parse(storedUser);
+        } catch {
+          localStorage.removeItem("user");
+        }
+        if (!parsedUser) {
+          setLoading(false);
+          return;
+        }
         // Immediately restore from localStorage so the UI isn't blank during verify
         setUser(parsedUser);
         try {
@@ -203,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Convert any existing guest session plans to this user's account
         if (guestSessionService.hasGuestSession()) {
           try {
-            await guestSessionService.convertGuestSession("");
+            await guestSessionService.convertGuestSession();
           } catch {
             // Non-critical — don't block login if conversion fails
           }

@@ -24,7 +24,7 @@ export default function PlanEventPage() {
   useEffect(() => {
     // Check authentication status
     if (typeof window !== "undefined") {
-      const authToken = localStorage.getItem("authToken");
+      const authToken = localStorage.getItem("user");
       setIsAuthenticated(!!authToken);
 
       // Show guest manager if user has guest session but is not authenticated

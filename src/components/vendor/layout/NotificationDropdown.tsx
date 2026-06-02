@@ -179,9 +179,9 @@ export default function NotificationDropdown() {
           setIsOpen(!isOpen);
           if (!isOpen) fetchNotifications();
         }}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
-        <Bell className="w-6 h-6 text-gray-600" />
+        <Bell className="w-6 h-6 text-gray-600 dark:text-gray-400" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -191,13 +191,13 @@ export default function NotificationDropdown() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
+        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-[600px] flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
               {unreadCount > 0 && (
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {unreadCount} unread
                 </p>
               )}
@@ -207,16 +207,16 @@ export default function NotificationDropdown() {
                 <button
                   onClick={handleMarkAllAsRead}
                   disabled={loading}
-                  className="text-xs text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50"
+                  className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium disabled:opacity-50"
                 >
                   Mark all read
                 </button>
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
           </div>
@@ -225,37 +225,34 @@ export default function NotificationDropdown() {
           <div className="overflow-y-auto flex-1">
             {notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No notifications yet</p>
+                <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 text-sm">No notifications yet</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {notifications.map((notification) => (
                   <div
                     key={notification._id}
-                    className={`p-4 hover:bg-gray-50 transition-colors ${
-                      !notification.isRead ? "bg-purple-50" : ""
+                    className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                      !notification.isRead ? "bg-purple-50 dark:bg-purple-900/20" : ""
                     }`}
                   >
                     <div className="flex gap-3">
-                      {/* Icon */}
                       {getNotificationIcon(notification.type)}
-
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-medium text-sm text-gray-900 line-clamp-1">
+                          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-1">
                             {notification.title}
                           </h4>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 mt-1" />
+                            <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full flex-shrink-0 mt-1" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
                           {notification.message}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 dark:text-gray-500">
                             {timeAgo(notification.createdAt)}
                           </span>
                           <div className="flex items-center gap-1">
@@ -263,12 +260,10 @@ export default function NotificationDropdown() {
                               <Link
                                 href={notification.link}
                                 onClick={() => {
-                                  if (!notification.isRead) {
-                                    handleMarkAsRead(notification._id);
-                                  }
+                                  if (!notification.isRead) handleMarkAsRead(notification._id);
                                   setIsOpen(false);
                                 }}
-                                className="p-1 hover:bg-gray-200 rounded text-gray-600"
+                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-400"
                                 title="View"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -276,10 +271,8 @@ export default function NotificationDropdown() {
                             )}
                             {!notification.isRead && (
                               <button
-                                onClick={() =>
-                                  handleMarkAsRead(notification._id)
-                                }
-                                className="p-1 hover:bg-gray-200 rounded text-gray-600"
+                                onClick={() => handleMarkAsRead(notification._id)}
+                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-400"
                                 title="Mark as read"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -287,7 +280,7 @@ export default function NotificationDropdown() {
                             )}
                             <button
                               onClick={() => handleDelete(notification._id)}
-                              className="p-1 hover:bg-gray-200 rounded text-gray-600"
+                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-400"
                               title="Delete"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -304,11 +297,11 @@ export default function NotificationDropdown() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <Link
                 href="/vendor/dashboard/notifications"
                 onClick={() => setIsOpen(false)}
-                className="block text-center text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="block text-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
               >
                 View all notifications
               </Link>

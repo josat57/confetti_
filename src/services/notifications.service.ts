@@ -56,36 +56,32 @@ export const notificationsService = {
    */
   async getUnreadCount(): Promise<number> {
     const response = await api.get("/notifications/unread-count");
-    return response.data.data?.count || response.data.count || 0;
+    return response.data.data?.unreadCount || response.data.unreadCount || 0;
   },
 
   /**
    * Mark notification as read
+   * Backend uses POST /:id/read
    */
   async markAsRead(notificationId: string): Promise<Notification> {
-    const response = await api.patch(`/notifications/${notificationId}/read`);
-    return response.data.data.notification;
+    const response = await api.post(`/notifications/${notificationId}/read`);
+    return response.data.data?.notification || response.data.notification;
   },
 
   /**
-   * Mark all notifications as read
+   * Mark all notifications as read via status update.
+   * The /notifications route has no bulk mark-all endpoint; we update to "read" status.
    */
   async markAllAsRead(): Promise<void> {
-    await api.patch("/notifications/read-all");
+    await api.patch("/notifications", { status: "read" });
   },
 
   /**
-   * Delete notification
+   * Delete notification — the /notifications route has no DELETE endpoint.
+   * Sets status to "read" as a best-effort workaround until backend adds DELETE support.
    */
   async deleteNotification(notificationId: string): Promise<void> {
-    await api.delete(`/notifications/${notificationId}`);
-  },
-
-  /**
-   * Delete all read notifications
-   */
-  async deleteAllRead(): Promise<void> {
-    await api.delete("/notifications/read");
+    await api.patch(`/notifications/${notificationId}`, { status: "read" });
   },
 };
 

@@ -1,52 +1,136 @@
 version: "3.8"
 
 services:
-  app:
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: confetti-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: confetti
+      MONGO_INITDB_ROOT_PASSWORD: Ginger_123
+      MONGO_INITDB_DATABASE: confetti
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - confetti-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: confetti-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - confetti-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend ───────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../confetti_server/src/node
+      dockerfile: Dockerfile
+    container_name: confetti-backend
+    restart: unless-stopped
+    ports:
+      - "9601:9600"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 9600
+      MONGODB_URI: mongodb://confetti:Ginger_123@mongodb:27017/confetti?authSource=admin
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # JWT
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # Email
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      FROM_NAME: ${FROM_NAME:-Confetti}
+      # Payments
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      FLUTTERWAVE_PUBLIC_KEY: ${FLUTTERWAVE_PUBLIC_KEY}
+      FLUTTERWAVE_SECRET_KEY: ${FLUTTERWAVE_SECRET_KEY}
+      FLUTTERWAVE_WEBHOOK_SECRET: ${FLUTTERWAVE_WEBHOOK_SECRET}
+      # AI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AI_PLANNER_RATE_LIMIT: ${AI_PLANNER_RATE_LIMIT:-5}
+      AI_PLANNER_SESSION_TTL: ${AI_PLANNER_SESSION_TTL:-86400}
+      AI_ENABLE_CACHING: ${AI_ENABLE_CACHING:-true}
+      # Cloudinary (file uploads)
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - confetti-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9600/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ─── Frontend ──────────────────────────────────────────────────────────────
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://host.docker.internal:9601/api/v1}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3002}
-    container_name: confetti-client
-    ports:
-      - "3002:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://host.docker.internal:9601/api/v1}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-    volumes:
-      - /app/node_modules
+        # Browser calls go to host:9601 (the mapped backend port)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:9601/api/v1}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    container_name: confetti-frontend
     restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:9601/api/v1}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+    depends_on:
+      backend:
+        condition: service_healthy
     networks:
       - confetti-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
-  # Optional: Include backend service if needed (uncomment to use)
-  # backend:
-  #   image: your-backend-image:latest
-  #   container_name: confetti-backend
-  #   ports:
-  #     - "9600:9600"
-  #   environment:
-  #     - DATABASE_URL=${DATABASE_URL}
-  #     - JWT_SECRET=${JWT_SECRET}
-  #   networks:
-  #     - confetti-network
-  #   restart: unless-stopped
+volumes:
+  mongodb_data:
+  redis_data:
 
 networks:
   confetti-network:

@@ -71,7 +71,7 @@ class NotificationsService {
     });
 
     if (unread !== undefined) {
-      params.append("unread", String(unread));
+      params.append("isRead", String(!unread));
     }
     if (type) {
       params.append("type", type);

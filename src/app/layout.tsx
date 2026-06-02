@@ -9,6 +9,7 @@ import { PlanProvider } from "../contexts/PlanContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
 import QueryProvider from "../providers/QueryProvider";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <head>{/* ... existing head content ... */}</head>
       <body className="min-h-screen bg-white">
+        <ThemeProvider>
         <QueryProvider>
           <CurrencyProvider>
             <AuthProvider>
@@ -49,6 +51,7 @@ export default function RootLayout({
             </AuthProvider>
           </CurrencyProvider>
         </QueryProvider>
+        </ThemeProvider>
 
         {/* Payment Provider Scripts */}
         <Script

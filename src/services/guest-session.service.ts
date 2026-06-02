@@ -194,11 +194,10 @@ class GuestSessionService {
   }
 
   /**
-   * Convert guest session to authenticated user account
+   * Convert guest session to authenticated user account.
+   * Auth is handled via httpOnly cookie — no token parameter needed.
    */
-  async convertGuestSession(
-    authToken: string
-  ): Promise<ConvertGuestSessionResponse> {
+  async convertGuestSession(): Promise<ConvertGuestSessionResponse> {
     const guestSessionToken = this.getStoredToken();
 
     if (!guestSessionToken) {
@@ -206,17 +205,9 @@ class GuestSessionService {
     }
 
     try {
-      const response = await api.post(
-        "/ai-planner/convert-guest-session",
-        {
-          guestSessionToken,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await api.post("/ai-planner/convert-guest-session", {
+        guestSessionToken,
+      });
 
       if (response.data?.status === "success" && response.data?.data) {
         // Clear guest session data after successful conversion

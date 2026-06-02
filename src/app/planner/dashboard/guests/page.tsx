@@ -26,9 +26,7 @@ export default function GuestsPage() {
   const eventIdParam = searchParams.get("eventId");
 
   const [events, setEvents] = useState<any[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>(
-    eventIdParam || ""
-  );
+  const [selectedEventId, setSelectedEventId] = useState<string>(eventIdParam || "");
   const [guests, setGuests] = useState<Guest[]>([]);
   const [stats, setStats] = useState<GuestStats>({
     total: 0,
@@ -44,12 +42,10 @@ export default function GuestsPage() {
   const [editingGuest, setEditingGuest] = useState<Guest | undefined>();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  // Fetch events on mount
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  // Fetch guests when event is selected
   useEffect(() => {
     if (selectedEventId) {
       fetchGuests();
@@ -64,21 +60,18 @@ export default function GuestsPage() {
       if (response.events.length > 0 && !selectedEventId) {
         setSelectedEventId(response.events[0]._id);
       }
-    } catch (error) {
-      console.error("Failed to fetch events:", error);
+    } catch {
       toast.error("Failed to load events");
     }
   };
 
   const fetchGuests = async () => {
     if (!selectedEventId) return;
-
     setLoading(true);
     try {
       const response = await GuestsService.getEventGuests(selectedEventId);
       setGuests(response.guests);
-    } catch (error) {
-      console.error("Failed to fetch guests:", error);
+    } catch {
       toast.error("Failed to load guests");
     } finally {
       setLoading(false);
@@ -87,18 +80,16 @@ export default function GuestsPage() {
 
   const fetchStats = async () => {
     if (!selectedEventId) return;
-
     try {
       const guestStats = await GuestsService.getGuestStats(selectedEventId);
       setStats(guestStats);
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
+    } catch {
+      // silent
     }
   };
 
   const handleCreateGuest = async (data: CreateGuestInput) => {
     if (!selectedEventId) return;
-
     try {
       await GuestsService.createGuest(selectedEventId, data);
       toast.success("Guest added successfully");
@@ -106,14 +97,12 @@ export default function GuestsPage() {
       fetchGuests();
       fetchStats();
     } catch (error: any) {
-      console.error("Failed to create guest:", error);
       toast.error(error.response?.data?.message || "Failed to add guest");
     }
   };
 
   const handleUpdateGuest = async (data: UpdateGuestInput) => {
     if (!editingGuest) return;
-
     try {
       await GuestsService.updateGuest(editingGuest._id, data);
       toast.success("Guest updated successfully");
@@ -122,21 +111,18 @@ export default function GuestsPage() {
       fetchGuests();
       fetchStats();
     } catch (error: any) {
-      console.error("Failed to update guest:", error);
       toast.error(error.response?.data?.message || "Failed to update guest");
     }
   };
 
   const handleDeleteGuest = async (guestId: string) => {
     if (!confirm("Are you sure you want to delete this guest?")) return;
-
     try {
       await GuestsService.deleteGuest(guestId);
       toast.success("Guest deleted successfully");
       fetchGuests();
       fetchStats();
     } catch (error: any) {
-      console.error("Failed to delete guest:", error);
       toast.error(error.response?.data?.message || "Failed to delete guest");
     }
   };
@@ -148,7 +134,6 @@ export default function GuestsPage() {
       fetchGuests();
       fetchStats();
     } catch (error: any) {
-      console.error("Failed to check in guest:", error);
       toast.error(error.response?.data?.message || "Failed to check in guest");
     }
   };
@@ -160,7 +145,6 @@ export default function GuestsPage() {
       fetchGuests();
       fetchStats();
     } catch (error: any) {
-      console.error("Failed to update RSVP:", error);
       toast.error(error.response?.data?.message || "Failed to update RSVP");
     }
   };
@@ -183,14 +167,8 @@ export default function GuestsPage() {
       toast.success("Seating updated");
       fetchGuests();
     } catch (error: any) {
-      console.error("Failed to update seating:", error);
       toast.error(error.response?.data?.message || "Failed to update seating");
     }
-  };
-
-  const handleEditGuest = (guest: Guest) => {
-    setEditingGuest(guest);
-    setShowGuestForm(true);
   };
 
   return (
@@ -198,28 +176,24 @@ export default function GuestsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Guest Management</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your event guests, track RSVPs, and create seating
-            arrangements
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Guest Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage your event guests, track RSVPs, and create seating arrangements
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowImport(true)}
             disabled={!selectedEventId}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             <Upload className="w-5 h-5" />
             Import
           </button>
           <button
-            onClick={() => {
-              setEditingGuest(undefined);
-              setShowGuestForm(true);
-            }}
+            onClick={() => { setEditingGuest(undefined); setShowGuestForm(true); }}
             disabled={!selectedEventId}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
           >
             <Plus className="w-5 h-5" />
             Add Guest
@@ -228,14 +202,14 @@ export default function GuestsPage() {
       </div>
 
       {/* Event Selector */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Select Event
         </label>
         <select
           value={selectedEventId}
           onChange={(e) => setSelectedEventId(e.target.value)}
-          className="w-full md:w-96 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full md:w-96 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
         >
           <option value="">Select an event...</option>
           {events.map((event) => (
@@ -252,13 +226,13 @@ export default function GuestsPage() {
           <RSVPTracker stats={stats} />
 
           {/* View Mode Toggle */}
-          <div className="flex items-center gap-2 bg-white rounded-lg shadow p-2 w-fit">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2 w-fit">
             <button
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 viewMode === "list"
                   ? "bg-teal-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
               <Users className="w-5 h-5" />
@@ -269,7 +243,7 @@ export default function GuestsPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 viewMode === "seating"
                   ? "bg-teal-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
               <LayoutGrid className="w-5 h-5" />
@@ -279,32 +253,29 @@ export default function GuestsPage() {
 
           {/* Content */}
           {loading ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-              <p className="text-gray-600 mt-4">Loading guests...</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto" />
+              <p className="text-gray-600 dark:text-gray-400 mt-4">Loading guests...</p>
             </div>
           ) : viewMode === "list" ? (
             <GuestList
               guests={guests}
-              onEdit={handleEditGuest}
+              onEdit={(guest) => { setEditingGuest(guest); setShowGuestForm(true); }}
               onDelete={handleDeleteGuest}
               onCheckIn={handleCheckIn}
               onUpdateRSVP={handleUpdateRSVP}
             />
           ) : (
-            <SeatingChart
-              guests={guests}
-              onUpdateSeating={handleUpdateSeating}
-            />
+            <SeatingChart guests={guests} onUpdateSeating={handleUpdateSeating} />
           )}
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <Users className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
             No Event Selected
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Please select an event to manage guests
           </p>
         </div>
@@ -314,25 +285,17 @@ export default function GuestsPage() {
       {showGuestForm && (
         <GuestForm
           guest={editingGuest}
-          onSubmit={(data) => {
-            if (editingGuest) {
-              return handleUpdateGuest(data as UpdateGuestInput);
-            } else {
-              return handleCreateGuest(data as CreateGuestInput);
-            }
-          }}
-          onCancel={() => {
-            setShowGuestForm(false);
-            setEditingGuest(undefined);
-          }}
+          onSubmit={(data) =>
+            editingGuest
+              ? handleUpdateGuest(data as UpdateGuestInput)
+              : handleCreateGuest(data as CreateGuestInput)
+          }
+          onCancel={() => { setShowGuestForm(false); setEditingGuest(undefined); }}
         />
       )}
 
       {showImport && (
-        <GuestImport
-          onImport={handleImport}
-          onClose={() => setShowImport(false)}
-        />
+        <GuestImport onImport={handleImport} onClose={() => setShowImport(false)} />
       )}
     </div>
   );

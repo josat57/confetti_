@@ -20,19 +20,16 @@ export default function TeamPage() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
 
-  // Fetch team members
   const { data: teamData, isLoading } = useQuery({
     queryKey: ["team-members"],
     queryFn: () => teamService.getTeamMembers(),
   });
 
-  // Fetch team activity
   const { data: activityData } = useQuery({
     queryKey: ["team-activity"],
     queryFn: () => teamService.getTeamActivity(20),
   });
 
-  // Invite mutation
   const inviteMutation = useMutation({
     mutationFn: (invitation: TeamInvitation) =>
       teamService.inviteTeamMember(invitation),
@@ -46,7 +43,6 @@ export default function TeamPage() {
     },
   });
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({
       memberId,
@@ -65,7 +61,6 @@ export default function TeamPage() {
     },
   });
 
-  // Remove mutation
   const removeMutation = useMutation({
     mutationFn: (memberId: string) => teamService.removeTeamMember(memberId),
     onSuccess: () => {
@@ -77,30 +72,15 @@ export default function TeamPage() {
     },
   });
 
-  const handleInvite = (invitation: TeamInvitation) => {
-    inviteMutation.mutate(invitation);
-  };
-
-  const handleEdit = (member: TeamMember) => {
-    setEditingMember(member);
-  };
-
   const handleRemove = (member: TeamMember) => {
-    if (
-      confirm(
-        `Are you sure you want to remove ${member.user.name} from your team?`
-      )
-    ) {
+    if (confirm(`Are you sure you want to remove ${member.user.name} from your team?`)) {
       removeMutation.mutate(member._id);
     }
   };
 
   const handleUpdateRole = (role: TeamRole) => {
     if (editingMember) {
-      updateMutation.mutate({
-        memberId: editingMember._id,
-        updates: { role },
-      });
+      updateMutation.mutate({ memberId: editingMember._id, updates: { role } });
     }
   };
 
@@ -115,10 +95,10 @@ export default function TeamPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               Team Management
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
               Collaborate with your team to manage events
             </p>
           </div>
@@ -133,15 +113,15 @@ export default function TeamPage() {
         </div>
 
         {/* Tier limit info */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <Users className="w-5 h-5 text-gray-600" />
+            <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <div>
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 Team Members: {current}
                 {limit !== undefined && ` / ${limit}`}
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
                 {limit === undefined
                   ? "Unlimited team members"
                   : isAtLimit
@@ -158,11 +138,11 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Permissions info */}
+      {/* Permissions toggle */}
       <div className="mb-6">
         <button
           onClick={() => setShowPermissions(!showPermissions)}
-          className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
+          className="flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
         >
           <AlertCircle className="w-4 h-4" />
           {showPermissions ? "Hide" : "View"} Role Permissions
@@ -179,7 +159,7 @@ export default function TeamPage() {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading team members...</p>
+            <p className="text-gray-600 dark:text-gray-400">Loading team members...</p>
           </div>
         </div>
       )}
@@ -191,12 +171,9 @@ export default function TeamPage() {
             <TeamMemberCard
               key={member._id}
               member={member}
-              onEdit={handleEdit}
+              onEdit={setEditingMember}
               onRemove={handleRemove}
-              isOwner={
-                member.role === "Admin" &&
-                member.user.email === "owner@example.com"
-              } // TODO: Check actual owner
+              isOwner={member.role === "Admin" && member.user.email === "owner@example.com"}
             />
           ))}
         </div>
@@ -204,12 +181,12 @@ export default function TeamPage() {
 
       {/* Empty state */}
       {!isLoading && members.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <Users className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
             No team members yet
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Invite team members to collaborate on your events
           </p>
           <button
@@ -224,52 +201,45 @@ export default function TeamPage() {
       )}
 
       {/* Team activity */}
-      {activityData &&
-        activityData.activities &&
-        activityData.activities.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Recent Activity
-              </h2>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-              {activityData.activities.slice(0, 10).map((activity) => (
-                <div
-                  key={activity._id}
-                  className="p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">
-                        <span className="font-medium">
-                          {activity.member.name}
-                        </span>{" "}
-                        {activity.action}{" "}
-                        <span className="font-medium">{activity.target}</span>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {format(
-                          new Date(activity.timestamp),
-                          "MMM d, yyyy 'at' h:mm a"
-                        )}
-                      </p>
-                    </div>
+      {activityData?.activities && activityData.activities.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Recent Activity
+            </h2>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+            {activityData.activities.slice(0, 10).map((activity) => (
+              <div
+                key={activity._id}
+                className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      <span className="font-medium">{activity.member.name}</span>{" "}
+                      {activity.action}{" "}
+                      <span className="font-medium">{activity.target}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      {format(new Date(activity.timestamp), "MMM d, yyyy 'at' h:mm a")}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
       {/* Invite form modal */}
       {showInviteForm && (
         <TeamInviteForm
-          onSubmit={handleInvite}
+          onSubmit={(invitation) => inviteMutation.mutate(invitation)}
           onCancel={() => setShowInviteForm(false)}
           loading={inviteMutation.isPending}
-          events={[]} // TODO: Pass actual events
+          events={[]}
           tierLimit={limit}
           currentCount={current}
         />
@@ -277,15 +247,17 @@ export default function TeamPage() {
 
       {/* Edit member modal */}
       {editingMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
               Edit Team Member
             </h2>
             <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Editing:{" "}
-                <span className="font-medium">{editingMember.user.name}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {editingMember.user.name}
+                </span>
               </p>
               <TeamPermissions
                 currentRole={editingMember.role}
@@ -295,7 +267,7 @@ export default function TeamPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setEditingMember(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>

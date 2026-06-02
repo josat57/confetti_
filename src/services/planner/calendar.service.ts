@@ -49,8 +49,8 @@ class PlannerCalendarService {
     filters?: CalendarFilters
   ): Promise<CalendarData> {
     const params = new URLSearchParams({
-      start: startDate,
-      end: endDate,
+      startDate,
+      endDate,
       view,
     });
 
@@ -93,41 +93,25 @@ class PlannerCalendarService {
    * Sync with external calendar (Google/Outlook)
    */
   async syncCalendar(
-    provider: "google" | "outlook",
-    authToken: string
+    provider: "google" | "outlook"
   ): Promise<{ success: boolean; synced: number }> {
     const response = await api.post("/planner/calendar/sync", {
       provider,
-      authToken,
+      action: "sync",
     });
     return response.data;
   }
 
   /**
-   * Export calendar to iCal format
+   * Export calendar to iCal format.
+   * Backend: GET /planner/calendar/export?startDate=...&endDate=...
    */
   async exportCalendar(
     startDate: string,
     endDate: string
   ): Promise<{ downloadUrl: string }> {
-    const response = await api.post("/planner/calendar/export", {
-      start: startDate,
-      end: endDate,
-    });
-    return response.data;
-  }
-
-  /**
-   * Update event/task date (for drag-and-drop)
-   */
-  async updateItemDate(
-    itemId: string,
-    itemType: "event" | "task",
-    newDate: Date
-  ): Promise<{ success: boolean }> {
-    const response = await api.patch(`/planner/calendar/items/${itemId}`, {
-      type: itemType,
-      date: newDate,
+    const response = await api.get("/planner/calendar/export", {
+      params: { startDate, endDate, includeEvents: true, includeTasks: true },
     });
     return response.data;
   }

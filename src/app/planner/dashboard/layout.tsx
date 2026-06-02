@@ -60,7 +60,7 @@ export default function PlannerDashboardLayout({
 
   if (loading || isVerifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
           <p className="text-gray-600">Loading planner dashboard...</p>
@@ -74,7 +74,7 @@ export default function PlannerDashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" data-brand="teal">
       {/* Sidebar */}
       <DashboardSidebar
         isOpen={sidebarOpen}

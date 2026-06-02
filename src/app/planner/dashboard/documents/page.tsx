@@ -82,13 +82,13 @@ export default function DocumentsPage() {
   const shareMutation = useMutation({
     mutationFn: ({
       docId,
-      userId,
-      role,
+      emails,
+      message,
     }: {
       docId: string;
-      userId: string;
-      role: "Vendor" | "Client" | "Team Member";
-    }) => documentsService.shareDocument(docId, userId, role),
+      emails: string[];
+      message?: string;
+    }) => documentsService.shareDocument(docId, emails, message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       setShareDoc(null);
@@ -112,29 +112,29 @@ export default function DocumentsPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Documents</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
           Manage contracts, invoices, and other event documents
         </p>
       </div>
 
       {/* Storage info */}
       {storage && (
-        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+        <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <HardDrive className="w-5 h-5 text-gray-600" />
-              <span className="text-sm font-medium text-gray-900">
+              <HardDrive className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 Storage: {documentsService.formatFileSize(storage.used)} /{" "}
                 {storage.limit === -1
                   ? "Unlimited"
                   : documentsService.formatFileSize(storage.limit)}
               </span>
             </div>
-            <span className="text-sm text-gray-600">{storage.tier} Plan</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{storage.tier} Plan</span>
           </div>
           {storage.limit !== -1 && (
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
                 className={`h-2 rounded-full ${
                   storage.percentage > 90
@@ -159,13 +159,13 @@ export default function DocumentsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as any)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
         >
           <option value="all">All Types</option>
           <option value="Contract">Contracts</option>
@@ -176,7 +176,7 @@ export default function DocumentsPage() {
         </select>
         <button
           onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
         >
           <UploadIcon className="w-5 h-5" />
           Upload
@@ -201,7 +201,7 @@ export default function DocumentsPage() {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading documents...</p>
+            <p className="text-gray-600 dark:text-gray-400">Loading documents...</p>
           </div>
         </div>
       ) : (
@@ -225,8 +225,8 @@ export default function DocumentsPage() {
       {shareDoc && (
         <DocumentShare
           document={shareDoc}
-          onShare={(userId, role) =>
-            shareMutation.mutate({ docId: shareDoc._id, userId, role })
+          onShare={(emails, message) =>
+            shareMutation.mutate({ docId: shareDoc._id, emails, message })
           }
           onClose={() => setShareDoc(null)}
           loading={shareMutation.isPending}

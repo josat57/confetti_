@@ -112,15 +112,12 @@ class DocumentsService {
    */
   async shareDocument(
     documentId: string,
-    userId: string,
-    role: "Vendor" | "Client" | "Team Member"
+    emails: string[],
+    message?: string
   ): Promise<{ success: boolean }> {
     const response = await api.post(
       `/planner/documents/${documentId}/share`,
-      {
-        userId,
-        role,
-      }
+      { emails, message }
     );
     return response.data;
   }

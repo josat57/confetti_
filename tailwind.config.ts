@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -21,6 +22,26 @@ const config: Config = {
           800: '#5b21b6',
           900: '#4c1d95',
         },
+        // Semantic surface/text tokens that read from CSS variables
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          secondary: 'var(--color-surface-secondary)',
+          elevated: 'var(--color-surface-elevated)',
+          border: 'var(--color-surface-border)',
+        },
+        content: {
+          DEFAULT: 'var(--color-content)',
+          secondary: 'var(--color-content-secondary)',
+          muted: 'var(--color-content-muted)',
+        },
+        brand: {
+          50: 'var(--color-brand-50)',
+          100: 'var(--color-brand-100)',
+          200: 'var(--color-brand-200)',
+          500: 'var(--color-brand-500)',
+          600: 'var(--color-brand-600)',
+          700: 'var(--color-brand-700)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)'],
@@ -36,4 +57,4 @@ const config: Config = {
   plugins: [],
 };
 
-export default config; 
+export default config;

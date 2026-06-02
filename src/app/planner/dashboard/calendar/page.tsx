@@ -34,45 +34,30 @@ export default function CalendarPage() {
     showTasks: true,
     showMilestones: true,
   });
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
-  );
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  // Calculate date range based on view
   const getDateRange = () => {
     if (view === "month") {
       const start = startOfWeek(startOfMonth(currentDate));
       const end = endOfWeek(endOfMonth(currentDate));
-      return {
-        startDate: format(start, "yyyy-MM-dd"),
-        endDate: format(end, "yyyy-MM-dd"),
-      };
+      return { startDate: format(start, "yyyy-MM-dd"), endDate: format(end, "yyyy-MM-dd") };
     } else if (view === "week") {
       const start = startOfWeek(currentDate);
       const end = endOfWeek(currentDate);
-      return {
-        startDate: format(start, "yyyy-MM-dd"),
-        endDate: format(end, "yyyy-MM-dd"),
-      };
+      return { startDate: format(start, "yyyy-MM-dd"), endDate: format(end, "yyyy-MM-dd") };
     } else if (view === "day") {
       return {
         startDate: format(currentDate, "yyyy-MM-dd"),
         endDate: format(currentDate, "yyyy-MM-dd"),
       };
     } else {
-      // Agenda view - show next 3 months
-      const start = currentDate;
       const end = addMonths(currentDate, 3);
-      return {
-        startDate: format(start, "yyyy-MM-dd"),
-        endDate: format(end, "yyyy-MM-dd"),
-      };
+      return { startDate: format(currentDate, "yyyy-MM-dd"), endDate: format(end, "yyyy-MM-dd") };
     }
   };
 
   const { startDate, endDate } = getDateRange();
 
-  // Fetch calendar data
   const { data, isLoading, error } = useQuery({
     queryKey: ["planner-calendar", startDate, endDate, view, filters],
     queryFn: () =>
@@ -86,26 +71,11 @@ export default function CalendarPage() {
 
   const handleExport = async () => {
     try {
-      const result = await plannerCalendarService.exportCalendar(
-        startDate,
-        endDate
-      );
-      // Trigger download
+      const result = await plannerCalendarService.exportCalendar(startDate, endDate);
       window.open(result.downloadUrl, "_blank");
-    } catch (error) {
-      console.error("Export failed:", error);
+    } catch {
       alert("Failed to export calendar");
     }
-  };
-
-  const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEvent(event);
-    // TODO: Open event/task details modal
-  };
-
-  const handleDateClick = (date: Date) => {
-    setCurrentDate(date);
-    setView("day");
   };
 
   return (
@@ -114,8 +84,8 @@ export default function CalendarPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Calendar</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
               Manage your events, tasks, and deadlines
             </p>
           </div>
@@ -131,15 +101,15 @@ export default function CalendarPage() {
         {/* Controls */}
         <div className="flex items-center justify-between">
           {/* View switcher */}
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
             {(["month", "week", "day", "agenda"] as ViewType[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   view === v
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                 }`}
               >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -147,27 +117,25 @@ export default function CalendarPage() {
             ))}
           </div>
 
-          {/* Filters */}
           <CalendarFilters
             filters={filters}
             onFiltersChange={setFilters}
-            events={[]} // TODO: Pass actual events list
-            teamMembers={[]} // TODO: Pass actual team members
+            events={[]}
+            teamMembers={[]}
           />
         </div>
       </div>
 
       {/* Conflicts warning */}
       {data?.conflicts && data.conflicts.length > 0 && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
           <div>
-            <h3 className="font-medium text-yellow-900">
+            <h3 className="font-medium text-yellow-900 dark:text-yellow-200">
               Scheduling Conflicts Detected
             </h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              You have {data.conflicts.length} date(s) with overlapping events
-              or tasks.
+            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              You have {data.conflicts.length} date(s) with overlapping events or tasks.
             </p>
           </div>
         </div>
@@ -178,7 +146,7 @@ export default function CalendarPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading calendar...</p>
+            <p className="text-gray-600 dark:text-gray-400">Loading calendar...</p>
           </div>
         </div>
       )}
@@ -187,11 +155,11 @@ export default function CalendarPage() {
       {error && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <CalendarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <CalendarIcon className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               Failed to load calendar
             </h3>
-            <p className="text-gray-600">Please try again later</p>
+            <p className="text-gray-600 dark:text-gray-400">Please try again later</p>
           </div>
         </div>
       )}
@@ -202,7 +170,7 @@ export default function CalendarPage() {
           {view === "agenda" ? (
             <AgendaView
               events={data.events || []}
-              onEventClick={handleEventClick}
+              onEventClick={setSelectedEvent}
             />
           ) : (
             <CalendarView
@@ -210,8 +178,8 @@ export default function CalendarPage() {
               view={view}
               currentDate={currentDate}
               onDateChange={setCurrentDate}
-              onEventClick={handleEventClick}
-              onDateClick={handleDateClick}
+              onEventClick={setSelectedEvent}
+              onDateClick={(date) => { setCurrentDate(date); setView("day"); }}
             />
           )}
         </div>
@@ -219,44 +187,38 @@ export default function CalendarPage() {
 
       {/* Event details modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               {selectedEvent.title}
             </h3>
             <div className="space-y-3">
               <div>
-                <span className="text-sm font-medium text-gray-700">Type:</span>
-                <span className="ml-2 text-sm text-gray-900 capitalize">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Type:</span>
+                <span className="ml-2 text-sm text-gray-900 dark:text-gray-100 capitalize">
                   {selectedEvent.type}
                 </span>
               </div>
               {selectedEvent.start && (
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Date:
-                  </span>
-                  <span className="ml-2 text-sm text-gray-900">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</span>
+                  <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                     {format(new Date(selectedEvent.start), "MMMM d, yyyy")}
                   </span>
                 </div>
               )}
               {selectedEvent.category && (
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Category:
-                  </span>
-                  <span className="ml-2 text-sm text-gray-900">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Category:</span>
+                  <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                     {selectedEvent.category}
                   </span>
                 </div>
               )}
               {selectedEvent.status && (
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Status:
-                  </span>
-                  <span className="ml-2 text-sm text-gray-900">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                  <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                     {selectedEvent.status}
                   </span>
                 </div>
@@ -265,15 +227,12 @@ export default function CalendarPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Close
               </button>
               <button
-                onClick={() => {
-                  // TODO: Navigate to event/task details
-                  setSelectedEvent(null);
-                }}
+                onClick={() => setSelectedEvent(null)}
                 className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 View Details
