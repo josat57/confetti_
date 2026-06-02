@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CurrencySelector from "./CurrencySelector";
+import Logo from "./Logo";
 
 const Navbar = () => {
   const router = useRouter();
@@ -41,8 +42,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-purple-600">
-              Confetti
+            <Link href="/" className="flex items-center">
+              <Logo
+                height={32}
+                scheme={isScrolled ? "light" : "dark"}
+              />
             </Link>
           </div>
 
