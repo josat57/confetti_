@@ -6,7 +6,6 @@ import {
   Search,
   Filter,
   Download,
-  MoreVertical,
   Eye,
   Ban,
   Trash2,
@@ -17,6 +16,14 @@ interface UserListProps {
   onUserSelect: (user: AdminUserView) => void;
   onSuspend: (userId: string) => void;
   onDelete: (userId: string) => void;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
+  loading?: boolean;
 }
 
 export default function UserList({
@@ -24,6 +31,9 @@ export default function UserList({
   onUserSelect,
   onSuspend,
   onDelete,
+  pagination,
+  onPageChange,
+  loading = false,
 }: UserListProps) {
   const [filters, setFilters] = useState<UserFilters>({
     role: "",
@@ -200,7 +210,7 @@ export default function UserList({
       )}
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-opacity ${loading ? "opacity-60 pointer-events-none" : ""}`}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -327,13 +337,23 @@ export default function UserList({
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-700">
-          Showing {filteredUsers.length} of {users.length} users
+          {pagination
+            ? `Page ${pagination.page} of ${pagination.totalPages} · ${pagination.total} total users`
+            : `Showing ${filteredUsers.length} users`}
         </span>
         <div className="flex items-center gap-2">
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+          <button
+            onClick={() => pagination && onPageChange?.(pagination.page - 1)}
+            disabled={!pagination || pagination.page <= 1 || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Previous
           </button>
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+          <button
+            onClick={() => pagination && onPageChange?.(pagination.page + 1)}
+            disabled={!pagination || pagination.page >= pagination.totalPages || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Next
           </button>
         </div>

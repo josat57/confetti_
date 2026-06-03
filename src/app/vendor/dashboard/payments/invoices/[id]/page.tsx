@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Send, Download, Check, CreditCard } from "lucide-react";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import { invoicesService } from "@/services/invoices.service";
+import type { Invoice as ApiInvoice } from "@/types/invoice.types";
 
 interface LineItem {
   id: string;
@@ -37,50 +39,43 @@ export default function InvoiceDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  function mapApiInvoice(api: ApiInvoice): Invoice {
+    const statusMap: Record<string, Invoice["status"]> = {
+      draft: "pending",
+      sent: "pending",
+      viewed: "pending",
+      paid: "paid",
+      partially_paid: "paid",
+      overdue: "overdue",
+      cancelled: "cancelled",
+    };
+    return {
+      id: api._id,
+      invoiceNumber: api.invoiceNumber,
+      clientName: api.client.name,
+      clientEmail: api.client.email,
+      lineItems: api.items.map((item) => ({
+        id: item._id || Math.random().toString(36).slice(2),
+        description: item.description,
+        quantity: item.quantity,
+        rate: item.unitPrice,
+        amount: item.amount,
+      })),
+      notes: api.notes,
+      status: statusMap[api.status] ?? "pending",
+      paymentMethod: "bank_transfer",
+      dueDate: new Date(api.dueDate),
+      paidAt: api.paidAt ? new Date(api.paidAt) : undefined,
+      createdAt: new Date(api.createdAt),
+    };
+  }
+
   useEffect(() => {
     const fetchInvoice = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const mockInvoice: Invoice = {
-          id: params.id as string,
-          invoiceNumber: "INV-2024-001",
-          clientName: "Sarah Johnson",
-          clientEmail: "sarah.j@email.com",
-          lineItems: [
-            {
-              id: "1",
-              description: "Wedding Photography - Full Day Coverage",
-              quantity: 1,
-              rate: 300000,
-              amount: 300000,
-            },
-            {
-              id: "2",
-              description: "Photo Album (Premium)",
-              quantity: 2,
-              rate: 75000,
-              amount: 150000,
-            },
-            {
-              id: "3",
-              description: "Digital Photo Editing",
-              quantity: 1,
-              rate: 50000,
-              amount: 50000,
-            },
-          ],
-          notes:
-            "Payment due within 7 days. Bank transfer details: Account Name: Your Business, Bank: GTBank, Account Number: 0123456789",
-          status: "pending",
-          paymentMethod: "flutterwave",
-          dueDate: new Date("2024-12-20"),
-          createdAt: new Date("2024-11-10"),
-        };
-
-        setInvoice(mockInvoice);
+        const apiInvoice = await invoicesService.getById(params.id as string);
+        setInvoice(mapApiInvoice(apiInvoice));
       } catch (error) {
         console.error("Error fetching invoice:", error);
         toast.error("Failed to load invoice");
@@ -113,9 +108,7 @@ export default function InvoiceDetailsPage() {
 
     setSending(true);
     try {
-      // TODO: Call API to send invoice
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+      await invoicesService.send(invoice.id);
       toast.success("Invoice sent successfully!");
     } catch (error) {
       console.error("Error sending invoice:", error);
@@ -129,9 +122,7 @@ export default function InvoiceDetailsPage() {
     if (!invoice) return;
 
     try {
-      // TODO: Call API to mark as paid
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+      await invoicesService.markAsPaid(invoice.id);
       setInvoice({ ...invoice, status: "paid", paidAt: new Date() });
       toast.success("Invoice marked as paid");
     } catch (error) {

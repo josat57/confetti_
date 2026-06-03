@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Upload as UploadIcon, HardDrive } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DocumentList from "@/components/planner/documents/DocumentList";
@@ -12,6 +12,7 @@ import {
   Document,
   DocumentType,
 } from "@/services/planner/documents.service";
+import { eventsService } from "@/services/planner/events.service";
 
 export default function DocumentsPage() {
   const queryClient = useQueryClient();
@@ -20,6 +21,18 @@ export default function DocumentsPage() {
   const [shareDoc, setShareDoc] = useState<Document | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DocumentType | "all">("all");
+  const [events, setEvents] = useState<Array<{ _id: string; name: string }>>(
+    []
+  );
+
+  useEffect(() => {
+    eventsService
+      .getEvents()
+      .then((data) =>
+        setEvents(data.events.map((e) => ({ _id: e._id, name: e.name })))
+      )
+      .catch(console.error);
+  }, []);
 
   // Fetch documents
   const { data, isLoading } = useQuery({
@@ -191,7 +204,7 @@ export default function DocumentsPage() {
               uploadMutation.mutate({ files, metadata })
             }
             loading={uploadMutation.isPending}
-            events={[]} // TODO: Pass actual events
+            events={events}
           />
         </div>
       )}

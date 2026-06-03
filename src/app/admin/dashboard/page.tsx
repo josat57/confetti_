@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Users,
   Building2,
@@ -52,6 +53,7 @@ interface DashboardMetrics {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,8 +67,6 @@ export default function AdminDashboardPage() {
       const response = await AdminAPI.getDashboardStats();
 
       if (response?.status === "success" && response?.data?.metrics) {
-        console.log("Dashboard metrics received:", response.data.metrics);
-        console.log("Recent activity:", response.data.metrics.recentActivity);
         setMetrics(response.data.metrics);
       }
     } catch (error: any) {
@@ -87,7 +87,6 @@ export default function AdminDashboardPage() {
       timestamp: new Date(activity.timestamp),
     })) || [];
 
-  console.log("Mapped activities for display:", activities);
 
   if (loading) {
     return (
@@ -246,7 +245,10 @@ export default function AdminDashboardPage() {
           </h3>
 
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors text-left">
+            <button
+              onClick={() => router.push("/admin/dashboard/vendors")}
+              className="w-full flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors text-left"
+            >
               <span className="font-medium text-purple-900">
                 Review Pending Verifications
               </span>
@@ -255,7 +257,10 @@ export default function AdminDashboardPage() {
               </span>
             </button>
 
-            <button className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-left">
+            <button
+              onClick={() => router.push("/admin/dashboard/notifications")}
+              className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-left"
+            >
               <span className="font-medium text-blue-900">
                 View Open Support Tickets
               </span>
@@ -264,13 +269,19 @@ export default function AdminDashboardPage() {
               </span>
             </button>
 
-            <button className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left">
+            <button
+              onClick={() => router.push("/admin/dashboard/analytics")}
+              className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+            >
               <span className="font-medium text-gray-900">
                 Generate Analytics Report
               </span>
             </button>
 
-            <button className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left">
+            <button
+              onClick={() => router.push("/admin/dashboard/monitoring")}
+              className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+            >
               <span className="font-medium text-gray-900">
                 System Health Check
               </span>

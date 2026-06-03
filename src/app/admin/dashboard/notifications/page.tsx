@@ -14,16 +14,10 @@ import {
   Megaphone,
   Plus,
   Search,
-  Filter,
-  MoreVertical,
-  Edit,
   Trash2,
   Play,
   X,
   Loader2,
-  Mail,
-  MessageSquare,
-  Smartphone,
   Eye,
   MousePointer,
   TrendingUp,
@@ -49,115 +43,17 @@ export default function NotificationsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const notificationsRes = await notificationsService.getNotifications(
-        filters
-      );
+      const [notificationsRes, statsRes] = await Promise.all([
+        notificationsService.getNotifications(filters),
+        notificationsService.getStatistics(),
+      ]);
 
       setNotifications(notificationsRes.notifications);
       setTotal(notificationsRes.total);
-
-      // Set mock stats for now
-      setStats({
-        total: 1285,
-        sent: 1250,
-        scheduled: 15,
-        draft: 8,
-        failed: 12,
-        totalDelivered: 1230,
-        totalOpened: 556,
-        totalClicked: 158,
-        deliveryRate: 98.5,
-        openRate: 45.2,
-        clickRate: 12.8,
-      });
+      setStats(statsRes.stats);
     } catch (err: any) {
       console.error("Error fetching notifications:", err);
       toast.error("Failed to load notifications");
-
-      // Mock data
-      setStats({
-        total: 1285,
-        sent: 1250,
-        scheduled: 15,
-        draft: 8,
-        failed: 12,
-        totalDelivered: 1230,
-        totalOpened: 556,
-        totalClicked: 158,
-        deliveryRate: 98.5,
-        openRate: 45.2,
-        clickRate: 12.8,
-      });
-
-      setNotifications([
-        {
-          _id: "1",
-          title: "New Feature Announcement",
-          message: "We've launched AI Event Planner! Check it out now.",
-          type: "info",
-          category: "system",
-          priority: "high",
-          recipients: { type: "all" },
-          channels: ["in-app", "email"],
-          status: "sent",
-          sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          deliveryStats: {
-            total: 1200,
-            delivered: 1180,
-            failed: 20,
-            opened: 850,
-            clicked: 320,
-          },
-          createdBy: {
-            _id: "admin1",
-            name: "Admin User",
-            email: "admin@confetti.com",
-          },
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        },
-        {
-          _id: "2",
-          title: "Subscription Renewal Reminder",
-          message: "Your subscription expires in 3 days. Renew now!",
-          type: "reminder",
-          category: "subscription",
-          priority: "medium",
-          recipients: {
-            type: "role",
-            roles: ["event-planner", "vendor"],
-          },
-          channels: ["email"],
-          status: "scheduled",
-          scheduledFor: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          createdBy: {
-            _id: "admin2",
-            name: "Admin User 2",
-            email: "admin2@confetti.com",
-          },
-          createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-          updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-        },
-        {
-          _id: "3",
-          title: "Maintenance Notice",
-          message: "Scheduled maintenance on Sunday 2AM-4AM",
-          type: "warning",
-          category: "system",
-          priority: "high",
-          recipients: { type: "all" },
-          channels: ["in-app"],
-          status: "draft",
-          createdBy: {
-            _id: "admin1",
-            name: "Admin User",
-            email: "admin@confetti.com",
-          },
-          createdAt: new Date(Date.now() - 30 * 60 * 1000),
-          updatedAt: new Date(Date.now() - 30 * 60 * 1000),
-        },
-      ]);
-      setTotal(3);
     } finally {
       setLoading(false);
     }

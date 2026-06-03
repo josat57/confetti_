@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Plus, X, Save, Send } from "lucide-react";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import { invoicesService } from "@/services/invoices.service";
 
 interface LineItem {
   id: string;
@@ -17,7 +18,7 @@ interface LineItem {
 
 export default function NewInvoicePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  useAuth();
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -113,8 +114,24 @@ export default function NewInvoicePage() {
     action(true);
 
     try {
-      // TODO: Call API to save invoice
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const today = new Date().toISOString().split("T")[0];
+
+      const invoice = await invoicesService.create({
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        issueDate: today,
+        dueDate: formData.dueDate,
+        items: lineItems.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.rate,
+        })),
+        notes: formData.notes || undefined,
+      });
+
+      if (sendToClient) {
+        await invoicesService.send(invoice._id);
+      }
 
       toast.success(
         sendToClient ? "Invoice sent successfully!" : "Invoice saved as draft"

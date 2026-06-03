@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import NotificationSystem, { useNotifications } from "./NotificationSystem";
 import {
@@ -19,6 +20,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const {
     notifications,
     markAsRead,
@@ -110,12 +112,24 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      router.push("/admin/dashboard/profile");
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  >
                     <User className="mr-3 h-4 w-4" />
                     Profile
                   </button>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      router.push("/admin/dashboard/settings");
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  >
                     <Settings className="mr-3 h-4 w-4" />
                     Settings
                   </button>

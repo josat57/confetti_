@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import leadService from "@/services/lead.service";
+import { invoicesService } from "@/services/invoices.service";
+import type { Lead as ApiLead } from "@/types/lead.types";
 
 interface Lead {
   id: string;
@@ -36,6 +39,28 @@ interface Lead {
   createdAt: Date;
 }
 
+function mapApiLead(apiLead: ApiLead): Lead {
+  return {
+    id: apiLead._id,
+    clientName: apiLead.customer.name,
+    clientEmail: apiLead.customer.email,
+    clientPhone: apiLead.customer.phone,
+    eventType: apiLead.eventDetails.type,
+    eventDate: new Date(apiLead.eventDetails.date),
+    budget: apiLead.eventDetails.budget,
+    message: apiLead.notes[0]?.text || "",
+    status: apiLead.status as Lead["status"],
+    source: apiLead.source,
+    notes: apiLead.notes.map((n) => ({
+      id: n._id,
+      text: n.text,
+      createdBy: n.createdBy,
+      createdAt: new Date(n.createdAt),
+    })),
+    createdAt: new Date(apiLead.createdAt),
+  };
+}
+
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -51,33 +76,8 @@ export default function LeadDetailsPage() {
     const fetchLead = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const mockLead: Lead = {
-          id: params.id as string,
-          clientName: "Sarah Johnson",
-          clientEmail: "sarah.j@email.com",
-          clientPhone: "+234 800 123 4567",
-          eventType: "Wedding",
-          eventDate: new Date("2024-06-15"),
-          budget: 500000,
-          message:
-            "Looking for a photographer for our wedding. We love your portfolio!",
-          status: "new",
-          source: "Website",
-          notes: [
-            {
-              id: "1",
-              text: "Client is interested in full-day coverage",
-              createdBy: user?.username || "You",
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-            },
-          ],
-          createdAt: new Date(Date.now() - 1000 * 60 * 30),
-        };
-
-        setLead(mockLead);
+        const apiLead = await leadService.getById(params.id as string);
+        setLead(mapApiLead(apiLead));
       } catch (error) {
         console.error("Error fetching lead:", error);
         toast.error("Failed to load lead details");
@@ -90,15 +90,13 @@ export default function LeadDetailsPage() {
     if (params.id) {
       fetchLead();
     }
-  }, [params.id, router, user]);
+  }, [params.id, router]);
 
   const handleStatusChange = async (newStatus: Lead["status"]) => {
     if (!lead) return;
 
     try {
-      // TODO: Call API to update status
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+      await leadService.updateStatus(lead.id, newStatus);
       setLead({ ...lead, status: newStatus });
       toast.success("Status updated successfully");
     } catch (error) {
@@ -114,8 +112,7 @@ export default function LeadDetailsPage() {
     }
 
     try {
-      // TODO: Call API to add note
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await leadService.addNote(lead.id, newNote.trim());
 
       const note = {
         id: Date.now().toString(),
@@ -124,11 +121,7 @@ export default function LeadDetailsPage() {
         createdAt: new Date(),
       };
 
-      setLead({
-        ...lead,
-        notes: [...lead.notes, note],
-      });
-
+      setLead({ ...lead, notes: [...lead.notes, note] });
       setNewNote("");
       toast.success("Note added successfully");
     } catch (error) {
@@ -146,10 +139,30 @@ export default function LeadDetailsPage() {
     setSendingQuote(true);
 
     try {
-      // TODO: Call API to send quote
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const today = new Date().toISOString().split("T")[0];
+      const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
 
-      await handleStatusChange("quoted");
+      const invoice = await invoicesService.create({
+        clientName: lead.clientName,
+        clientEmail: lead.clientEmail,
+        issueDate: today,
+        dueDate,
+        items: [
+          {
+            description: quoteDetails,
+            quantity: 1,
+            unitPrice: parseFloat(quoteAmount),
+          },
+        ],
+        notes: `Quote for ${lead.eventType} event on ${lead.eventDate.toLocaleDateString()}`,
+      });
+
+      await invoicesService.send(invoice._id);
+      await leadService.updateStatus(lead.id, "quoted");
+
+      setLead({ ...lead, status: "quoted" });
       toast.success("Quote sent successfully!");
       setQuoteAmount("");
       setQuoteDetails("");
@@ -266,16 +279,18 @@ export default function LeadDetailsPage() {
           </div>
 
           {/* Initial Message */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Initial Message
-            </h2>
-            <p className="text-gray-700">{lead.message}</p>
-            <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-500">
-              Received from {lead.source} on{" "}
-              {lead.createdAt.toLocaleDateString()}
+          {lead.message && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Initial Message
+              </h2>
+              <p className="text-gray-700">{lead.message}</p>
+              <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-500">
+                Received from {lead.source} on{" "}
+                {lead.createdAt.toLocaleDateString()}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Send Quote */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">

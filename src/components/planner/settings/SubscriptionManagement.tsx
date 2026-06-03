@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, Loader2, CreditCard, TrendingUp, X } from "lucide-react";
+import { Check, Loader2, CreditCard, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/contexts/AuthContext";
 import settingsService from "@/services/planner/settings.service";
@@ -24,10 +24,8 @@ export default function SubscriptionManagement() {
 
   const fetchPaymentMethods = async () => {
     try {
-      // TODO: Implement payment methods fetching
-      // const methods = await settingsService.getPaymentMethods();
-      // setPaymentMethods(methods);
-      setPaymentMethods([]); // Placeholder
+      const methods = await settingsService.getPaymentMethods();
+      setPaymentMethods(methods);
     } catch (error) {
       console.error("Failed to fetch payment methods:", error);
     }
@@ -101,11 +99,6 @@ export default function SubscriptionManagement() {
 
     setChangingPlan(true);
     try {
-      // Get NGN pricing (or first available)
-      const ngnPricing =
-        plan.pricing?.find((p: any) => p.currency === "NGN") ||
-        plan.pricing?.[0];
-
       await settingsService.upgradeSubscription(
         plan.planName,
         plan.billingCycle || "monthly"
@@ -189,51 +182,6 @@ export default function SubscriptionManagement() {
       setLoading(false);
     }
   };
-
-  const tiers = [
-    {
-      name: "Starter",
-      price: "₦15,000",
-      period: "/month",
-      features: [
-        "Up to 5 active events",
-        "1 team member",
-        "Basic vendor directory",
-        "Email support",
-        "Mobile app access",
-      ],
-    },
-    {
-      name: "Professional",
-      price: "₦35,000",
-      period: "/month",
-      popular: true,
-      features: [
-        "Up to 15 active events",
-        "3 team members",
-        "Full vendor directory",
-        "Priority support",
-        "SMS notifications",
-        "Advanced analytics",
-        "Client portal",
-      ],
-    },
-    {
-      name: "Business",
-      price: "₦75,000",
-      period: "/month",
-      features: [
-        "Up to 50 active events",
-        "10 team members",
-        "Premium vendor access",
-        "24/7 support",
-        "Custom branding",
-        "API access",
-        "White-label options",
-        "Dedicated account manager",
-      ],
-    },
-  ];
 
   // Calculate days remaining until renewal
   const getDaysRemaining = (endDate: string) => {

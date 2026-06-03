@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { bookingsService } from "@/services/bookings.service";
 
 interface Booking {
   id: string;
@@ -19,35 +20,40 @@ export default function UpcomingBookings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch real bookings from API
-    // Mock data for now
-    setBookings([
-      {
-        id: "1",
-        title: "Wedding at Grand Hotel",
-        date: "June 15, 2024",
-        time: "2:00 PM",
-        location: "Grand Hotel, Lagos",
-        status: "confirmed",
-      },
-      {
-        id: "2",
-        title: "Corporate Event",
-        date: "June 22, 2024",
-        time: "10:00 AM",
-        location: "Business Center, Abuja",
-        status: "confirmed",
-      },
-      {
-        id: "3",
-        title: "Birthday Party",
-        date: "June 28, 2024",
-        time: "4:00 PM",
-        location: "Private Residence",
-        status: "pending",
-      },
-    ]);
-    setLoading(false);
+    const fetchBookings = async () => {
+      try {
+        const data = await bookingsService.getUpcoming(5);
+        setBookings(
+          data.map((b) => ({
+            id: b._id,
+            title: `${b.event.type} — ${b.client.name}`,
+            date: new Date(b.event.date).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            }),
+            time: new Date(b.event.date).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            location: b.event.location,
+            status: (
+              b.status === "in_progress"
+                ? "confirmed"
+                : b.status === "cancelled" || b.status === "refunded"
+                ? "completed"
+                : b.status
+            ) as Booking["status"],
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch upcoming bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
   const statusColors = {

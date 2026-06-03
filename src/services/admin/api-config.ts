@@ -3,6 +3,7 @@ import axios from "axios";
 // Create axios instance with base configuration
 export const adminApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9601/api/v1",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
