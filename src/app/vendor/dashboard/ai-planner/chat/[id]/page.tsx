@@ -44,7 +44,7 @@ export default function AIChatPage() {
         );
         setSession(sessionData);
       } catch (error: any) {
-        toast.error("Failed to load chat session");
+        toast.error(error?.message || "Failed to load chat session");
         router.push("/vendor/dashboard/ai-planner");
       } finally {
         setLoading(false);
@@ -90,19 +90,16 @@ export default function AIChatPage() {
           : null
       );
 
-      // Send message to AI
+      // The server stores both messages; append the reply locally
       const aiResponse = await aiPlannerService.sendMessage(
         sessionId,
         userMessage
       );
-
-      // Update session with AI response
-      const updatedSession = await aiPlannerService.getPlanningSession(
-        sessionId
+      setSession((prev) =>
+        prev ? { ...prev, messages: [...prev.messages, aiResponse] } : null
       );
-      setSession(updatedSession);
     } catch (error: any) {
-      toast.error("Failed to send message");
+      toast.error(error?.message || "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -115,7 +112,7 @@ export default function AIChatPage() {
       toast.success("Event plan generated successfully!");
       router.push(`/vendor/dashboard/ai-planner/plans/${plan.id}`);
     } catch (error: any) {
-      toast.error("Failed to generate plan");
+      toast.error(error?.message || "Failed to generate plan");
     } finally {
       setGenerating(false);
     }

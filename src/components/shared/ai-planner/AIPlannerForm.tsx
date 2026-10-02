@@ -30,6 +30,7 @@ import {
   EventPlanningRequest,
 } from "@/services/ai-planner.service";
 import aiPlannerService from "@/services/ai-planner.service";
+import { saveEventPlan } from "@/lib/api/ai-planner";
 import { LocationData } from "@/services/location.service";
 import LocationForm from "@/components/shared/location/LocationForm";
 
@@ -313,6 +314,15 @@ export default function AIPlannerForm({
         onPlanUpdated(updatedPlan);
       } else {
         const newPlan = await aiPlannerService.createEventPlan(request);
+        // Persist the generated plan to the user's account, unless the
+        // backend already auto-saved it (then newPlan.id is the saved planId).
+        if (!newPlan.autoSaved) {
+          try {
+            await saveEventPlan(newPlan.id);
+          } catch {
+            // Non-critical — plan is still usable in this session
+          }
+        }
         onPlanCreated(newPlan);
       }
     } catch (error: any) {

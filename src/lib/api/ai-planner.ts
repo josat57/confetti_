@@ -375,23 +375,6 @@ export const saveEventPlan = async (sessionToken: string): Promise<any> => {
 };
 
 /**
- * Get full event plan (requires authentication)
- */
-export const getFullEventPlan = async (eventId: string): Promise<any> => {
-  const response = await apiClient.get<APIResponse<any>>(
-    `/ai-planner/full/${eventId}`
-  );
-
-  if (response.data.status === "success" && response.data.data) {
-    return response.data.data;
-  }
-
-  throw new Error(
-    response.data.message || "Failed to retrieve full event plan"
-  );
-};
-
-/**
  * Health check for AI Event Planner service
  */
 export const healthCheck = async (): Promise<any> => {
@@ -464,7 +447,6 @@ export default {
   analyzeEvent,
   getEventPlanResult,
   saveEventPlan,
-  getFullEventPlan,
   healthCheck,
   canSubmitRequest,
   getMinutesUntilReset,

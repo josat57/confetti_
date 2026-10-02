@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { AIEventPlan } from "@/services/ai-planner.service";
 import aiPlannerService from "@/services/ai-planner.service";
+import PlanFeedback from "./PlanFeedback";
 
 interface AIPlannerViewProps {
   plan: AIEventPlan;
@@ -135,7 +136,7 @@ export default function AIPlannerView({
       onPlanUpdated(enhancedPlan);
     } catch (error) {
       console.error("Failed to enhance plan:", error);
-      alert("Failed to enhance plan. Please try again.");
+      alert((error as Error)?.message || "Failed to enhance plan. Please try again.");
     } finally {
       setEnhancing(false);
       setEnhancementType("");
@@ -153,28 +154,40 @@ export default function AIPlannerView({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to export plan:", error);
-      alert("Export feature coming soon!");
+      alert(error?.message || "Failed to export plan");
     }
   };
 
   const handleShare = async () => {
     try {
-      await aiPlannerService.sharePlan(
-        plan.id,
-        "client@example.com",
-        "Here's your event plan!"
-      );
-      alert("Plan shared successfully!");
-    } catch (error) {
+      const email = prompt("Email address to share this plan with:");
+      if (!email) return;
+      const { shareUrl } = await aiPlannerService.sharePlan(plan.id, email.trim());
+      alert(`Plan shared with ${email.trim()}.\n\nRead-only link: ${shareUrl}`);
+    } catch (error: any) {
       console.error("Failed to share plan:", error);
-      alert("Share feature coming soon!");
+      alert(error?.message || "Failed to share plan");
     }
   };
 
   const Icon = getEventTypeIcon();
   const colorClass = getEventTypeColor();
+
+  const insightGroups = [
+    { title: "Cultural considerations", items: plan.clientAnalysis?.culturalConsiderations || [] },
+    { title: "Easy to overlook", items: plan.clientAnalysis?.hiddenNeeds || [] },
+    { title: "What success looks like", items: plan.clientAnalysis?.successMetrics || [] },
+    { title: "Personal touches", items: plan.clientAnalysis?.personalizationOpportunities || [] },
+  ];
+  // "balanced" with no details is the backend's placeholder when no AI model ran
+  const hasClientInsights =
+    insightGroups.some((group) => group.items.length > 0) ||
+    Boolean(
+      plan.clientAnalysis?.clientPersonality &&
+        plan.clientAnalysis.clientPersonality !== "balanced"
+    );
 
   return (
     <div
@@ -367,6 +380,84 @@ export default function AIPlannerView({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8 order-2 lg:order-1">
+            {/* What the last AI refinement changed */}
+            {plan.latestRefinement && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-purple-50 border border-purple-200 rounded-xl lg:rounded-2xl p-4 sm:p-6"
+              >
+                <div className="flex items-center mb-2">
+                  <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+                  <h2 className="text-base lg:text-lg font-semibold text-purple-900">
+                    Latest AI refinement
+                  </h2>
+                </div>
+                <p className="text-sm text-purple-900">
+                  {plan.latestRefinement.changes.length > 0
+                    ? plan.latestRefinement.changes.join(" · ")
+                    : "No changes were needed for this request."}
+                </p>
+                {plan.latestRefinement.reasoning && (
+                  <p className="text-sm text-purple-800 mt-2">
+                    {plan.latestRefinement.reasoning}
+                  </p>
+                )}
+                {plan.latestRefinement.suggestions.length > 0 && (
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    {plan.latestRefinement.suggestions.map((tip, index) => (
+                      <li key={index} className="text-sm text-purple-800">
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </motion.div>
+            )}
+
+            {/* Client insights (AI analysis of the request) */}
+            {hasClientInsights && plan.clientAnalysis && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="bg-white rounded-xl lg:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8"
+              >
+                <div className="flex items-center mb-4 lg:mb-6">
+                  <Target className="h-5 w-5 lg:h-6 lg:w-6 text-pink-600 mr-2 lg:mr-3" />
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+                    Client Insights
+                  </h2>
+                </div>
+                {plan.clientAnalysis.clientPersonality &&
+                  plan.clientAnalysis.clientPersonality !== "balanced" && (
+                    <p className="text-sm lg:text-base text-gray-700 mb-4">
+                      {plan.clientAnalysis.clientPersonality}
+                    </p>
+                  )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {insightGroups.map(
+                    (group) =>
+                      group.items.length > 0 && (
+                        <div key={group.title}>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                            {group.title}
+                          </h3>
+                          <ul className="space-y-1">
+                            {group.items.map((item, index) => (
+                              <li key={index} className="text-xs lg:text-sm text-gray-600 flex items-start">
+                                <CheckCircle className="h-3 w-3 text-pink-500 mr-2 mt-1 flex-shrink-0" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* Timeline */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -401,13 +492,15 @@ export default function AIPlannerView({
                       key={index}
                       className="flex items-start space-x-3 lg:space-x-4 p-3 lg:p-4 bg-gray-50 rounded-xl"
                     >
-                      <div className="flex-shrink-0 w-12 sm:w-16 text-center">
+                      <div className="flex-shrink-0 w-16 sm:w-20 text-center">
                         <div className="text-xs sm:text-sm font-semibold text-purple-600">
                           {item.time}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {item.duration}h
-                        </div>
+                        {item.duration != null && (
+                          <div className="text-xs text-gray-500">
+                            {item.duration}h
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
@@ -425,7 +518,7 @@ export default function AIPlannerView({
                   <div className="text-center py-6 lg:py-8 text-gray-500">
                     <Clock className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-3 lg:mb-4 text-gray-300" />
                     <p className="text-sm lg:text-base">
-                      Timeline will be generated with AI enhancement
+                      No timeline in this plan yet. Use Enhance Timeline to generate one.
                     </p>
                   </div>
                 )}
@@ -501,11 +594,26 @@ export default function AIPlannerView({
                   <div className="text-center py-6 lg:py-8 text-gray-500">
                     <DollarSign className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-3 lg:mb-4 text-gray-300" />
                     <p className="text-sm lg:text-base">
-                      Budget breakdown will be generated with AI enhancement
+                      No budget breakdown in this plan yet.
                     </p>
                   </div>
                 )}
               </div>
+              {plan.budgetTips && plan.budgetTips.length > 0 && (
+                <div className="mt-4 lg:mt-6 p-4 bg-green-50 rounded-xl">
+                  <h3 className="text-sm font-semibold text-green-900 mb-2">
+                    Budget tips
+                  </h3>
+                  <ul className="space-y-1">
+                    {plan.budgetTips.map((tip, index) => (
+                      <li key={index} className="text-xs lg:text-sm text-green-800 flex items-start">
+                        <Lightbulb className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </motion.div>
 
             {/* Vendor Recommendations */}
@@ -557,15 +665,34 @@ export default function AIPlannerView({
                                 <Star className="h-3 w-3 lg:h-4 lg:w-4 text-yellow-400 mr-1" />
                                 <span className="text-xs lg:text-sm font-medium">
                                   {vendor.rating}
+                                  {vendor.reviewCount ? (
+                                    <span className="text-gray-500 font-normal">
+                                      {" "}({vendor.reviewCount})
+                                    </span>
+                                  ) : null}
                                 </span>
                               </div>
                             </div>
                             <p className="text-xs lg:text-sm text-gray-600 mb-2 lg:mb-3 line-clamp-2">
                               {vendor.description}
                             </p>
+                            {vendor.matchScore != null && (
+                              <div className="mb-2 lg:mb-3">
+                                <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800 font-medium">
+                                  {Math.round(vendor.matchScore * 100)}% match
+                                </span>
+                                {vendor.matchReasons && vendor.matchReasons.length > 0 && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {vendor.matchReasons.slice(0, 2).join(" · ")}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
                               <span className="text-sm lg:text-base font-medium text-green-600">
-                                ₦{vendor.estimatedCost.toLocaleString()}
+                                {vendor.estimatedCost != null
+                                  ? `₦${vendor.estimatedCost.toLocaleString()}`
+                                  : "Quote on request"}
                               </span>
                               {vendor.contact && (
                                 <span className="text-xs text-gray-500 truncate">
@@ -582,12 +709,26 @@ export default function AIPlannerView({
                   <div className="text-center py-6 lg:py-8 text-gray-500">
                     <Users className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-3 lg:mb-4 text-gray-300" />
                     <p className="text-sm lg:text-base">
-                      Vendor recommendations will be generated with AI
-                      enhancement
+                      No verified vendors matched this event yet. Try a nearby city or
+                      adjust the budget.
                     </p>
                   </div>
                 )}
               </div>
+              {plan.vendorAdvice && plan.vendorAdvice.length > 0 && (
+                <div className="mt-4 lg:mt-6 p-4 bg-blue-50 rounded-xl">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                    AI advice on vendors
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {plan.vendorAdvice.map((advice, index) => (
+                      <li key={index} className="text-xs lg:text-sm text-blue-800">
+                        {advice}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </motion.div>
           </div>
 
@@ -729,9 +870,11 @@ export default function AIPlannerView({
                       <div className="text-sm font-medium text-gray-900">
                         {risk.risk}
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {risk.mitigation}
-                      </div>
+                      {risk.mitigation && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          {risk.mitigation}
+                        </div>
+                      )}
                       <div className="flex items-center mt-2 space-x-2">
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${
@@ -752,11 +895,28 @@ export default function AIPlannerView({
                   ))
                 ) : (
                   <div className="text-center py-4 text-gray-500 text-sm">
-                    Risk assessment will be generated with AI enhancement
+                    No risks identified for this plan.
                   </div>
                 )}
               </div>
+              {plan.riskMitigations && plan.riskMitigations.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="text-sm font-medium text-gray-900 mb-2">
+                    How to reduce risk
+                  </div>
+                  <ul className="space-y-1">
+                    {plan.riskMitigations.map((tip, index) => (
+                      <li key={index} className="text-xs text-gray-600 flex items-start">
+                        <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </motion.div>
+
+            <PlanFeedback interactionId={plan.learningInteractionId} />
 
             {/* Quick Actions */}
             <motion.div

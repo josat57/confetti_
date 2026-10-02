@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { aiPlannerService, AIEventPlan } from "@/services/ai-planner.service";
+import PlanFeedback from "@/components/shared/ai-planner/PlanFeedback";
 
 export default function AIPlanDetailPage() {
   const params = useParams();
@@ -55,20 +56,20 @@ export default function AIPlanDetailPage() {
     }
   }, [planId, router]);
 
-  const handleExport = async (format: "pdf" | "docx" | "json") => {
+  const handleExport = async (format: "pdf" | "json") => {
     try {
       const blob = await aiPlannerService.exportPlan(planId, format);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `event-plan-${plan?.eventType}-${format}`;
+      a.download = `event-plan-${plan?.eventType}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success(`Plan exported as ${format.toUpperCase()}`);
     } catch (error: any) {
-      toast.error("Failed to export plan");
+      toast.error(error?.message || "Failed to export plan");
     }
   };
 
@@ -76,21 +77,28 @@ export default function AIPlanDetailPage() {
     const clientEmail = prompt("Enter client email to share the plan:");
     if (clientEmail) {
       try {
-        await aiPlannerService.sharePlan(planId, clientEmail);
-        toast.success("Plan shared successfully!");
+        await aiPlannerService.sharePlan(planId, clientEmail.trim());
+        toast.success(`Plan shared with ${clientEmail.trim()}`);
       } catch (error: any) {
-        toast.error("Failed to share plan");
+        toast.error(error?.message || "Failed to share plan");
       }
     }
   };
 
   const handleConvertToQuote = async () => {
+    const name = prompt("Customer name for the quote:");
+    if (!name?.trim()) return;
+    const email = prompt("Customer email:");
+    if (!email?.trim()) return;
     try {
-      const { quoteId } = await aiPlannerService.convertToQuote(planId);
-      toast.success("Plan converted to quote successfully!");
+      const { quoteId } = await aiPlannerService.convertToQuote(planId, {
+        name: name.trim(),
+        email: email.trim(),
+      });
+      toast.success("Draft quote created — review prices before sending");
       router.push(`/vendor/dashboard/quotes/${quoteId}`);
     } catch (error: any) {
-      toast.error("Failed to convert to quote");
+      toast.error(error?.message || "Failed to convert to quote");
     }
   };
 
@@ -179,12 +187,6 @@ export default function AIPlanDetailPage() {
                   Export as PDF
                 </button>
                 <button
-                  onClick={() => handleExport("docx")}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50"
-                >
-                  Export as Word
-                </button>
-                <button
                   onClick={() => handleExport("json")}
                   className="w-full px-4 py-2 text-left hover:bg-gray-50 last:rounded-b-lg"
                 >
@@ -239,14 +241,16 @@ export default function AIPlanDetailPage() {
         </div>
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
-            <Leaf className="w-8 h-8 opacity-80" />
+            <AlertTriangle className="w-8 h-8 opacity-80" />
             <span className="text-2xl font-bold">
-              {plan.sustainability.score}/100
+              {plan.riskAssessment.length}
             </span>
           </div>
-          <p className="text-orange-100 mt-2">Sustainability Score</p>
+          <p className="text-orange-100 mt-2">Risks Identified</p>
         </div>
       </div>
+
+      <PlanFeedback interactionId={plan.learningInteractionId} className="mb-6" />
 
       {/* Tabs */}
       <div className="mb-6">
@@ -334,7 +338,8 @@ export default function AIPlanDetailPage() {
               </div>
             </div>
 
-            {/* Sustainability */}
+            {/* Sustainability (only when the backend assessed it) */}
+            {plan.sustainability && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Leaf className="w-5 h-5 text-green-500" />
@@ -395,6 +400,7 @@ export default function AIPlanDetailPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
 
@@ -518,7 +524,9 @@ export default function AIPlanDetailPage() {
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-semibold text-purple-600">
-                          ₦{vendor.estimatedCost.toLocaleString()}
+                          {vendor.estimatedCost != null
+                            ? `₦${vendor.estimatedCost.toLocaleString()}`
+                            : "Quote on request"}
                         </span>
                         {vendor.contact && (
                           <span className="text-sm text-gray-500">

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { EventPlanTeaser } from "@/types/ai-planner";
 import { getEventPlanResult } from "@/lib/api/ai-planner";
+import PlanFeedback from "@/components/shared/ai-planner/PlanFeedback";
 import { toast } from "react-toastify";
 import { formatCurrency, formatDate } from "@/lib/utils/formValidation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -269,18 +270,18 @@ export default function ResultPage() {
     : hasEventDetails
     ? {
         // Extract from new backend response structure with eventDetails
-        eventType: backendData.eventDetails.eventType || "Birthday",
+        eventType: backendData.eventDetails.eventType || "Event",
         eventDate:
           backendData.eventDetails.eventDate || new Date().toISOString(),
         location:
           backendData.eventDetails.location?.fullLocation ||
           backendData.eventDetails.location?.city ||
           "Location TBD",
-        guestCount: backendData.eventDetails.guestCount || 50,
+        guestCount: backendData.eventDetails.guestCount || 0,
         totalBudget:
           backendData.budgetBreakdown?.totalBudget ||
           backendData.eventDetails.budget?.amount ||
-          500000,
+          0,
         currency:
           backendData.budgetBreakdown?.currency ||
           backendData.eventDetails.budget?.currency ||
@@ -289,16 +290,16 @@ export default function ResultPage() {
       }
     : {
         // Fallback for other backend response structures
-        eventType: backendData.eventType || "Wedding",
+        eventType: backendData.eventType || "Event",
         eventDate: backendData.eventDate || new Date().toISOString(),
         location:
           backendData.location?.fullLocation ||
           backendData.location?.city ||
           "Location TBD",
-        guestCount: backendData.guestCount || 295,
-        totalBudget: backendData.budgetBreakdown?.totalBudget || 3000000,
+        guestCount: backendData.guestCount || 0,
+        totalBudget: backendData.budgetBreakdown?.totalBudget || 0,
         currency: backendData.budgetBreakdown?.currency || "NGN",
-        formality: backendData.formality || "formal",
+        formality: backendData.formality || "casual",
       };
 
   // Extract budget breakdown from the actual backend structure
@@ -323,16 +324,52 @@ export default function ResultPage() {
               })
             )
           : [],
-        totalAllocated: backendData.budgetBreakdown?.totalBudget || 3000000,
+        totalAllocated:
+          backendData.budgetBreakdown?.validation?.totalAllocated ||
+          backendData.budgetBreakdown?.totalBudget ||
+          0,
         contingency:
-          backendData.budgetBreakdown?.breakdown?.contingency?.amount || 300000,
-        feasibilityScore: 75,
+          backendData.budgetBreakdown?.breakdown?.contingency?.amount || 0,
+        feasibilityScore: null,
       };
 
   // Extract vendor categories (hide contact details for guests)
+  // categoryBreakdown: { [category]: [{ vendor, matchScore, matchReasons, estimatedCost }] }
   const vendorCategories = isEventPlanTeaser
     ? eventPlan.vendorCategories || []
-    : backendData.vendorRecommendations?.recommendations || [];
+    : Object.entries(
+        backendData.vendorRecommendations?.categoryBreakdown || {}
+      ).map(([key, recs]: [string, any]) => {
+        const prices = recs
+          .map((r: any) => r.vendor?.averagePrice)
+          .filter((p: number) => p > 0);
+        const ratings = recs
+          .map((r: any) => r.vendor?.rating)
+          .filter((r: number) => r > 0);
+        return {
+          name: key.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          description: `${recs.length} matched vendor${recs.length === 1 ? "" : "s"} near your event`,
+          vendorCount: recs.length,
+          priceRange: prices.length
+            ? { min: Math.min(...prices), max: Math.max(...prices) }
+            : null,
+          averageRating: ratings.length
+            ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+            : null,
+          reviewCount: recs.reduce(
+            (sum: number, r: any) => sum + (r.vendor?.reviewCount || 0),
+            0
+          ),
+          vendors: recs.map((r: any) => ({
+            name: r.vendor?.name,
+            specialization: r.matchScore != null
+              ? `${Math.round(r.matchScore * 100)}% match`
+              : r.vendor?.subcategory || "",
+            basePrice: r.estimatedCost || 0,
+            rating: r.vendor?.rating || 0,
+          })),
+        };
+      });
 
   // Extract timeline data from the actual backend structure
   const timeline: any = isEventPlanTeaser
@@ -380,18 +417,27 @@ export default function ResultPage() {
   const aiInsights = isEventPlanTeaser
     ? eventPlan.aiInsights
     : {
-        sentiment: {
-          score: backendData.clientAnalysis?.confidenceScore || 0.75,
-          label: "positive" as const,
-        },
-        keywords: backendData.visualSuggestions?.moodBoardConcepts || [
-          "elegant",
-          "modern",
-        ],
-        feasibilityScore: backendData.riskAnalysis?.confidenceLevel
-          ? Math.round(backendData.riskAnalysis.confidenceLevel * 100)
-          : 82, // From the actual backend response
+        keywords: backendData.visualSuggestions?.moodBoardConcepts || [],
+        // Feasibility = 1 - overall risk; confidenceLevel is the model's
+        // confidence, not feasibility. null hides the bar.
+        feasibilityScore:
+          typeof backendData.riskAnalysis?.overallRiskScore === "number"
+            ? Math.round((1 - backendData.riskAnalysis.overallRiskScore) * 100)
+            : null,
       };
+
+  const clientAnalysis: any = backendData.clientAnalysis || null;
+  const clientInsightGroups = [
+    { title: "Cultural considerations", items: clientAnalysis?.culturalConsiderations || [] },
+    { title: "Easy to overlook", items: clientAnalysis?.hiddenNeeds || [] },
+    { title: "What success looks like", items: clientAnalysis?.successMetrics || [] },
+    { title: "Personal touches", items: clientAnalysis?.personalizationOpportunities || [] },
+  ].filter((group) => group.items.length > 0);
+  // "balanced" with no details is the backend's placeholder when no AI model ran
+  const clientPersonality =
+    clientAnalysis?.clientPersonality && clientAnalysis.clientPersonality !== "balanced"
+      ? clientAnalysis.clientPersonality
+      : null;
 
   // Extract actual backend data for detailed sections
   const visualSuggestions: any = backendData.visualSuggestions || null;
@@ -502,6 +548,7 @@ export default function ResultPage() {
                 </h3>
 
                 {/* Feasibility Score */}
+                {aiInsights.feasibilityScore != null && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">
@@ -524,8 +571,32 @@ export default function ResultPage() {
                     />
                   </div>
                 </div>
+                )}
 
-                {/* Client Analysis - Not available in EventPlanTeaser, section commented out */}
+                {/* Client Analysis */}
+                {(clientPersonality || clientInsightGroups.length > 0) && (
+                  <div className="mb-4">
+                    {clientPersonality && (
+                      <p className="text-sm text-gray-700 mb-3">{clientPersonality}</p>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {clientInsightGroups.map((group) => (
+                        <div key={group.title}>
+                          <p className="text-sm font-medium text-gray-700 mb-1">
+                            {group.title}
+                          </p>
+                          <ul className="list-disc pl-5 space-y-0.5">
+                            {group.items.map((item: string, index: number) => (
+                              <li key={index} className="text-sm text-gray-600">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Visual Suggestions - Not available in EventPlanTeaser */}
                 {/* 
@@ -701,6 +772,12 @@ export default function ResultPage() {
           </motion.div>
         )}
 
+        {/* Rating (signed-in users on plan level 2+; hidden otherwise) */}
+        <PlanFeedback
+          interactionId={backendData.learningInteractionId}
+          className="mb-8"
+        />
+
         {/* Recommendations */}
         {recommendations && recommendations.length > 0 && (
           <motion.div
@@ -758,17 +835,8 @@ export default function ResultPage() {
                   💡 AI-Optimized Budget
                 </p>
                 <p className="text-sm text-green-800">
-                  Our AI has analyzed{" "}
-                  {vendorCategories.length > 0 ? `${vendorCategories.length}+` : "multiple"}{" "}
-                  vendors to maximize value while staying within your budget. Estimated
-                  market savings:{" "}
-                  <span className="font-bold">
-                    {formatCurrency(
-                      eventSummary.totalBudget * 0.15,
-                      eventSummary.currency
-                    )}
-                  </span>{" "}
-                  (15%)
+                  Allocations follow typical spending for this type of event, with
+                  a 10% contingency held back for unexpected costs.
                 </p>
               </div>
             </div>
@@ -1063,10 +1131,12 @@ export default function ResultPage() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-medium text-green-600">
-                                        {formatCurrency(
-                                          vendor.basePrice || 0,
-                                          eventSummary.currency
-                                        )}
+                                        {vendor.basePrice
+                                          ? formatCurrency(
+                                              vendor.basePrice,
+                                              eventSummary.currency
+                                            )
+                                          : "Quote on request"}
                                       </p>
                                       {vendor.rating && (
                                         <p className="text-xs text-gray-500">

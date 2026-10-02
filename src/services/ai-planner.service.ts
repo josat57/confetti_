@@ -41,9 +41,44 @@ export interface BackendPlanResponse {
   lastAccessed: string;
 }
 
+/** AI read of the client, from the backend's clientAnalysis */
+export interface ClientAnalysis {
+  clientPersonality?: string;
+  culturalConsiderations?: string[];
+  hiddenNeeds?: string[];
+  successMetrics?: string[];
+  personalizationOpportunities?: string[];
+  confidenceScore?: number;
+  aiModelsUsed?: string[];
+}
+
+/** What the most recent refinement changed, and why */
+export interface PlanRefinement {
+  type?: string;
+  prompt?: string;
+  changes: string[];
+  reasoning?: string | null;
+  impact?: string | null;
+  suggestions: string[];
+  refinedAt?: string;
+}
+
 export interface AIEventPlan {
+  /** Use for refine/chat/result calls: saved planId, or the guest session token */
   id: string;
   planId?: string;
+  /** Pass to submitPlanFeedback; null for guests and plan level 1 */
+  learningInteractionId?: string | null;
+  /** True when the backend already saved this plan to the user's account */
+  autoSaved?: boolean;
+  clientAnalysis?: ClientAnalysis | null;
+  /** Budget advice from the backend (validation + optimization tips) */
+  budgetTips?: string[];
+  /** General mitigation advice that isn't tied to one risk */
+  riskMitigations?: string[];
+  /** Model advice about vendors (never fabricated vendor listings) */
+  vendorAdvice?: string[];
+  latestRefinement?: PlanRefinement | null;
   title?: string;
   description?: string;
   status?: "draft" | "active" | "refined" | "finalized" | "archived";
@@ -59,7 +94,7 @@ export interface AIEventPlan {
   timeline: {
     time: string;
     activity: string;
-    duration: number;
+    duration?: number;
     notes?: string;
   }[];
 
@@ -78,11 +113,17 @@ export interface AIEventPlan {
   vendorRecommendations: {
     category: string;
     vendors: {
+      id?: string;
       name: string;
       rating: number;
-      estimatedCost: number;
+      reviewCount?: number;
+      /** null when the vendor quotes on request */
+      estimatedCost: number | null;
       description: string;
       contact?: string;
+      /** 0-1; null when the vendor wasn't AI-scored */
+      matchScore?: number | null;
+      matchReasons?: string[];
     }[];
   }[];
 
@@ -112,12 +153,13 @@ export interface AIEventPlan {
     cons: string[];
   }[];
 
+  /** null: the backend doesn't assess sustainability yet */
   sustainability: {
     score: number;
     recommendations: string[];
     carbonFootprint: number;
     ecoFriendlyOptions: string[];
-  };
+  } | null;
 
   createdAt: string;
   updatedAt: string;
@@ -137,975 +179,53 @@ export interface PlanningSession {
   status: "active" | "completed" | "archived";
   messages: ChatMessage[];
   currentPlan?: AIEventPlan;
+  /** Plan created from this conversation (open via getEventPlan) */
+  generatedPlanId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+/** "flowers_decor" -> "Flowers Decor" */
+const humanize = (key: string) =>
+  String(key)
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+
+const formatShortDate = (value: string) => {
+  const date = new Date(value);
+  return isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+/** The backend's error message when there is one, otherwise the fallback */
+const apiErrorMessage = (error: any, fallback: string) => {
+  const status = error?.response?.status;
+  if (status === 429) return "You've made too many requests. Please wait a while and try again.";
+  if (status === 401) return "Please sign in to continue.";
+  return error?.response?.data?.message || (!error?.response && error?.message) || fallback;
+};
+
+/** Backend chat session document -> PlanningSession */
+const toPlanningSession = (raw: any): PlanningSession => ({
+  id: raw._id || raw.id,
+  title: raw.title || "Planning Session",
+  status: raw.status || "active",
+  generatedPlanId: raw.generatedPlanId || undefined,
+  messages: (raw.messages || []).map(toChatMessage),
+  createdAt: raw.createdAt,
+  updatedAt: raw.updatedAt,
+});
+
+const toChatMessage = (raw: any): ChatMessage => ({
+  id: raw._id || raw.id,
+  role: raw.role,
+  content: raw.content,
+  timestamp: raw.timestamp,
+});
+
 export const aiPlannerService = {
-  /**
-   * Generate comprehensive mock plan data
-   */
-  generateMockPlan(request: EventPlanningRequest): AIEventPlan {
-    const eventType = request.eventType;
-    const budget = request.budget;
-    const guestCount = request.guestCount;
-
-    // Generate timeline based on event type and duration
-    const timeline = this.generateMockTimeline(eventType, request.duration);
-
-    // Generate budget breakdown
-    const budgetBreakdown = this.generateMockBudgetBreakdown(eventType, budget);
-
-    // Generate vendor recommendations
-    const vendorRecommendations = this.generateMockVendorRecommendations(
-      eventType,
-      request.location
-    );
-
-    // Generate checklist
-    const checklist = this.generateMockChecklist(eventType);
-
-    // Generate risk assessment
-    const riskAssessment = this.generateMockRiskAssessment(eventType);
-
-    // Generate alternatives
-    const alternatives = this.generateMockAlternatives(eventType, budget);
-
-    // Generate sustainability info
-    const sustainability = this.generateMockSustainability(eventType);
-
-    return {
-      id: Date.now().toString(),
-      eventType: request.eventType,
-      budget: request.budget,
-      guestCount: request.guestCount,
-      date: request.date,
-      location: request.location,
-      timeline,
-      budgetBreakdown,
-      vendorRecommendations,
-      checklist,
-      riskAssessment,
-      alternatives,
-      sustainability,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  },
-
-  /**
-   * Enhance existing plan with mock data for empty fields
-   */
-  enhancePlanWithMockData(
-    plan: AIEventPlan,
-    request: EventPlanningRequest
-  ): AIEventPlan {
-    return {
-      ...plan,
-      timeline:
-        plan.timeline.length > 0
-          ? plan.timeline
-          : this.generateMockTimeline(request.eventType, request.duration),
-      budgetBreakdown:
-        plan.budgetBreakdown.length > 0
-          ? plan.budgetBreakdown
-          : this.generateMockBudgetBreakdown(request.eventType, request.budget),
-      vendorRecommendations:
-        plan.vendorRecommendations.length > 0
-          ? plan.vendorRecommendations
-          : this.generateMockVendorRecommendations(
-              request.eventType,
-              request.location
-            ),
-      checklist:
-        plan.checklist.length > 0
-          ? plan.checklist
-          : this.generateMockChecklist(request.eventType),
-      riskAssessment:
-        plan.riskAssessment.length > 0
-          ? plan.riskAssessment
-          : this.generateMockRiskAssessment(request.eventType),
-      alternatives:
-        plan.alternatives.length > 0
-          ? plan.alternatives
-          : this.generateMockAlternatives(request.eventType, request.budget),
-      sustainability:
-        plan.sustainability.score > 0
-          ? plan.sustainability
-          : this.generateMockSustainability(request.eventType),
-    };
-  },
-
-  /**
-   * Generate mock timeline based on event type
-   */
-  generateMockTimeline(eventType: string, duration: number) {
-    const timelineTemplates = {
-      wedding: [
-        {
-          time: "14:00",
-          activity: "Guest Arrival & Welcome Drinks",
-          duration: 1,
-          notes: "Cocktail reception with light refreshments",
-        },
-        {
-          time: "15:00",
-          activity: "Wedding Ceremony",
-          duration: 1,
-          notes: "Exchange of vows and rings",
-        },
-        {
-          time: "16:00",
-          activity: "Photo Session & Cocktail Hour",
-          duration: 1,
-          notes: "Professional photography and mingling",
-        },
-        {
-          time: "17:00",
-          activity: "Reception Dinner",
-          duration: 2,
-          notes: "Three-course meal with speeches",
-        },
-        {
-          time: "19:00",
-          activity: "First Dance & Entertainment",
-          duration: 2,
-          notes: "Dancing and live entertainment",
-        },
-        {
-          time: "21:00",
-          activity: "Cake Cutting & Celebration",
-          duration: 1,
-          notes: "Traditional cake cutting ceremony",
-        },
-      ],
-      corporate: [
-        {
-          time: "09:00",
-          activity: "Registration & Welcome Coffee",
-          duration: 1,
-          notes: "Check-in and networking breakfast",
-        },
-        {
-          time: "10:00",
-          activity: "Opening Keynote",
-          duration: 1,
-          notes: "Welcome address and company updates",
-        },
-        {
-          time: "11:00",
-          activity: "Coffee Break & Networking",
-          duration: 0.5,
-          notes: "Refreshments and informal discussions",
-        },
-        {
-          time: "11:30",
-          activity: "Panel Discussion",
-          duration: 1.5,
-          notes: "Industry experts panel",
-        },
-        {
-          time: "13:00",
-          activity: "Lunch & Networking",
-          duration: 1,
-          notes: "Catered lunch with networking opportunities",
-        },
-        {
-          time: "14:00",
-          activity: "Workshops & Breakout Sessions",
-          duration: 2,
-          notes: "Interactive learning sessions",
-        },
-        {
-          time: "16:00",
-          activity: "Closing Remarks & Awards",
-          duration: 1,
-          notes: "Summary and recognition ceremony",
-        },
-      ],
-      birthday: [
-        {
-          time: "15:00",
-          activity: "Guest Arrival & Welcome",
-          duration: 0.5,
-          notes: "Welcome drinks and mingling",
-        },
-        {
-          time: "15:30",
-          activity: "Games & Activities",
-          duration: 1.5,
-          notes: "Fun activities and entertainment",
-        },
-        {
-          time: "17:00",
-          activity: "Birthday Cake & Celebration",
-          duration: 0.5,
-          notes: "Cake cutting and birthday song",
-        },
-        {
-          time: "17:30",
-          activity: "Dinner & Refreshments",
-          duration: 1.5,
-          notes: "Birthday feast and refreshments",
-        },
-        {
-          time: "19:00",
-          activity: "Dancing & Music",
-          duration: 2,
-          notes: "DJ and dancing",
-        },
-        {
-          time: "21:00",
-          activity: "Gift Opening & Thank You",
-          duration: 0.5,
-          notes: "Gift appreciation and farewell",
-        },
-      ],
-    };
-
-    const defaultTimeline = [
-      {
-        time: "10:00",
-        activity: "Event Setup & Preparation",
-        duration: 1,
-        notes: "Final preparations and setup",
-      },
-      {
-        time: "11:00",
-        activity: "Guest Arrival",
-        duration: 0.5,
-        notes: "Welcome and registration",
-      },
-      {
-        time: "11:30",
-        activity: "Main Event Activities",
-        duration: duration - 2,
-        notes: "Core event programming",
-      },
-      {
-        time: `${11 + duration - 1}:30`,
-        activity: "Closing & Farewell",
-        duration: 0.5,
-        notes: "Thank you and goodbye",
-      },
-    ];
-
-    return (
-      timelineTemplates[eventType as keyof typeof timelineTemplates] ||
-      defaultTimeline
-    );
-  },
-
-  /**
-   * Generate mock budget breakdown
-   */
-  generateMockBudgetBreakdown(eventType: string, totalBudget: number) {
-    const budgetTemplates = {
-      wedding: [
-        {
-          category: "Venue & Catering",
-          percentage: 45,
-          items: [
-            {
-              item: "Venue Rental",
-              cost: Math.round(totalBudget * 0.25),
-              quantity: 1,
-              notes: "Reception hall rental",
-            },
-            {
-              item: "Catering Services",
-              cost: Math.round(totalBudget * 0.2),
-              quantity: 1,
-              notes: "Food and beverage service",
-            },
-          ],
-        },
-        {
-          category: "Photography & Videography",
-          percentage: 15,
-          items: [
-            {
-              item: "Wedding Photographer",
-              cost: Math.round(totalBudget * 0.1),
-              quantity: 1,
-              notes: "Professional photography",
-            },
-            {
-              item: "Videographer",
-              cost: Math.round(totalBudget * 0.05),
-              quantity: 1,
-              notes: "Wedding video production",
-            },
-          ],
-        },
-        {
-          category: "Decorations & Flowers",
-          percentage: 20,
-          items: [
-            {
-              item: "Floral Arrangements",
-              cost: Math.round(totalBudget * 0.12),
-              quantity: 1,
-              notes: "Bridal bouquet and centerpieces",
-            },
-            {
-              item: "Venue Decoration",
-              cost: Math.round(totalBudget * 0.08),
-              quantity: 1,
-              notes: "Lighting and decor setup",
-            },
-          ],
-        },
-        {
-          category: "Entertainment & Music",
-          percentage: 10,
-          items: [
-            {
-              item: "DJ Services",
-              cost: Math.round(totalBudget * 0.06),
-              quantity: 1,
-              notes: "Music and sound system",
-            },
-            {
-              item: "Live Band",
-              cost: Math.round(totalBudget * 0.04),
-              quantity: 1,
-              notes: "Live musical entertainment",
-            },
-          ],
-        },
-        {
-          category: "Miscellaneous",
-          percentage: 10,
-          items: [
-            {
-              item: "Transportation",
-              cost: Math.round(totalBudget * 0.05),
-              quantity: 1,
-              notes: "Bridal car and guest transport",
-            },
-            {
-              item: "Wedding Favors",
-              cost: Math.round(totalBudget * 0.03),
-              quantity: 1,
-              notes: "Guest gifts and favors",
-            },
-            {
-              item: "Contingency",
-              cost: Math.round(totalBudget * 0.02),
-              quantity: 1,
-              notes: "Emergency fund",
-            },
-          ],
-        },
-      ],
-      corporate: [
-        {
-          category: "Venue & Equipment",
-          percentage: 40,
-          items: [
-            {
-              item: "Conference Venue",
-              cost: Math.round(totalBudget * 0.25),
-              quantity: 1,
-              notes: "Meeting space rental",
-            },
-            {
-              item: "AV Equipment",
-              cost: Math.round(totalBudget * 0.15),
-              quantity: 1,
-              notes: "Sound, lighting, and projection",
-            },
-          ],
-        },
-        {
-          category: "Catering",
-          percentage: 25,
-          items: [
-            {
-              item: "Breakfast & Coffee",
-              cost: Math.round(totalBudget * 0.08),
-              quantity: 1,
-              notes: "Morning refreshments",
-            },
-            {
-              item: "Lunch Catering",
-              cost: Math.round(totalBudget * 0.12),
-              quantity: 1,
-              notes: "Full lunch service",
-            },
-            {
-              item: "Coffee Breaks",
-              cost: Math.round(totalBudget * 0.05),
-              quantity: 1,
-              notes: "Afternoon refreshments",
-            },
-          ],
-        },
-        {
-          category: "Speakers & Entertainment",
-          percentage: 20,
-          items: [
-            {
-              item: "Keynote Speaker",
-              cost: Math.round(totalBudget * 0.15),
-              quantity: 1,
-              notes: "Professional speaker fee",
-            },
-            {
-              item: "Panel Moderator",
-              cost: Math.round(totalBudget * 0.05),
-              quantity: 1,
-              notes: "Discussion facilitator",
-            },
-          ],
-        },
-        {
-          category: "Materials & Swag",
-          percentage: 10,
-          items: [
-            {
-              item: "Welcome Bags",
-              cost: Math.round(totalBudget * 0.06),
-              quantity: 1,
-              notes: "Branded merchandise",
-            },
-            {
-              item: "Printed Materials",
-              cost: Math.round(totalBudget * 0.04),
-              quantity: 1,
-              notes: "Programs and handouts",
-            },
-          ],
-        },
-        {
-          category: "Logistics",
-          percentage: 5,
-          items: [
-            {
-              item: "Registration Setup",
-              cost: Math.round(totalBudget * 0.03),
-              quantity: 1,
-              notes: "Check-in management",
-            },
-            {
-              item: "Staff Coordination",
-              cost: Math.round(totalBudget * 0.02),
-              quantity: 1,
-              notes: "Event management",
-            },
-          ],
-        },
-      ],
-    };
-
-    const defaultBudget = [
-      {
-        category: "Venue",
-        percentage: 40,
-        items: [
-          {
-            item: "Venue Rental",
-            cost: Math.round(totalBudget * 0.4),
-            quantity: 1,
-            notes: "Event space rental",
-          },
-        ],
-      },
-      {
-        category: "Catering",
-        percentage: 30,
-        items: [
-          {
-            item: "Food & Beverages",
-            cost: Math.round(totalBudget * 0.3),
-            quantity: 1,
-            notes: "Catering services",
-          },
-        ],
-      },
-      {
-        category: "Entertainment",
-        percentage: 15,
-        items: [
-          {
-            item: "Entertainment Services",
-            cost: Math.round(totalBudget * 0.15),
-            quantity: 1,
-            notes: "Music and activities",
-          },
-        ],
-      },
-      {
-        category: "Decorations",
-        percentage: 10,
-        items: [
-          {
-            item: "Decorations & Setup",
-            cost: Math.round(totalBudget * 0.1),
-            quantity: 1,
-            notes: "Event decoration",
-          },
-        ],
-      },
-      {
-        category: "Miscellaneous",
-        percentage: 5,
-        items: [
-          {
-            item: "Contingency & Extras",
-            cost: Math.round(totalBudget * 0.05),
-            quantity: 1,
-            notes: "Emergency fund",
-          },
-        ],
-      },
-    ];
-
-    const template =
-      budgetTemplates[eventType as keyof typeof budgetTemplates] ||
-      defaultBudget;
-
-    return template.map((category) => ({
-      ...category,
-      amount: category.items.reduce((sum, item) => sum + item.cost, 0),
-    }));
-  },
-
-  /**
-   * Generate mock vendor recommendations
-   */
-  generateMockVendorRecommendations(eventType: string, location: string) {
-    const city = location.split(",")[0]?.trim() || "Lagos";
-
-    return [
-      {
-        category: "Catering",
-        vendors: [
-          {
-            name: `${city} Premium Catering`,
-            rating: 4.8,
-            estimatedCost: 150000,
-            description:
-              "Award-winning catering service specializing in Nigerian and international cuisine",
-            contact: "+234 801 234 5678",
-          },
-          {
-            name: "Gourmet Events Co.",
-            rating: 4.6,
-            estimatedCost: 120000,
-            description: "Professional catering with customizable menu options",
-            contact: "+234 802 345 6789",
-          },
-          {
-            name: "Royal Feast Catering",
-            rating: 4.7,
-            estimatedCost: 180000,
-            description: "Luxury catering service for high-end events",
-            contact: "+234 803 456 7890",
-          },
-        ],
-      },
-      {
-        category: "Photography",
-        vendors: [
-          {
-            name: "Moments Photography",
-            rating: 4.9,
-            estimatedCost: 80000,
-            description:
-              "Creative wedding and event photography with artistic flair",
-            contact: "+234 804 567 8901",
-          },
-          {
-            name: `${city} Photo Studio`,
-            rating: 4.5,
-            estimatedCost: 60000,
-            description:
-              "Professional event photography and videography services",
-            contact: "+234 805 678 9012",
-          },
-          {
-            name: "Elite Captures",
-            rating: 4.7,
-            estimatedCost: 100000,
-            description: "Premium photography with same-day editing",
-            contact: "+234 806 789 0123",
-          },
-        ],
-      },
-      {
-        category: "Entertainment",
-        vendors: [
-          {
-            name: "Soundwave Entertainment",
-            rating: 4.6,
-            estimatedCost: 45000,
-            description:
-              "Professional DJ services with extensive music library",
-            contact: "+234 807 890 1234",
-          },
-          {
-            name: "Live Music Collective",
-            rating: 4.8,
-            estimatedCost: 75000,
-            description: "Live band performances for all event types",
-            contact: "+234 808 901 2345",
-          },
-          {
-            name: "Party Vibes DJ",
-            rating: 4.4,
-            estimatedCost: 35000,
-            description: "Energetic DJ services with lighting effects",
-            contact: "+234 809 012 3456",
-          },
-        ],
-      },
-      {
-        category: "Decoration",
-        vendors: [
-          {
-            name: "Elegant Decor Solutions",
-            rating: 4.7,
-            estimatedCost: 65000,
-            description: "Creative event decoration and floral arrangements",
-            contact: "+234 810 123 4567",
-          },
-          {
-            name: `${city} Event Styling`,
-            rating: 4.5,
-            estimatedCost: 50000,
-            description: "Complete event styling and setup services",
-            contact: "+234 811 234 5678",
-          },
-          {
-            name: "Luxury Events Decor",
-            rating: 4.9,
-            estimatedCost: 90000,
-            description: "High-end decoration with premium materials",
-            contact: "+234 812 345 6789",
-          },
-        ],
-      },
-    ];
-  },
-
-  /**
-   * Generate mock checklist
-   */
-  generateMockChecklist(eventType: string) {
-    const checklistTemplates = {
-      wedding: [
-        {
-          category: "Pre-Event (8 weeks before)",
-          tasks: [
-            {
-              task: "Book venue and confirm date",
-              deadline: "8 weeks before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Send save-the-date cards",
-              deadline: "8 weeks before",
-              priority: "medium" as const,
-              completed: false,
-            },
-            {
-              task: "Book photographer and videographer",
-              deadline: "6 weeks before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Order wedding cake",
-              deadline: "4 weeks before",
-              priority: "medium" as const,
-              completed: false,
-            },
-          ],
-        },
-        {
-          category: "Final Preparations (1 week before)",
-          tasks: [
-            {
-              task: "Confirm final guest count",
-              deadline: "1 week before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Prepare seating arrangements",
-              deadline: "3 days before",
-              priority: "medium" as const,
-              completed: false,
-            },
-            {
-              task: "Final venue walkthrough",
-              deadline: "2 days before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Prepare emergency kit",
-              deadline: "1 day before",
-              priority: "low" as const,
-              completed: false,
-            },
-          ],
-        },
-      ],
-      corporate: [
-        {
-          category: "Planning Phase (4 weeks before)",
-          tasks: [
-            {
-              task: "Confirm venue and AV requirements",
-              deadline: "4 weeks before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Send invitations to attendees",
-              deadline: "3 weeks before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Book keynote speakers",
-              deadline: "3 weeks before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Arrange catering services",
-              deadline: "2 weeks before",
-              priority: "medium" as const,
-              completed: false,
-            },
-          ],
-        },
-        {
-          category: "Final Week",
-          tasks: [
-            {
-              task: "Test all AV equipment",
-              deadline: "2 days before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Prepare welcome materials",
-              deadline: "2 days before",
-              priority: "medium" as const,
-              completed: false,
-            },
-            {
-              task: "Brief all staff members",
-              deadline: "1 day before",
-              priority: "high" as const,
-              completed: false,
-            },
-            {
-              task: "Set up registration area",
-              deadline: "Event day",
-              priority: "medium" as const,
-              completed: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    const defaultChecklist = [
-      {
-        category: "Pre-Event Planning",
-        tasks: [
-          {
-            task: "Confirm venue booking",
-            deadline: "2 weeks before",
-            priority: "high" as const,
-            completed: false,
-          },
-          {
-            task: "Send invitations",
-            deadline: "2 weeks before",
-            priority: "high" as const,
-            completed: false,
-          },
-          {
-            task: "Arrange catering",
-            deadline: "1 week before",
-            priority: "medium" as const,
-            completed: false,
-          },
-          {
-            task: "Confirm entertainment",
-            deadline: "1 week before",
-            priority: "medium" as const,
-            completed: false,
-          },
-        ],
-      },
-      {
-        category: "Event Day",
-        tasks: [
-          {
-            task: "Set up decorations",
-            deadline: "Event day",
-            priority: "high" as const,
-            completed: false,
-          },
-          {
-            task: "Brief service staff",
-            deadline: "Event day",
-            priority: "medium" as const,
-            completed: false,
-          },
-          {
-            task: "Final sound check",
-            deadline: "Event day",
-            priority: "high" as const,
-            completed: false,
-          },
-          {
-            task: "Welcome guests",
-            deadline: "Event day",
-            priority: "low" as const,
-            completed: false,
-          },
-        ],
-      },
-    ];
-
-    return (
-      checklistTemplates[eventType as keyof typeof checklistTemplates] ||
-      defaultChecklist
-    );
-  },
-
-  /**
-   * Generate mock risk assessment
-   */
-  generateMockRiskAssessment(eventType: string) {
-    return [
-      {
-        risk: "Weather-related disruptions",
-        probability: "medium" as const,
-        impact: "high" as const,
-        mitigation:
-          "Secure indoor backup venue and monitor weather forecasts closely",
-      },
-      {
-        risk: "Vendor no-show or cancellation",
-        probability: "low" as const,
-        impact: "high" as const,
-        mitigation:
-          "Maintain backup vendor list and confirm all bookings 48 hours prior",
-      },
-      {
-        risk: "Technical equipment failure",
-        probability: "medium" as const,
-        impact: "medium" as const,
-        mitigation:
-          "Test all equipment beforehand and have backup systems ready",
-      },
-      {
-        risk: "Lower than expected attendance",
-        probability: "low" as const,
-        impact: "medium" as const,
-        mitigation:
-          "Send reminder notifications and have flexible catering arrangements",
-      },
-      {
-        risk: "Budget overrun",
-        probability: "medium" as const,
-        impact: "medium" as const,
-        mitigation: "Maintain 10% contingency fund and track expenses closely",
-      },
-    ];
-  },
-
-  /**
-   * Generate mock alternatives
-   */
-  generateMockAlternatives(eventType: string, budget: number) {
-    return [
-      {
-        scenario: "Budget-Friendly Option",
-        budgetImpact: -budget * 0.3,
-        description:
-          "Reduce costs while maintaining quality through strategic vendor selection",
-        pros: [
-          "30% cost savings",
-          "More intimate atmosphere",
-          "Flexible scheduling",
-        ],
-        cons: [
-          "Fewer premium options",
-          "Limited guest capacity",
-          "Simpler decorations",
-        ],
-      },
-      {
-        scenario: "Premium Upgrade",
-        budgetImpact: budget * 0.5,
-        description:
-          "Enhanced experience with luxury vendors and premium services",
-        pros: [
-          "Premium venue and catering",
-          "Professional photography/videography",
-          "Enhanced entertainment",
-        ],
-        cons: [
-          "Higher investment required",
-          "More complex logistics",
-          "Extended planning time",
-        ],
-      },
-      {
-        scenario: "Hybrid Format",
-        budgetImpact: budget * 0.1,
-        description: "Combine in-person and virtual elements for broader reach",
-        pros: [
-          "Increased accessibility",
-          "Cost-effective scaling",
-          "Technology integration",
-        ],
-        cons: [
-          "Technical complexity",
-          "Reduced personal interaction",
-          "Equipment requirements",
-        ],
-      },
-    ];
-  },
-
-  /**
-   * Generate mock sustainability info
-   */
-  generateMockSustainability(eventType: string) {
-    return {
-      score: Math.floor(Math.random() * 30) + 70, // Score between 70-100
-      recommendations: [
-        "Use locally sourced catering to reduce carbon footprint",
-        "Implement digital invitations and programs to reduce paper waste",
-        "Choose venues with renewable energy sources",
-        "Provide recycling stations throughout the event space",
-        "Use reusable or biodegradable serving materials",
-        "Donate leftover food to local charities",
-      ],
-      carbonFootprint: Math.floor(Math.random() * 500) + 200, // kg CO2
-      ecoFriendlyOptions: [
-        "Solar-powered lighting systems",
-        "Organic and locally-sourced menu options",
-        "Digital check-in and registration",
-        "Carpooling coordination for guests",
-        "Waste reduction and recycling program",
-      ],
-    };
-  },
-
   /**
    * Create a new AI event plan using the analyze endpoint
    */
@@ -1141,208 +261,162 @@ export const aiPlannerService = {
 
     try {
       const response = await api.post("/ai-planner/generate", payload);
-      const responseData = response.data;
-
-      console.log("Backend response:", responseData);
-
-      // Handle the actual backend response structure
-      const eventPlan = responseData.data?.eventPlan;
-
-      if (!eventPlan) {
-        console.log("No eventPlan in response, using mock data");
-        return this.generateMockPlan(request);
+      const data = response.data?.data;
+      if (!data?.eventPlan) {
+        throw new Error("The AI planner didn't return a plan. Please try again.");
       }
 
-      // Transform backend response to our expected format
-      const basePlan = {
-        id: eventPlan.sessionToken || Date.now().toString(),
+      const plan = this.transformComprehensivePlan(data.eventPlan, {
+        // resultId: saved planId for signed-in users, session token for guests
+        id: data.resultId,
+        planId: data.planId,
+        autoSaved: data.autoSaved,
+      });
+      // Echo the request's own values for the header/overview
+      return {
+        ...plan,
         eventType: request.eventType,
         budget: request.budget,
         guestCount: request.guestCount,
         date: request.date,
         location: request.location,
-        timeline: this.transformIntelligentTimeline(
-          eventPlan.intelligentTimeline,
-          request
-        ),
-        budgetBreakdown: this.transformBudgetOptimization(
-          eventPlan.budgetOptimization,
-          request.budget
-        ),
-        vendorRecommendations: this.transformVendorRecommendations(
-          eventPlan.vendorRecommendations
-        ),
-        checklist: this.generateChecklistFromBackendData(eventPlan, request),
-        riskAssessment: this.transformRiskAnalysis(eventPlan.riskAnalysis),
-        alternatives: this.generateAlternativesFromBackendData(
-          eventPlan,
-          request.budget
-        ),
-        sustainability: this.transformSustainabilityData(eventPlan),
-        createdAt: eventPlan.generatedAt || new Date().toISOString(),
-        updatedAt: eventPlan.generatedAt || new Date().toISOString(),
       };
-
-      // Enhance with mock data for missing sections
-      const enhancedPlan = this.enhancePlanWithMockData(basePlan, request);
-
-      return enhancedPlan;
-    } catch (error) {
-      console.error("AI Planner API error, using mock data:", error);
-      // Return complete mock data if API fails
-      return this.generateMockPlan(request);
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Failed to generate your event plan"));
     }
   },
 
   /**
-   * Transform backend risk analysis to our format
+   * Backend riskAnalysis.riskCategories -> risk list (highest score first).
+   * Mitigation is only set when the backend tied factors to that risk.
    */
-  transformRiskAnalysis(riskAnalysis: any) {
-    if (!riskAnalysis || !riskAnalysis.riskCategories) {
-      return [];
-    }
+  transformRiskAnalysis(riskAnalysis: any): AIEventPlan["riskAssessment"] {
+    const categories = riskAnalysis?.riskCategories;
+    if (!categories) return [];
 
-    const risks = [];
-    const categories = riskAnalysis.riskCategories;
+    const labels: Record<string, string> = {
+      financial: "Budget overrun",
+      operational: "Operational and logistics issues",
+      market: "Vendor market conditions",
+      seasonal: "Seasonal demand (pricing and availability)",
+      vendor: "Vendor reliability",
+    };
+    const level = (v: any): "low" | "medium" | "high" =>
+      v === "high" || v === "medium" || v === "low" ? v : "medium";
 
-    if (categories.financial) {
-      risks.push({
-        risk: "Financial budget overrun",
-        probability: categories.financial.level as "low" | "medium" | "high",
-        impact:
-          categories.financial.score > 0.5
-            ? "high"
-            : ("medium" as "low" | "medium" | "high"),
-        mitigation: "Monitor expenses closely and maintain contingency fund",
-      });
-    }
-
-    if (categories.operational) {
-      risks.push({
-        risk: "Operational challenges",
-        probability: categories.operational.level as "low" | "medium" | "high",
-        impact:
-          categories.operational.score > 0.5
-            ? "high"
-            : ("medium" as "low" | "medium" | "high"),
-        mitigation: "Ensure proper coordination and backup plans",
-      });
-    }
-
-    // Add default risks if none from backend
-    if (risks.length === 0) {
-      return this.generateMockRiskAssessment("");
-    }
-
-    return risks;
+    return Object.entries(categories)
+      .filter(([, value]: [string, any]) => value && typeof value === "object")
+      .sort(([, a]: [string, any], [, b]: [string, any]) => (b.score || 0) - (a.score || 0))
+      .map(([key, value]: [string, any]) => ({
+        risk: labels[key] || humanize(key),
+        probability: level(value.level),
+        impact: value.score >= 0.5 ? "high" : value.score >= 0.25 ? "medium" : "low",
+        mitigation: Array.isArray(value.factors) ? value.factors.join("; ") : "",
+      }));
   },
 
   /**
-   * Transform backend intelligent timeline to our format
+   * Backend planning timeline -> timeline rows. Handles the generated shape
+   * ({ phases: [{ phase, tasks: [...] }] }) and refined plans, where the AI
+   * may return a flat array of items.
    */
-  transformIntelligentTimeline(
-    timelineData: any,
-    request: EventPlanningRequest
-  ) {
-    // Backend doesn't provide detailed timeline yet, return empty for mock data enhancement
-    if (
-      !timelineData ||
-      !timelineData.phases ||
-      timelineData.phases.length === 0
-    ) {
-      return [];
-    }
+  transformIntelligentTimeline(timelineData: any): AIEventPlan["timeline"] {
+    const row = (item: any, phase?: string) => {
+      const due = item.deadline || item.date || item.dueDate;
+      const notes = [
+        due ? `Due ${formatShortDate(due)}` : null,
+        item.priority ? `${item.priority} priority` : null,
+        item.vendor || null,
+        item.description || item.notes || null,
+      ].filter(Boolean);
+      return {
+        time: phase || item.phase || item.time || item.timeframe || "",
+        activity: item.task || item.activity || item.name || item.title || "",
+        notes: notes.join(" · "),
+      };
+    };
 
-    // Transform backend timeline phases to our timeline format
-    return timelineData.phases.map((phase: any, index: number) => ({
-      time: `${10 + index}:00`,
-      activity: phase.name || `Phase ${index + 1}`,
-      duration: phase.duration || 1,
-      notes: phase.description || "",
-    }));
-  },
-
-  /**
-   * Transform backend budget optimization to our budget breakdown format
-   */
-  transformBudgetOptimization(budgetData: any, totalBudget: number) {
-    // Backend doesn't provide detailed budget breakdown yet
-    if (!budgetData || !budgetData.recommendations) {
-      return [];
-    }
-
-    // Create a simple budget breakdown based on backend recommendations
-    return [
-      {
-        category: "Optimized Planning",
-        percentage: 100,
-        amount: totalBudget,
-        items: budgetData.recommendations.map((rec: string, index: number) => ({
-          item: rec,
-          cost: Math.round(totalBudget * 0.1),
-          quantity: 1,
-          notes: `Feasibility score: ${budgetData.feasibility_score}%`,
-        })),
-      },
-    ];
-  },
-
-  /**
-   * Generate checklist from backend data
-   */
-  generateChecklistFromBackendData(
-    eventPlan: any,
-    request: EventPlanningRequest
-  ) {
-    const clientAnalysis = eventPlan.clientAnalysis;
-    const tasks = [];
-
-    if (clientAnalysis?.culturalConsiderations) {
-      tasks.push({
-        task: `Address cultural considerations: ${clientAnalysis.culturalConsiderations.join(
-          ", "
-        )}`,
-        deadline: "2 weeks before",
-        priority: "high" as const,
-        completed: false,
-      });
-    }
-
-    if (clientAnalysis?.hiddenNeeds) {
-      clientAnalysis.hiddenNeeds.forEach((need: string) => {
-        tasks.push({
-          task: `Ensure ${need.toLowerCase()}`,
-          deadline: "1 week before",
-          priority: "medium" as const,
-          completed: false,
-        });
-      });
-    }
-
-    if (clientAnalysis?.personalizationOpportunities) {
-      clientAnalysis.personalizationOpportunities.forEach(
-        (opportunity: string) => {
-          tasks.push({
-            task: `Implement ${opportunity.toLowerCase()}`,
-            deadline: "3 days before",
-            priority: "low" as const,
-            completed: false,
-          });
-        }
+    if (Array.isArray(timelineData?.phases)) {
+      return timelineData.phases.flatMap((phase: any) =>
+        (phase.tasks || []).map((task: any) => row(task, phase.phase))
       );
     }
+    if (Array.isArray(timelineData)) {
+      return timelineData
+        .flatMap((item: any) =>
+          Array.isArray(item?.tasks)
+            ? item.tasks.map((task: any) => row(task, item.phase || item.timeframe))
+            : [row(item || {})]
+        )
+        .filter((r: any) => r.activity);
+    }
+    return [];
+  },
 
-    // If no backend tasks, return empty for mock data
-    if (tasks.length === 0) {
-      return [];
+  /** Backend budgetBreakdown ({ breakdown: { [category]: {...} } }) -> categories */
+  transformBudgetOptimization(budgetData: any): AIEventPlan["budgetBreakdown"] {
+    const breakdown = budgetData?.breakdown;
+    if (!breakdown || typeof breakdown !== "object") return [];
+
+    return Object.entries(breakdown)
+      .filter(([, cat]: [string, any]) => cat && typeof cat.amount === "number")
+      // Priority 1 first; contingency (priority 0) last
+      .sort(([, a]: [string, any], [, b]: [string, any]) =>
+        (a.priority || 99) - (b.priority || 99))
+      .map(([key, cat]: [string, any]) => ({
+        category: humanize(key),
+        amount: cat.amount,
+        percentage: cat.percentage ?? 0,
+        items: Array.isArray(cat.items) && cat.items.length > 0
+          ? cat.items.map((item: any) => ({
+              item: item.name || item.item || "",
+              cost: item.cost || 0,
+              quantity: item.quantity || 1,
+              notes: item.notes || undefined,
+            }))
+          : cat.purpose
+            ? [{ item: cat.purpose, cost: cat.amount, quantity: 1 }]
+            : [],
+      }));
+  },
+
+  /** Checklist from the timeline phases, often-missed components and client analysis */
+  generateChecklistFromBackendData(eventPlan: any): AIEventPlan["checklist"] {
+    const checklist: AIEventPlan["checklist"] = [];
+    const priority = (v: any): "high" | "medium" | "low" =>
+      v === "critical" || v === "high" ? "high" : v === "low" ? "low" : "medium";
+
+    for (const phase of eventPlan.timeline?.phases || []) {
+      const tasks = (phase.tasks || []).map((task: any) => ({
+        task: task.task,
+        deadline: task.deadline ? formatShortDate(task.deadline) : phase.phase,
+        priority: priority(task.priority),
+        completed: task.status === "completed",
+        assignedTo: task.vendor || undefined,
+      }));
+      if (tasks.length) checklist.push({ category: phase.phase, tasks });
     }
 
-    return [
-      {
-        category: "AI-Recommended Tasks",
-        tasks: tasks,
-      },
+    const missed = (eventPlan.missedComponents || []).map((c: any) => ({
+      task: c.reason ? `${c.component} — ${c.reason}` : c.component,
+      deadline: "Before booking vendors",
+      priority: priority(c.importance),
+      completed: false,
+    }));
+    if (missed.length) checklist.push({ category: "Often missed", tasks: missed });
+
+    const analysis = eventPlan.clientAnalysis || {};
+    const aiTasks = [
+      ...(analysis.hiddenNeeds || []).map((need: string) => ({
+        task: need, deadline: "1 week before", priority: "medium" as const, completed: false,
+      })),
+      ...(analysis.personalizationOpportunities || []).map((idea: string) => ({
+        task: idea, deadline: "3 days before", priority: "low" as const, completed: false,
+      })),
     ];
+    if (aiTasks.length) checklist.push({ category: "AI-recommended", tasks: aiTasks });
+
+    return checklist;
   },
 
   /**
@@ -1378,52 +452,89 @@ export const aiPlannerService = {
       }
     }
 
-    // Return empty if no alternatives for mock data enhancement
     return alternatives.length > 0 ? alternatives : [];
   },
 
   /**
-   * Transform backend vendor recommendations to our format
+   * Backend vendorRecommendations.recommendations ([{ vendor, matchScore,
+   * matchReasons, estimatedCost }]) -> vendors grouped by category.
    */
-  transformVendorRecommendations(vendorData: any) {
-    // Backend currently returns empty recommendations array
-    // Return empty array so mock data will be used
-    if (
-      !vendorData ||
-      !vendorData.recommendations ||
-      vendorData.recommendations.length === 0
-    ) {
-      return [];
-    }
+  transformVendorRecommendations(vendorData: any): AIEventPlan["vendorRecommendations"] {
+    const recommendations = Array.isArray(vendorData?.recommendations)
+      ? vendorData.recommendations
+      : [];
+    const groups = new Map<string, AIEventPlan["vendorRecommendations"][number]["vendors"]>();
 
-    // If backend provides vendor data, transform it to our format
-    // This is a placeholder for when backend provides actual vendor data
-    return vendorData.recommendations.map((vendor: any) => ({
-      category: vendor.category || "General",
-      vendors: vendor.vendors || [],
-    }));
+    for (const rec of recommendations) {
+      const v = rec?.vendor;
+      if (!v?.name) continue;
+      const category = humanize(v.category || "other");
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category)!.push({
+        id: v.id,
+        name: v.name,
+        rating: v.rating || 0,
+        reviewCount: v.reviewCount || 0,
+        estimatedCost: typeof rec.estimatedCost === "number" && rec.estimatedCost > 0
+          ? rec.estimatedCost
+          : null,
+        description: v.description || "",
+        matchScore: typeof rec.matchScore === "number" ? rec.matchScore : null,
+        matchReasons: rec.matchReasons || [],
+      });
+    }
+    return Array.from(groups, ([category, vendors]) => ({ category, vendors }));
   },
 
   /**
-   * Transform backend sustainability data to our format
+   * Map the backend's eventPlan (generate, result and refine responses all
+   * use this shape) to AIEventPlan. Sections the backend didn't produce stay
+   * empty — nothing is filled with sample data.
    */
-  transformSustainabilityData(eventPlan: any) {
-    const visualSuggestions = eventPlan.visualSuggestions;
-    const budgetOptimization = eventPlan.budgetOptimization;
+  transformComprehensivePlan(
+    eventPlan: any,
+    ids: { id?: string; planId?: string; autoSaved?: boolean } = {}
+  ): AIEventPlan {
+    const details = eventPlan.eventDetails || {};
+    const loc = details.location || {};
+    const location = [loc.city, loc.state, loc.country]
+      .filter((part: string) => part && part !== "Not specified")
+      .join(", ");
+    const budget = details.budget?.amount ?? eventPlan.budgetBreakdown?.totalBudget ?? 0;
+    const asText = (items: any[]) =>
+      (items || []).map((x) => (typeof x === "string" ? x : x?.advice || x?.note || x?.name || JSON.stringify(x)));
 
     return {
-      score: budgetOptimization?.feasibility_score || 75,
-      recommendations: budgetOptimization?.recommendations || [
-        "Consider eco-friendly venue options",
-        "Use digital invitations to reduce paper waste",
-        "Choose local vendors to reduce transportation impact",
+      id: ids.id || eventPlan.planId || eventPlan.sessionToken,
+      planId: ids.planId || eventPlan.planId,
+      autoSaved: ids.autoSaved ?? Boolean(eventPlan.autoSaved),
+      learningInteractionId: eventPlan.learningInteractionId ?? null,
+      eventType: details.eventType || "event",
+      budget,
+      guestCount: details.guestCount || 0,
+      date: details.eventDate || eventPlan.generatedAt || "",
+      location,
+      clientAnalysis: eventPlan.clientAnalysis || null,
+      timeline: this.transformIntelligentTimeline(eventPlan.timeline),
+      budgetBreakdown: this.transformBudgetOptimization(eventPlan.budgetBreakdown),
+      budgetTips: [
+        ...(eventPlan.budgetBreakdown?.validation?.recommendations || []),
+        ...(eventPlan.budgetOptimizationTips || []),
       ],
-      carbonFootprint: Math.floor(Math.random() * 500) + 200,
-      ecoFriendlyOptions: visualSuggestions?.moodBoardConcepts || [
-        "Sustainable decorations",
-        "Organic catering options",
-        "Renewable energy venues",
-      ],
+      vendorRecommendations: this.transformVendorRecommendations(eventPlan.vendorRecommendations),
+      vendorAdvice: asText(eventPlan.vendorRecommendations?.aiAdvice),
+      checklist: this.generateChecklistFromBackendData(eventPlan),
+      riskAssessment: this.transformRiskAnalysis(eventPlan.riskAnalysis),
+      riskMitigations: eventPlan.riskAnalysis?.mitigationStrategies || [],
+      alternatives: this.generateAlternativesFromBackendData(eventPlan, budget),
+      sustainability: null,
+      latestRefinement: eventPlan.latestRefinement || null,
+      createdAt: eventPlan.generatedAt || new Date().toISOString(),
+      updatedAt:
+        eventPlan.latestRefinement?.refinedAt ||
+        eventPlan.savedAt ||
+        eventPlan.generatedAt ||
+        new Date().toISOString(),
     };
   },
 
@@ -1665,113 +776,23 @@ export const aiPlannerService = {
   },
 
   /**
-   * Get mock saved plans for development
-   */
-  getMockSavedPlans(params?: any): {
-    plans: AIEventPlan[];
-    total: number;
-    totalPages: number;
-  } {
-    const mockPlans: AIEventPlan[] = [
-      {
-        id: "plan_001",
-        eventType: "wedding",
-        budget: 2500000,
-        guestCount: 150,
-        date: "2024-06-15T00:00:00.000Z",
-        location: "Lagos, Nigeria",
-        timeline: this.generateMockTimeline("wedding", 8),
-        budgetBreakdown: this.generateMockBudgetBreakdown("wedding", 2500000),
-        vendorRecommendations: this.generateMockVendorRecommendations(
-          "wedding",
-          "Lagos"
-        ),
-        checklist: this.generateMockChecklist("wedding"),
-        riskAssessment: this.generateMockRiskAssessment("wedding"),
-        alternatives: this.generateMockAlternatives("wedding", 2500000),
-        sustainability: this.generateMockSustainability("wedding"),
-        createdAt: "2024-01-15T10:30:00.000Z",
-        updatedAt: "2024-01-16T14:20:00.000Z",
-      },
-      {
-        id: "plan_002",
-        eventType: "corporate",
-        budget: 1800000,
-        guestCount: 200,
-        date: "2024-07-20T00:00:00.000Z",
-        location: "Abuja, Nigeria",
-        timeline: this.generateMockTimeline("corporate", 6),
-        budgetBreakdown: this.generateMockBudgetBreakdown("corporate", 1800000),
-        vendorRecommendations: this.generateMockVendorRecommendations(
-          "corporate",
-          "Abuja"
-        ),
-        checklist: this.generateMockChecklist("corporate"),
-        riskAssessment: this.generateMockRiskAssessment("corporate"),
-        alternatives: this.generateMockAlternatives("corporate", 1800000),
-        sustainability: this.generateMockSustainability("corporate"),
-        createdAt: "2024-01-10T09:15:00.000Z",
-        updatedAt: "2024-01-12T16:45:00.000Z",
-      },
-      {
-        id: "plan_003",
-        eventType: "birthday",
-        budget: 850000,
-        guestCount: 80,
-        date: "2024-05-25T00:00:00.000Z",
-        location: "Port Harcourt, Nigeria",
-        timeline: this.generateMockTimeline("birthday", 5),
-        budgetBreakdown: this.generateMockBudgetBreakdown("birthday", 850000),
-        vendorRecommendations: this.generateMockVendorRecommendations(
-          "birthday",
-          "Port Harcourt"
-        ),
-        checklist: this.generateMockChecklist("birthday"),
-        riskAssessment: this.generateMockRiskAssessment("birthday"),
-        alternatives: this.generateMockAlternatives("birthday", 850000),
-        sustainability: this.generateMockSustainability("birthday"),
-        createdAt: "2024-01-08T11:20:00.000Z",
-        updatedAt: "2024-01-08T11:20:00.000Z",
-      },
-    ];
-
-    const limit = params?.limit || 10;
-    const page = params?.page || 1;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-
-    return {
-      plans: mockPlans.slice(startIndex, endIndex),
-      total: mockPlans.length,
-      totalPages: Math.ceil(mockPlans.length / limit),
-    };
-  },
-
-  /**
-   * Get a specific event plan by session token or plan ID (Backend Integration)
+   * Get a plan by saved planId or guest session token (Backend Integration)
    */
   async getEventPlan(id: string): Promise<AIEventPlan> {
     try {
       const response = await api.get(`/ai-planner/result/${id}`);
-
-      if (response.data?.status === "success" && response.data?.data) {
-        return this.transformSavedPlan(response.data.data);
+      const data = response.data?.data;
+      if (response.data?.status === "success" && data?.eventPlan) {
+        return this.transformComprehensivePlan(data.eventPlan, {
+          id,
+          autoSaved: data.metadata?.resultType === "saved",
+        });
       }
-
       throw new Error("Plan not found");
     } catch (error: any) {
       console.error("Failed to fetch event plan:", error);
-
-      // Handle specific error cases
-      if (error?.response?.status === 404) {
-        throw new Error("Plan not found");
-      }
-
-      if (error?.response?.status === 401) {
-        throw new Error("Authentication required");
-      }
-
-      throw new Error("Failed to fetch event plan");
+      if (error?.response?.status === 404) throw new Error("Plan not found or expired");
+      throw new Error(apiErrorMessage(error, "Failed to fetch event plan"));
     }
   },
 
@@ -1807,7 +828,8 @@ export const aiPlannerService = {
   },
 
   /**
-   * Refine an existing plan with AI prompting (Backend Integration)
+   * Refine an existing plan with AI (Backend Integration). Returns the full
+   * refined plan; its latestRefinement says what changed.
    */
   async refinePlan(
     planId: string,
@@ -1823,32 +845,21 @@ export const aiPlannerService = {
     try {
       const response = await api.post(`/ai-planner/refine/${planId}`, {
         refinementPrompt: prompt,
-        enhancementType: enhancementType || "general",
-        refinementDetails: {
-          type: enhancementType || "general",
-          userRequest: prompt,
-          timestamp: new Date().toISOString(),
-        },
+        refinementType: enhancementType || "general",
       });
-
-      if (response.data?.status === "success" && response.data?.data?.plan) {
-        return this.transformSavedPlan(response.data.data.plan);
+      const refined = response.data?.data?.refinedPlan;
+      if (response.data?.status === "success" && refined) {
+        // Saved plans and session plans both carry the plan under aiPlan
+        return this.transformComprehensivePlan(refined.aiPlan || refined, {
+          id: planId,
+          planId: refined.planId,
+        });
       }
-
       throw new Error("Failed to refine plan");
     } catch (error: any) {
       console.error("Failed to refine plan:", error);
-
-      // Handle specific error cases
-      if (error?.response?.status === 404) {
-        throw new Error("Plan not found");
-      }
-
-      if (error?.response?.status === 401) {
-        throw new Error("Authentication required");
-      }
-
-      throw new Error("Failed to refine plan. Please try again.");
+      if (error?.response?.status === 404) throw new Error("Plan not found or expired");
+      throw new Error(apiErrorMessage(error, "Failed to refine plan. Please try again."));
     }
   },
 
@@ -1949,155 +960,46 @@ export const aiPlannerService = {
   },
 
   /**
-   * Simulate plan enhancement for development
-   */
-  simulateEnhancement(
-    plan: AIEventPlan,
-    prompt: string,
-    enhancementType?: string
-  ): AIEventPlan {
-    const enhancedPlan = { ...plan };
-
-    // Simulate AI enhancement based on prompt and type
-    if (
-      enhancementType === "timeline" ||
-      prompt.toLowerCase().includes("timeline") ||
-      prompt.toLowerCase().includes("schedule")
-    ) {
-      enhancedPlan.timeline = [
-        ...plan.timeline,
-        {
-          time: "21:30",
-          activity: `Enhanced Activity: ${prompt.slice(0, 50)}...`,
-          duration: 0.5,
-          notes: "AI-enhanced based on your request",
-        },
-      ];
-    }
-
-    if (
-      enhancementType === "budget" ||
-      prompt.toLowerCase().includes("budget") ||
-      prompt.toLowerCase().includes("cost")
-    ) {
-      enhancedPlan.budgetBreakdown = plan.budgetBreakdown.map((category) => ({
-        ...category,
-        items: [
-          ...category.items,
-          {
-            item: `AI Suggestion: ${prompt.slice(0, 30)}...`,
-            cost: Math.round(plan.budget * 0.05),
-            quantity: 1,
-            notes: "AI-recommended enhancement",
-          },
-        ],
-      }));
-    }
-
-    if (
-      enhancementType === "vendors" ||
-      prompt.toLowerCase().includes("vendor") ||
-      prompt.toLowerCase().includes("supplier")
-    ) {
-      enhancedPlan.vendorRecommendations = [
-        ...plan.vendorRecommendations,
-        {
-          category: "AI-Enhanced Recommendations",
-          vendors: [
-            {
-              name: "Premium AI-Suggested Vendor",
-              rating: 4.9,
-              estimatedCost: Math.round(plan.budget * 0.15),
-              description: `Specialized service based on your request: ${prompt.slice(
-                0,
-                100
-              )}...`,
-              contact: "+234 800 AI MAGIC",
-            },
-          ],
-        },
-      ];
-    }
-
-    enhancedPlan.updatedAt = new Date().toISOString();
-    return enhancedPlan;
-  },
-
-  /**
-   * Chat with AI about a specific plan (Backend Integration)
+   * Chat with AI about a specific plan (Backend Integration). Errors are
+   * thrown so the UI can say so — there is no scripted fallback.
    */
   async chatWithAI(
     planId: string,
     message: string,
     conversationHistory?: ChatMessage[]
   ): Promise<{ response: string; updatedPlan?: AIEventPlan }> {
-    try {
-      const response = await api.post(`/ai-planner/plans/${planId}/chat`, {
-        message,
-        conversationHistory: conversationHistory || [],
-      });
-
-      if (response.data?.status === "success") {
-        return {
-          response:
-            response.data.data.response ||
-            "I understand your request. Let me help you with that.",
-          updatedPlan: response.data.data.updatedPlan
-            ? this.transformSavedPlan(response.data.data.updatedPlan)
-            : undefined,
-        };
-      }
-
+    const previousMessages = (conversationHistory || [])
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
+    const response = await api.post(`/ai-planner/plans/${planId}/chat`, {
+      message,
+      context: { previousMessages },
+    });
+    const reply = response.data?.data?.response;
+    if (response.data?.status !== "success" || typeof reply !== "string") {
       throw new Error("Failed to get AI response");
-    } catch (error: any) {
-      console.error("Failed to chat with AI:", error);
-
-      // Return a fallback response instead of simulation
-      return {
-        response:
-          "I'm currently experiencing some technical difficulties. Please try again in a moment.",
-        updatedPlan: undefined,
-      };
     }
+    return { response: reply };
   },
 
   /**
-   * Simulate AI chat for development
+   * Rate a generated plan (1-5). interactionId is plan.learningInteractionId;
+   * when omitted the backend rates the user's most recent plan.
    */
-  async simulateAIChat(
-    planId: string,
-    message: string
-  ): Promise<{ response: string; updatedPlan?: AIEventPlan }> {
-    const responses = [
-      "That's a great idea! I can help you incorporate that into your event plan. Let me suggest some specific ways to implement this.",
-      "Based on your event details, I recommend considering the cultural significance and guest preferences. Here are some tailored suggestions.",
-      "I understand your concern. Let me analyze your current plan and provide some optimization recommendations.",
-      "Excellent question! For your event type and budget, I suggest focusing on these key areas for maximum impact.",
-      "That's an interesting enhancement request. I can help you refine this aspect while maintaining your overall event vision.",
-    ];
-
-    const randomResponse =
-      responses[Math.floor(Math.random() * responses.length)];
-
-    // Simulate plan update if message suggests changes
-    let updatedPlan;
-    if (
-      message.toLowerCase().includes("add") ||
-      message.toLowerCase().includes("change") ||
-      message.toLowerCase().includes("update")
-    ) {
-      const existingPlan = await this.getEventPlan(planId);
-      updatedPlan = this.simulateEnhancement(existingPlan, message);
+  async submitPlanFeedback(params: {
+    rating: number;
+    comments?: string;
+    interactionId?: string | null;
+  }): Promise<void> {
+    try {
+      await api.post("/ai-planner/feedback", {
+        rating: params.rating,
+        comments: params.comments || "",
+        ...(params.interactionId && { interactionId: params.interactionId }),
+      });
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Couldn't save your rating. Please try again."));
     }
-
-    return {
-      response: `${randomResponse} ${
-        message.includes("?")
-          ? "What specific aspects would you like me to focus on?"
-          : "Would you like me to update your plan with these suggestions?"
-      }`,
-      updatedPlan,
-    };
   },
 
   /**
@@ -2127,79 +1029,69 @@ export const aiPlannerService = {
   },
 
   /**
-   * Start a new planning session (mock implementation for now)
+   * Start a saved chat session with the AI planning assistant
    */
   async startPlanningSession(title: string): Promise<PlanningSession> {
-    const sessionId = Date.now().toString();
-    return {
-      id: sessionId,
-      title,
-      status: "active",
-      messages: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const response = await api.post("/ai-planner/sessions", { title });
+      return toPlanningSession(response.data.data.session);
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Couldn't start a chat session"));
+    }
   },
 
   /**
-   * Get all planning sessions (mock implementation for now)
+   * Your chat sessions, most recent first (without messages)
    */
   async getPlanningSessions(): Promise<PlanningSession[]> {
-    return [];
+    try {
+      const response = await api.get("/ai-planner/sessions");
+      return (response.data?.data?.sessions || []).map(toPlanningSession);
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Couldn't load chat sessions"));
+    }
   },
 
   /**
-   * Get a specific planning session (mock implementation for now)
+   * A chat session with its messages
    */
   async getPlanningSession(id: string): Promise<PlanningSession> {
-    return {
-      id,
-      title: "Planning Session",
-      status: "active",
-      messages: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const response = await api.get(`/ai-planner/sessions/${id}`);
+      return toPlanningSession(response.data.data.session);
+    } catch (error: any) {
+      if (error?.response?.status === 404) throw new Error("Chat session not found");
+      throw new Error(apiErrorMessage(error, "Couldn't load the chat session"));
+    }
   },
 
   /**
-   * Send a message in a planning session (mock implementation for now)
+   * Send a message in a chat session. The server stores both the message and
+   * the assistant's reply; returns the reply.
    */
   async sendMessage(sessionId: string, message: string): Promise<ChatMessage> {
-    return {
-      id: Date.now().toString(),
-      role: "user",
-      content: message,
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      const response = await api.post(`/ai-planner/sessions/${sessionId}/messages`, {
+        message,
+      });
+      return toChatMessage(response.data.data.assistantMessage);
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Failed to get AI response"));
+    }
   },
 
   /**
-   * Generate plan from chat session (mock implementation for now)
+   * Generate a full plan from the event details discussed in a chat session
    */
   async generatePlanFromChat(sessionId: string): Promise<AIEventPlan> {
-    return {
-      id: Date.now().toString(),
-      eventType: "Wedding",
-      budget: 1000000,
-      guestCount: 100,
-      date: new Date().toISOString(),
-      location: "Lagos, Nigeria",
-      timeline: [],
-      budgetBreakdown: [],
-      vendorRecommendations: [],
-      checklist: [],
-      riskAssessment: [],
-      alternatives: [],
-      sustainability: {
-        score: 0,
-        recommendations: [],
-        carbonFootprint: 0,
-        ecoFriendlyOptions: [],
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const response = await api.post(`/ai-planner/sessions/${sessionId}/generate-plan`);
+      const { resultId, autoSaved } = response.data.data;
+      const plan = await this.getEventPlan(resultId);
+      return { ...plan, autoSaved };
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Failed to generate a plan from this chat"));
+    }
   },
 
   /**
@@ -2217,61 +1109,65 @@ export const aiPlannerService = {
   },
 
   /**
-   * Export plan to different formats (mock implementation for now)
+   * Download a plan as PDF or JSON (saved planId, session token or share token)
    */
-  async exportPlan(
-    planId: string,
-    format: "pdf" | "docx" | "json"
-  ): Promise<Blob> {
-    return new Blob(["Mock export data"], { type: "text/plain" });
+  async exportPlan(planId: string, format: "pdf" | "json"): Promise<Blob> {
+    try {
+      const response = await api.get(`/ai-planner/plans/${planId}/export`, {
+        params: { format },
+        responseType: "blob",
+      });
+      return response.data;
+    } catch (error: any) {
+      // Error bodies arrive as a Blob when responseType is "blob"
+      let message: string | undefined;
+      try {
+        message = JSON.parse(await error?.response?.data?.text())?.message;
+      } catch {
+        // not JSON
+      }
+      throw new Error(message || apiErrorMessage(error, "Failed to export plan"));
+    }
   },
 
   /**
-   * Share plan with client (mock implementation for now)
+   * Email a read-only link to a saved plan. Returns the link.
    */
   async sharePlan(
     planId: string,
     clientEmail: string,
     message?: string
-  ): Promise<void> {
-    console.log(`Sharing plan ${planId} with ${clientEmail}`);
+  ): Promise<{ shareUrl: string }> {
+    try {
+      const response = await api.post(`/ai-planner/plans/${planId}/share`, {
+        email: clientEmail,
+        message: message || "",
+      });
+      return { shareUrl: response.data.data.shareUrl };
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Failed to share plan"));
+    }
   },
 
   /**
-   * Convert plan to quote (mock implementation for now)
+   * Draft a quote from a saved plan's budget (vendors). Returns the quote id.
    */
-  async convertToQuote(planId: string): Promise<{ quoteId: string }> {
-    return { quoteId: Date.now().toString() };
+  async convertToQuote(
+    planId: string,
+    customer: { name: string; email: string; phone?: string }
+  ): Promise<{ quoteId: string }> {
+    try {
+      const response = await api.post(`/ai-planner/plans/${planId}/quote`, {
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+      });
+      return { quoteId: response.data.data.quoteId };
+    } catch (error: any) {
+      throw new Error(apiErrorMessage(error, "Failed to convert to quote"));
+    }
   },
 
-  /**
-   * Get AI analytics and insights (mock implementation for now)
-   */
-  async getAIInsights(): Promise<{
-    totalPlansGenerated: number;
-    averagePlanningTime: number;
-    mostPopularEventTypes: string[];
-    budgetTrends: {
-      eventType: string;
-      averageBudget: number;
-      trend: "up" | "down" | "stable";
-    }[];
-    clientSatisfactionScore: number;
-    timesSaved: number; // in hours
-  }> {
-    return {
-      totalPlansGenerated: 1247,
-      averagePlanningTime: 12,
-      mostPopularEventTypes: ["wedding", "corporate", "birthday", "conference"],
-      budgetTrends: [
-        { eventType: "wedding", averageBudget: 2500000, trend: "up" },
-        { eventType: "corporate", averageBudget: 1800000, trend: "stable" },
-        { eventType: "birthday", averageBudget: 850000, trend: "up" },
-      ],
-      clientSatisfactionScore: 94,
-      timesSaved: 3741,
-    };
-  },
 };
 
 export default aiPlannerService;

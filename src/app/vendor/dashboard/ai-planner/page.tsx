@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Bot, Sparkles, MessageSquare, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import AIPlannerHub from "@/components/shared/ai-planner/AIPlannerHub";
+import ChatSessionsCard from "@/components/shared/ai-planner/ChatSessionsCard";
 
 export default function VendorAIPlannerPage() {
   const { user } = useAuth();
@@ -96,5 +97,10 @@ export default function VendorAIPlannerPage() {
     );
   }
 
-  return <AIPlannerHub userType="vendor" />;
+  return (
+    <>
+      <ChatSessionsCard chatBasePath="/vendor/dashboard/ai-planner/chat" />
+      <AIPlannerHub userType="vendor" />
+    </>
+  );
 }
