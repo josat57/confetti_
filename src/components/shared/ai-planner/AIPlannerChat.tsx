@@ -5,26 +5,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Send,
-  Bot,
-  User,
   Sparkles,
-  RefreshCw,
-  MessageSquare,
-  Lightbulb,
-  TrendingUp,
   DollarSign,
   Users,
-  Calendar,
-  MapPin,
   Clock,
-  CheckCircle,
+  Lightbulb,
+  TrendingUp,
   AlertCircle,
-  Wand2,
   Copy,
   ThumbsUp,
   ThumbsDown,
   Download,
-  Share2,
+  Calendar,
+  MapPin,
+  CheckCircle2,
+  Wand2,
+  Bot,
+  User,
+  RefreshCw,
 } from "lucide-react";
 import { AIEventPlan, ChatMessage } from "@/services/ai-planner.service";
 import aiPlannerService from "@/services/ai-planner.service";
@@ -40,46 +38,73 @@ interface AIPlannerChatProps {
 const quickPrompts = [
   {
     icon: DollarSign,
-    text: "Optimize my budget allocation",
+    text: "Optimize budget",
     prompt:
       "Can you help me optimize the budget allocation for better value? Look for areas where I can save money or get better deals.",
-    color: "bg-green-100 text-green-700 hover:bg-green-200",
+    accent: "from-emerald-500 to-teal-500",
+    bg: "bg-emerald-50 hover:bg-emerald-100",
+    iconColor: "text-emerald-600",
+    border: "border-emerald-100",
   },
   {
     icon: Users,
-    text: "Find more vendor options",
+    text: "More vendors",
     prompt:
       "I need more vendor recommendations, especially for catering and entertainment. Can you suggest additional options with different price ranges?",
-    color: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+    accent: "from-blue-500 to-indigo-500",
+    bg: "bg-blue-50 hover:bg-blue-100",
+    iconColor: "text-blue-600",
+    border: "border-blue-100",
   },
   {
     icon: Clock,
-    text: "Improve event timeline",
+    text: "Improve timeline",
     prompt:
       "Can you help me create a more detailed timeline with better flow between activities? I want to ensure guests are engaged throughout.",
-    color: "bg-purple-100 text-purple-700 hover:bg-purple-200",
+    accent: "from-violet-500 to-purple-500",
+    bg: "bg-violet-50 hover:bg-violet-100",
+    iconColor: "text-violet-600",
+    border: "border-violet-100",
   },
   {
     icon: Lightbulb,
-    text: "Add creative ideas",
+    text: "Creative ideas",
     prompt:
       "I want to make this event more unique and memorable. Can you suggest some creative ideas that fit my theme and budget?",
-    color: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200",
+    accent: "from-amber-500 to-orange-500",
+    bg: "bg-amber-50 hover:bg-amber-100",
+    iconColor: "text-amber-600",
+    border: "border-amber-100",
   },
   {
     icon: TrendingUp,
-    text: "Enhance sustainability",
+    text: "Sustainability",
     prompt:
-      "How can I make this event more eco-friendly and sustainable? I want to reduce environmental impact while maintaining quality.",
-    color: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
+      "How can I make this event more eco-friendly and sustainable while reducing environmental impact?",
+    accent: "from-green-500 to-emerald-500",
+    bg: "bg-green-50 hover:bg-green-100",
+    iconColor: "text-green-600",
+    border: "border-green-100",
   },
   {
     icon: AlertCircle,
-    text: "Risk mitigation",
+    text: "Risk planning",
     prompt:
-      "What potential risks should I be aware of for this event? Can you help me create contingency plans for common issues?",
-    color: "bg-orange-100 text-orange-700 hover:bg-orange-200",
+      "What potential risks should I be aware of for this event? Can you help me create contingency plans?",
+    accent: "from-rose-500 to-red-500",
+    bg: "bg-rose-50 hover:bg-rose-100",
+    iconColor: "text-rose-600",
+    border: "border-rose-100",
   },
+];
+
+const aiCapabilities = [
+  "Budget optimization",
+  "Vendor recommendations",
+  "Timeline planning",
+  "Risk assessment",
+  "Creative suggestions",
+  "Sustainability tips",
 ];
 
 export default function AIPlannerChat({
@@ -93,44 +118,25 @@ export default function AIPlannerChat({
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initialize with welcome message
-    const welcomeMessage: ChatMessage = {
+    const welcome: ChatMessage = {
       id: "welcome",
       role: "assistant",
-      content: `Hello! I'm your AI event planning assistant. I can see you're working on a ${plan.eventType.replace(
-        "_",
-        " "
-      )} event for ${
-        plan.guestCount
-      } guests with a budget of ₦${plan.budget.toLocaleString()}. 
-
-I can help you:
-• Optimize your budget and timeline
-• Find better vendor options
-• Add creative ideas and enhancements
-• Improve sustainability
-• Plan for potential risks
-• Answer any questions about your event
-
-What would you like to work on first?`,
+      content: `Hello! I'm your AI event planning assistant. I can see you're working on a **${plan.eventType.replace(/_/g, " ")}** for **${plan.guestCount} guests** with a budget of **₦${plan.budget.toLocaleString()}**.\n\nI can help you optimize your budget and timeline, find better vendors, add creative ideas, and plan for risks.\n\nWhat would you like to work on first?`,
       timestamp: new Date().toISOString(),
       planId: plan.id,
     };
-
-    setMessages([welcomeMessage]);
+    setMessages([welcome]);
   }, [plan]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (messageText?: string) => {
     const text = messageText || inputMessage.trim();
@@ -150,420 +156,361 @@ What would you like to work on first?`,
     setLoading(true);
 
     try {
-      const response = await aiPlannerService.chatWithAI(
-        plan.id,
-        text,
-        messages
-      );
+      const response = await aiPlannerService.chatWithAI(plan.id, text, messages);
 
-      // Simulate typing delay
-      setTimeout(() => {
-        const assistantMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: response.response,
-          timestamp: new Date().toISOString(),
-          planId: plan.id,
-        };
+      await new Promise((r) => setTimeout(r, 900));
 
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsTyping(false);
-
-        // Update plan if AI made changes
-        if (response.updatedPlan) {
-          onPlanUpdated(response.updatedPlan);
-        }
-      }, 1500);
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      const errorMessage: ChatMessage = {
+      const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
+        content: response.response,
         timestamp: new Date().toISOString(),
         planId: plan.id,
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsTyping(false);
+
+      if (response.updatedPlan) {
+        onPlanUpdated(response.updatedPlan);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "Sorry, something went wrong. Please try again.",
+          timestamp: new Date().toISOString(),
+          planId: plan.id,
+        },
+      ]);
       setIsTyping(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickPrompt = (prompt: string) => {
-    handleSendMessage(prompt);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const copyMessage = (content: string) => {
+  const copyMessage = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
-    // You could add a toast notification here
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const exportChat = () => {
+    const text = messages
+      .map((m) => `${m.role === "user" ? "You" : "AI"}: ${m.content}`)
+      .join("\n\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ai-chat-${plan.eventType}-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const formatTime = (ts: string) =>
+    new Date(ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+  const renderContent = (content: string) => {
+    // Simple bold rendering for **text**
+    const parts = content.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) =>
+      part.startsWith("**") && part.endsWith("**") ? (
+        <strong key={i}>{part.slice(2, -2)}</strong>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
   };
 
   return (
-    <div
-      className={`min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 ${className}`}
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 ${className}`}>
+      {/* Decorative background blobs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-6 lg:mb-8"
+          transition={{ duration: 0.4 }}
+          className="flex flex-wrap items-center justify-between gap-3 mb-6"
         >
-          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center">
+          {/* Left: back + title */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onBack}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors self-start sm:mr-4"
+              className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors shrink-0"
             >
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Back to Plan
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Plan</span>
             </button>
-            <div className="flex items-center">
-              <div className="p-2 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl mr-3 sm:mr-4">
-                <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+
+            <div className="hidden sm:block w-px h-5 bg-gray-200" />
+
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-200">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" />
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
                   AI Chat Assistant
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600 capitalize">
-                  {plan.eventType.replace("_", " ")} • {plan.guestCount} guests
-                  • ₦{plan.budget.toLocaleString()}
+                <p className="text-xs text-gray-500 truncate capitalize">
+                  {plan.eventType.replace(/_/g, " ")} · {plan.guestCount} guests · ₦{plan.budget.toLocaleString()}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-end">
-            <button
-              onClick={() => {
-                // Export chat functionality
-                const chatContent = messages
-                  .map(
-                    (msg) =>
-                      `${msg.role === "user" ? "You" : "AI"}: ${msg.content}`
-                  )
-                  .join("\n\n");
-                const blob = new Blob([chatContent], { type: "text/plain" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `ai-chat-${plan.eventType}-${Date.now()}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm w-full sm:w-auto justify-center"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Chat
-            </button>
-          </div>
+          {/* Right: export */}
+          <button
+            onClick={exportChat}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export</span>
+          </button>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-          {/* Chat Area */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl lg:rounded-2xl shadow-lg h-[400px] sm:h-[500px] lg:h-[600px] flex flex-col"
+        {/* ── Body grid ──────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+          {/* Chat panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex flex-col bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/60 overflow-hidden"
+            style={{ height: "min(72vh, 680px)" }}
+          >
+            {/* Messages */}
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 space-y-4 scroll-smooth"
             >
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 lg:space-y-4">
-                <AnimatePresence>
-                  {messages.map((message, index) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={`flex ${
-                        message.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[85%] sm:max-w-[80%] ${
-                          message.role === "user"
-                            ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                            : "bg-gray-100 text-gray-900"
-                        } rounded-2xl px-3 sm:px-4 py-2 sm:py-3 relative group`}
-                      >
-                        <div className="flex items-start space-x-2 sm:space-x-3">
-                          <div
-                            className={`p-1.5 sm:p-2 rounded-full flex-shrink-0 ${
-                              message.role === "user"
-                                ? "bg-white/20"
-                                : "bg-green-100"
-                            }`}
-                          >
-                            {message.role === "user" ? (
-                              <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                            ) : (
-                              <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">
-                              {message.content}
-                            </div>
-                            <div
-                              className={`text-xs mt-1 sm:mt-2 ${
-                                message.role === "user"
-                                  ? "text-white/70"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {formatTime(message.timestamp)}
-                            </div>
-                          </div>
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    {/* Avatar */}
+                    <div className="shrink-0 mt-0.5">
+                      {msg.role === "assistant" ? (
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
+                          <Bot className="h-4 w-4 text-white" />
                         </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-md">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                    </div>
 
-                        {/* Message Actions */}
-                        {message.role === "assistant" && (
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={() => copyMessage(message.content)}
-                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                                title="Copy message"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </button>
-                              <button
-                                className="p-1 text-gray-400 hover:text-green-600 transition-colors"
-                                title="Good response"
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </button>
-                              <button
-                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                                title="Poor response"
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </button>
-                            </div>
+                    {/* Bubble + actions */}
+                    <div className={`group flex flex-col gap-1 max-w-[78%] sm:max-w-[70%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                      <div
+                        className={`relative px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                          msg.role === "user"
+                            ? "bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-tr-sm shadow-lg shadow-purple-200/50"
+                            : "bg-gray-50 border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm"
+                        }`}
+                      >
+                        {renderContent(msg.content)}
+                      </div>
+
+                      {/* Timestamp + actions */}
+                      <div className={`flex items-center gap-2 px-1 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                        <span className="text-[11px] text-gray-400">{formatTime(msg.timestamp)}</span>
+
+                        {msg.role === "assistant" && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => copyMessage(msg.id, msg.content)}
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                              title="Copy"
+                            >
+                              {copiedId === msg.id ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <button className="p-1 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all">
+                              <ThumbsUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button className="p-1 rounded-md text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
+                              <ThumbsDown className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         )}
                       </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
-                {/* Typing Indicator */}
+              {/* Typing indicator */}
+              <AnimatePresence>
                 {isTyping && (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-start"
+                    exit={{ opacity: 0, y: 8 }}
+                    className="flex gap-3"
                   >
-                    <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 rounded-full">
-                          <Bot className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          ></div>
-                        </div>
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm">
+                      <div className="flex items-center gap-1.5">
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            className="w-2 h-2 bg-purple-400 rounded-full"
+                            animate={{ y: [0, -6, 0] }}
+                            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                          />
+                        ))}
                       </div>
                     </div>
                   </motion.div>
                 )}
+              </AnimatePresence>
 
-                <div ref={messagesEndRef} />
-              </div>
+              <div ref={messagesEndRef} />
+            </div>
 
-              {/* Input Area */}
-              <div className="border-t border-gray-200 p-3 sm:p-4">
-                <div className="flex items-end space-x-2 sm:space-x-3">
-                  <div className="flex-1 relative">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything about your event plan..."
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10 sm:pr-12 text-sm sm:text-base"
-                      disabled={loading}
-                    />
-                    {loading && (
-                      <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" />
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleSendMessage()}
-                    disabled={!inputMessage.trim() || loading}
-                    className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                  >
-                    <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-4 lg:space-y-6 order-1 lg:order-2">
-            {/* Quick Prompts */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl lg:rounded-2xl shadow-lg p-4 lg:p-6"
-            >
-              <div className="flex items-center mb-3 lg:mb-4">
-                <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-purple-600 mr-2" />
-                <h3 className="text-base lg:text-lg font-semibold text-gray-900">
-                  Quick Actions
-                </h3>
-              </div>
-              <div className="space-y-2 lg:space-y-3">
-                {quickPrompts.map((prompt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickPrompt(prompt.prompt)}
+            {/* Input area */}
+            <div className="border-t border-gray-100 bg-white/90 backdrop-blur-sm px-4 py-3 sm:px-5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex-1 relative">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask anything about your event..."
                     disabled={loading}
-                    className={`w-full flex items-center p-2.5 lg:p-3 rounded-xl text-xs lg:text-sm font-medium transition-colors disabled:opacity-50 ${prompt.color}`}
+                    className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-300 focus:bg-white transition-all disabled:opacity-50"
+                  />
+                  {loading && (
+                    <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400 animate-spin" />
+                  )}
+                </div>
+                <button
+                  onClick={() => handleSendMessage()}
+                  disabled={!inputMessage.trim() || loading}
+                  className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-lg shadow-purple-200 hover:shadow-purple-300 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── Sidebar ──────────────────────────────────────────────────── */}
+          <div className="flex flex-col gap-4">
+            {/* Quick actions */}
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/60 p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Wand2 className="h-4 w-4 text-purple-500" />
+                <h3 className="text-sm font-semibold text-gray-900">Quick Actions</h3>
+              </div>
+
+              {/* Mobile: horizontal scroll; Desktop: grid */}
+              <div className="flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1 lg:gap-1.5 lg:overflow-visible lg:pb-0 snap-x snap-mandatory">
+                {quickPrompts.map((qp, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleSendMessage(qp.prompt)}
+                    disabled={loading}
+                    className={`shrink-0 snap-start flex items-center gap-2.5 px-3 py-2.5 rounded-xl border ${qp.bg} ${qp.border} text-left transition-all disabled:opacity-50 w-36 lg:w-auto`}
                   >
-                    <prompt.icon className="h-3 w-3 lg:h-4 lg:w-4 mr-2 lg:mr-3 flex-shrink-0" />
-                    <span className="text-left">{prompt.text}</span>
-                  </button>
+                    <div className={`shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br ${qp.accent} flex items-center justify-center shadow-sm`}>
+                      <qp.icon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className={`text-xs font-medium ${qp.iconColor} leading-tight`}>{qp.text}</span>
+                  </motion.button>
                 ))}
               </div>
             </motion.div>
 
-            {/* Plan Summary */}
+            {/* Plan summary */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl shadow-lg p-6"
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/60 p-4"
             >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Current Plan
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-600">Event:</span>
-                  <span className="ml-2 font-medium capitalize">
-                    {plan.eventType.replace("_", " ")}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <MapPin className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-600">Location:</span>
-                  <span className="ml-2 font-medium">{plan.location}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Users className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-600">Guests:</span>
-                  <span className="ml-2 font-medium">{plan.guestCount}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-600">Budget:</span>
-                  <span className="ml-2 font-medium">
-                    ₦{plan.budget.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-600">Date:</span>
-                  <span className="ml-2 font-medium">
-                    {new Date(plan.date).toLocaleDateString()}
-                  </span>
-                </div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Event Details</h3>
+              <div className="space-y-2.5">
+                {[
+                  { icon: Calendar, label: plan.eventType.replace(/_/g, " "), sub: "Event type" },
+                  { icon: MapPin, label: plan.location || "—", sub: "Location" },
+                  { icon: Users, label: `${plan.guestCount} guests`, sub: "Attendance" },
+                  { icon: DollarSign, label: `₦${plan.budget.toLocaleString()}`, sub: "Total budget" },
+                  { icon: Clock, label: new Date(plan.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }), sub: "Event date" },
+                ].map(({ icon: Icon, label, sub }, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                      <Icon className="h-3.5 w-3.5 text-purple-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-900 truncate capitalize">{label}</p>
+                      <p className="text-[11px] text-gray-400">{sub}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </motion.div>
 
-            {/* AI Capabilities */}
+            {/* AI capabilities */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-2xl shadow-lg p-6"
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-purple-100 p-4"
             >
-              <div className="flex items-center mb-4">
-                <Wand2 className="h-5 w-5 text-green-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  AI Capabilities
-                </h3>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <h3 className="text-sm font-semibold text-gray-900">Capabilities</h3>
               </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Budget optimization
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Vendor recommendations
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Timeline planning
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Risk assessment
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Creative suggestions
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Sustainability tips
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Tips */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6"
-            >
-              <div className="flex items-center mb-3">
-                <Lightbulb className="h-5 w-5 text-blue-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Pro Tips
-                </h3>
-              </div>
-              <div className="space-y-2 text-sm text-gray-700">
-                <p>• Be specific about your needs and preferences</p>
-                <p>• Ask for alternatives and comparisons</p>
-                <p>• Request detailed explanations for recommendations</p>
-                <p>• Use follow-up questions to refine suggestions</p>
+              <div className="grid grid-cols-2 gap-y-1.5 gap-x-2 lg:grid-cols-1">
+                {aiCapabilities.map((cap, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                    <span className="text-xs text-gray-600">{cap}</span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           </div>

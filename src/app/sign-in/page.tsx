@@ -91,7 +91,14 @@ function SignInContent() {
           user: "/user/dashboard",
         };
         const dashboardRoute = roleRouteMap[response.user.role] || "/dashboard";
-        router.push(dashboardRoute);
+        // Redirect back to the plan result page if the user came from there
+        const redirectAfter = localStorage.getItem("redirectAfterSignup");
+        if (redirectAfter) {
+          localStorage.removeItem("redirectAfterSignup");
+          router.push(redirectAfter);
+        } else {
+          router.push(dashboardRoute);
+        }
       } else {
         toast.error("Invalid user role");
         await logout();

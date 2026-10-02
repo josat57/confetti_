@@ -724,23 +724,22 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await getDashboardStats();
-      if (response?.data) {
-        setStats(response.data);
+      if (response?.data?.metrics) {
+        const m = response.data.metrics;
+        setStats({
+          totalUsers: m.users?.total ?? 0,
+          totalVendors: m.users?.vendors ?? 0,
+          totalEvents: m.events?.total ?? 0,
+          totalRevenue: m.revenue?.total ?? 0,
+          activeSubscriptions: m.subscriptions?.active ?? 0,
+          pendingReports: m.pendingActions?.flaggedContent ?? 0,
+          supportTickets: m.pendingActions?.openTickets ?? 0,
+          systemHealth:
+            m.systemHealth?.database?.status === "healthy" ? "good" : "warning",
+        });
       }
     } catch (error) {
       console.error("Error fetching admin stats:", error);
-      // Provide fallback stats when API is not available
-      setStats({
-        totalUsers: 0,
-        totalVendors: 0,
-        totalEvents: 0,
-        totalRevenue: 0,
-        activeSubscriptions: 0,
-        pendingReports: 0,
-        supportTickets: 0,
-        systemHealth: "good",
-      });
-      // Don't show error toast on initial load
     } finally {
       setLoading(false);
     }

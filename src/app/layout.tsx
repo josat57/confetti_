@@ -53,15 +53,13 @@ export default function RootLayout({
         </QueryProvider>
         </ThemeProvider>
 
-        {/* Payment Provider Scripts */}
+        {/* Flutterwave — global, safe to load eagerly */}
         <Script
           src="https://checkout.flutterwave.com/v3.js"
           strategy="lazyOnload"
         />
-        <Script
-          src="https://js.paystack.co/v1/inline.js"
-          strategy="lazyOnload"
-        />
+        {/* Paystack is loaded on-demand inside PaymentModal to avoid the
+            "please put inside a form" init error from inline.js */}
       </body>
     </html>
   );

@@ -206,7 +206,35 @@ const PaymentModal = ({
     }
   };
 
+  const loadPaystackScript = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (window.PaystackPop) return resolve();
+      const existing = document.getElementById("paystack-inline-js");
+      if (existing) {
+        existing.addEventListener("load", () => resolve());
+        existing.addEventListener("error", reject);
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "paystack-inline-js";
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.onload = () => resolve();
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
+
   const handlePaystackPayment = async () => {
+    // Load Paystack script on-demand to avoid the "form element" init warning
+    try {
+      await loadPaystackScript();
+    } catch {
+      const errorMessage = "Failed to load payment SDK. Please try again.";
+      setPaymentError(errorMessage);
+      toast.error(errorMessage);
+      if (onError) onError(errorMessage);
+      return;
+    }
+
     // Check if PaystackPop is available
     if (!window.PaystackPop) {
       const errorMessage =

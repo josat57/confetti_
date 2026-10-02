@@ -12,6 +12,7 @@ import { Auth } from "@/api/api";
 import { toast } from "react-toastify";
 import { AdminAPI } from "@/api/adminApi";
 import { guestSessionService } from "@/services/guest-session.service";
+import { saveEventPlan } from "@/lib/api/ai-planner";
 
 interface User {
   _id: string;
@@ -190,6 +191,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Save a plan the user generated before authenticating (stored in localStorage by the public planner flow).
+  const savePendingEventPlan = async () => {
+    const token =
+      localStorage.getItem("eventPlanToken") ||
+      localStorage.getItem("eventPlanSessionToken");
+    if (!token) return;
+    try {
+      await saveEventPlan(token);
+      localStorage.removeItem("eventPlanToken");
+      localStorage.removeItem("eventPlanSessionToken");
+    } catch {
+      // Non-critical — plan might already be saved or token expired
+    }
+  };
+
   const login = async (
     email: string,
     password: string,
@@ -217,6 +233,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Non-critical — don't block login if conversion fails
           }
         }
+
+        // Save any AI plan the user generated before logging in
+        await savePendingEventPlan();
 
         return response;
       } else {
