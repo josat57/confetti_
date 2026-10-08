@@ -84,6 +84,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Team",       href: "/vendor/dashboard/team",       icon: Users,           tier: "business" },
     { name: "Payments",   href: "/vendor/dashboard/payments",   icon: CreditCard,      tier: "professional" },
     { name: "Payouts",    href: "/vendor/dashboard/payouts",    icon: CreditCard,      tier: "basic" },
+    { name: "Boost listing", href: "/vendor/dashboard/boost",   icon: BarChart3,       tier: "basic" },
     { name: "AI Planner", href: "/vendor/dashboard/ai-planner", icon: Bot,             tier: "business" },
     { name: "Messages",       href: "/vendor/dashboard/messages",       icon: MessageSquare,   tier: "basic" },
     { name: "Analytics",      href: "/vendor/dashboard/analytics",      icon: BarChart3,       tier: "basic" },
