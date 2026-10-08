@@ -17,6 +17,9 @@ import {
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import { useUserEvents, useDeleteEvent } from "@/hooks/useUserDashboard";
+import { eventPassService, ActivePass } from "@/services/event-pass.service";
+
+const PASS_LABEL: Record<string, string> = { celebration: "Celebration", plus: "Plus", diaspora: "Diaspora" };
 
 const STATUS_OPTIONS = ["All", "Draft", "Planning", "Confirmed", "In Progress", "Completed", "Cancelled"];
 
@@ -65,6 +68,10 @@ const formatCurrency = (amount: number, currency = "NGN") =>
 
 export default function UserEventsPage() {
   const router = useRouter();
+  const [passes, setPasses] = useState<Record<string, ActivePass>>({});
+  useEffect(() => {
+    eventPassService.getMyPasses().then(setPasses).catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -186,7 +193,14 @@ export default function UserEventsPage() {
                     <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors line-clamp-1 flex-1 pr-2">
                       {event.name}
                     </h3>
-                    <StatusBadge status={event.status} />
+                    <div className="flex items-center gap-1.5">
+                      {passes[event._id] && (
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
+                          {PASS_LABEL[passes[event._id].tier] || "Pass"}
+                        </span>
+                      )}
+                      <StatusBadge status={event.status} />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 text-sm text-gray-500">

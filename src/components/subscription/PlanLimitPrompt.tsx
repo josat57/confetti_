@@ -12,8 +12,10 @@ const PLAN_PAGES: Record<string, string> = {
 interface PlanLimitDetail {
   message?: string;
   code?: string;
-  details?: { upgradeTo?: string | null; planType?: string };
+  details?: { upgradeTo?: string | null; planType?: string; eventId?: string | null };
 }
+
+const PASS_NAMES: Record<string, string> = { celebration: "Celebration Pass", plus: "Celebration Plus" };
 
 /**
  * Shown when an action hits a plan limit or a paid feature (the API returns
@@ -29,8 +31,16 @@ export default function PlanLimitPrompt({ dashboard }: { dashboard: "vendor" | "
   }, []);
 
   if (!detail) return null;
-  const href = PLAN_PAGES[dashboard];
-  const upgradeTo = detail.details?.upgradeTo;
+  // Clients upgrade an event with a pass; others change plan
+  const isPass = detail.code === "PASS_REQUIRED";
+  const href = isPass
+    ? detail.details?.eventId
+      ? `/user/dashboard/events/${detail.details.eventId}`
+      : "/user/dashboard/events"
+    : dashboard === "user"
+    ? "/user/dashboard/events"
+    : PLAN_PAGES[dashboard];
+  const upgradeTo = isPass ? PASS_NAMES[detail.details?.upgradeTo || ""] || detail.details?.upgradeTo : detail.details?.upgradeTo;
 
   return (
     <div
@@ -52,7 +62,7 @@ export default function PlanLimitPrompt({ dashboard }: { dashboard: "vendor" | "
               onClick={() => setDetail(null)}
               className="inline-block mt-2 text-sm font-medium text-purple-700 dark:text-purple-300 hover:underline"
             >
-              See plans
+              {isPass ? "Upgrade your event" : "See plans"}
             </Link>
           )}
         </div>

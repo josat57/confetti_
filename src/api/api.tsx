@@ -31,7 +31,9 @@ api.interceptors.response.use(
     const planCode = error.response?.data?.code;
     if (
       typeof window !== "undefined" &&
-      (planCode === "PLAN_LIMIT_REACHED" || planCode === "PLAN_FEATURE_REQUIRED")
+      (planCode === "PLAN_LIMIT_REACHED" ||
+        planCode === "PLAN_FEATURE_REQUIRED" ||
+        planCode === "PASS_REQUIRED")
     ) {
       window.dispatchEvent(
         new CustomEvent("confetti:plan-limit", { detail: error.response.data })
