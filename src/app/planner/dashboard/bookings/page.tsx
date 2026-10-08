@@ -6,6 +6,7 @@ import { Briefcase, Calendar, Loader2, XCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { userBookingService, UserBooking, UserBookingStatus } from "@/services/user-booking.service";
 import MessageButton from "@/components/messages/MessageButton";
+import BookingPaymentPanel from "@/components/escrow/BookingPaymentPanel";
 
 const STATUS_STYLE: Record<UserBookingStatus, string> = {
   Pending: "bg-amber-100 text-amber-700",
@@ -26,6 +27,18 @@ export default function PlannerBookingsPage() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<UserBookingStatus | "All">("All");
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [openPayment, setOpenPayment] = useState<string | null>(null);
+
+  // Back from the payment page
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const outcome = query.get("payment");
+    if (!outcome) return;
+    if (outcome === "success") toast.success("Payment received. Confetti holds it until after the event.");
+    else if (outcome === "cancelled") toast.info("Payment cancelled");
+    else toast.error(query.get("message") || "The payment didn't go through");
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,7 +123,8 @@ export default function PlannerBookingsPage() {
             const vendor = typeof b.vendor === "object" ? b.vendor : null;
             const event = typeof b.event === "object" ? b.event : null;
             return (
-              <div key={b._id} className="bg-white rounded-lg border border-gray-200 p-4 flex flex-wrap items-center gap-4">
+              <div key={b._id} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-gray-900">{vendor?.businessName || "Vendor"}</p>
@@ -139,6 +153,12 @@ export default function PlannerBookingsPage() {
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-teal-200 text-teal-700 hover:bg-teal-50 disabled:opacity-50"
                     />
                   )}
+                  <button
+                    onClick={() => setOpenPayment(openPayment === b._id ? null : b._id)}
+                    className="px-3 py-2 rounded-lg text-sm border border-gray-200 text-gray-700 hover:bg-gray-50"
+                  >
+                    {openPayment === b._id ? "Hide payment" : "Payment"}
+                  </button>
                   {CANCELLABLE.includes(b.status) && (
                     <button
                       onClick={() => cancel(b._id)}
@@ -149,6 +169,12 @@ export default function PlannerBookingsPage() {
                     </button>
                   )}
                 </div>
+              </div>
+              {openPayment === b._id && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <BookingPaymentPanel bookingId={b._id} accent="teal" />
+                </div>
+              )}
               </div>
             );
           })}

@@ -141,6 +141,11 @@ const navigation: NavigationItem[] = [
         href: "/admin/dashboard/subscriptions",
         icon: CreditCard,
       },
+      {
+        name: "Escrow & Commission",
+        href: "/admin/dashboard/escrow",
+        icon: CreditCard,
+      },
     ],
   },
   {

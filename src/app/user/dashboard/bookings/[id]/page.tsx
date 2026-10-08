@@ -10,6 +10,7 @@ import { userBookingService, UserBooking, UserBookingStatus } from "@/services/u
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import MessageButton from "@/components/messages/MessageButton";
+import BookingPaymentPanel from "@/components/escrow/BookingPaymentPanel";
 
 const statusConfig: Record<
   UserBookingStatus,
@@ -57,6 +58,17 @@ export default function BookingDetailPage() {
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => { if (id) load(); }, [id]);
+
+  // Back from the payment page
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const outcome = query.get("payment");
+    if (!outcome) return;
+    if (outcome === "success") toast.success("Payment received. Confetti holds it until after your event.");
+    else if (outcome === "cancelled") toast.info("Payment cancelled");
+    else toast.error(query.get("message") || "The payment didn't go through");
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -156,6 +168,11 @@ export default function BookingDetailPage() {
       </div>
 
       {/* Vendor card */}
+      <div className={cardClass}>
+        <h2 className={sectionHeadingClass}>Payment</h2>
+        <BookingPaymentPanel bookingId={id} />
+      </div>
+
       <div className={cardClass}>
         <h2 className={sectionHeadingClass}>Vendor</h2>
         <div className="flex items-center gap-4">
