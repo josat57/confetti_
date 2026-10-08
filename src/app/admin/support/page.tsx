@@ -451,6 +451,14 @@ export default function SupportPage() {
                         >
                           {ticket.priority}
                         </span>
+                        {(ticket as any).isPriority && (
+                          <span
+                            className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded"
+                            title={(ticket as any).prioritySource ? `Priority support: ${(ticket as any).prioritySource}` : "Priority support"}
+                          >
+                            Priority support
+                          </span>
+                        )}
                         {ticket.category && (
                           <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded">
                             {ticket.category}

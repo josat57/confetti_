@@ -66,6 +66,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Documents",      href: "/planner/dashboard/documents",      icon: FileText,        tier: "starter" },
     { name: "Team",           href: "/planner/dashboard/team",           icon: UsersRound,      tier: "professional" },
     { name: "Notifications",  href: "/planner/dashboard/notifications",  icon: Bell,            tier: "starter" },
+    { name: "Help & support", href: "/planner/dashboard/support",        icon: MessageSquare,   tier: "starter" },
     { name: "Settings",       href: "/planner/dashboard/settings",       icon: Settings,        tier: "starter" },
   ];
 

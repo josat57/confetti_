@@ -89,6 +89,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Messages",       href: "/vendor/dashboard/messages",       icon: MessageSquare,   tier: "basic" },
     { name: "Analytics",      href: "/vendor/dashboard/analytics",      icon: BarChart3,       tier: "basic" },
     { name: "Notifications",  href: "/vendor/dashboard/notifications",  icon: Bell,            tier: "basic" },
+    { name: "Help & support", href: "/vendor/dashboard/support",        icon: MessageSquare,   tier: "basic" },
     { name: "Settings",       href: "/vendor/dashboard/settings",       icon: Settings,        tier: "basic" },
   ];
 
