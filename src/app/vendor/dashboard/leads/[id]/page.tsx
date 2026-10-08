@@ -16,6 +16,7 @@ import {
 import { toast } from "react-toastify";
 import Link from "next/link";
 import leadService from "@/services/lead.service";
+import MessageButton from "@/components/messages/MessageButton";
 import { invoicesService } from "@/services/invoices.service";
 import type { Lead as ApiLead } from "@/types/lead.types";
 
@@ -30,6 +31,7 @@ interface Lead {
   message: string;
   status: "new" | "contacted" | "quoted" | "won" | "lost";
   source: string;
+  customerUser?: string;
   notes: Array<{
     id: string;
     text: string;
@@ -48,9 +50,10 @@ function mapApiLead(apiLead: ApiLead): Lead {
     eventType: apiLead.eventDetails.type,
     eventDate: new Date(apiLead.eventDetails.date),
     budget: apiLead.eventDetails.budget,
-    message: apiLead.notes[0]?.text || "",
+    message: apiLead.notes[0]?.text || (apiLead.eventDetails as any)?.description || "",
     status: apiLead.status as Lead["status"],
     source: apiLead.source,
+    customerUser: apiLead.customerUser,
     notes: apiLead.notes.map((n) => ({
       id: n._id,
       text: n.text,
@@ -404,6 +407,14 @@ export default function LeadDetailsPage() {
               Quick Actions
             </h2>
             <div className="space-y-2">
+              {lead.customerUser && (
+                <MessageButton
+                  participantId={lead.customerUser}
+                  subject={`Your ${lead.eventType} enquiry`}
+                  label="Message Client"
+                  className="flex items-center gap-2 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                />
+              )}
               <a
                 href={`mailto:${lead.clientEmail}`}
                 className="flex items-center gap-2 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"

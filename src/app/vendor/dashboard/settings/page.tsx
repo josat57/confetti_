@@ -18,12 +18,22 @@ import {
 import { toast } from "react-toastify";
 import { User } from "@/api/api";
 import { settingsService } from "@/services/settings.service";
-import { subscriptionService } from "@/services/subscription.service";
+import PlanPicker from "@/components/subscription/PlanPicker";
+import PlanUsage from "@/components/subscription/PlanUsage";
 import Image from "next/image";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [planRefresh, setPlanRefresh] = useState(0);
+  // Open a tab from the link (e.g. ?tab=billing from upgrade prompts)
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab && ["profile", "notifications", "security", "billing", "preferences"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -106,27 +116,6 @@ export default function SettingsPage() {
 
     fetchBillingData();
 
-    // Fetch available plans when user is available
-    const fetchAvailablePlans = async () => {
-      if (!user?.role) return;
-
-      try {
-        const plans = await subscriptionService.getPlans({
-          planType: user.role === "vendor" ? "vendor" : "planner",
-        });
-        console.log("Fetched plans:", plans);
-        setBillingData((prev) => ({
-          ...prev,
-          availablePlans: plans,
-        }));
-      } catch (error) {
-        console.error("Error fetching plans:", error);
-      }
-    };
-
-    if (user?.role) {
-      fetchAvailablePlans();
-    }
   }, [user?.role]);
 
   // Update profile data when user changes
@@ -185,9 +174,6 @@ export default function SettingsPage() {
     currentPlan: null as any,
     paymentMethods: [] as any[],
     showAddPaymentModal: false,
-    showChangePlanModal: false,
-    availablePlans: [] as any[],
-    loadingPlans: false,
   });
 
   const [paymentForm, setPaymentForm] = useState({
@@ -556,72 +542,6 @@ export default function SettingsPage() {
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleChangePlan = async (plan: any) => {
-    if (!confirm("Are you sure you want to change your subscription plan?"))
-      return;
-
-    setLoading(true);
-    try {
-      // Get NGN pricing (or first available)
-      const ngnPricing =
-        plan.pricing?.find((p: any) => p.currency === "NGN") ||
-        plan.pricing?.[0];
-
-      await settingsService.changePlan({
-        planId: plan._id,
-        planName: plan.planName,
-        amount: ngnPricing?.amountInMinorUnits || ngnPricing?.amount || 0,
-        currency: ngnPricing?.currency || "NGN",
-      });
-      toast.success("Subscription plan changed successfully");
-      // Refresh billing data
-      const response = await settingsService.getAllSettings();
-      if (response.data?.billing) {
-        setBillingData({
-          ...billingData,
-          currentPlan: response.data.billing.subscription,
-          showChangePlanModal: false,
-        });
-      }
-    } catch (error: any) {
-      console.error("Error changing plan:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to change subscription plan"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpenChangePlanModal = async () => {
-    // Open modal first
-    setBillingData({
-      ...billingData,
-      showChangePlanModal: true,
-      loadingPlans: true,
-    });
-
-    // Fetch latest plans
-    try {
-      const plans = await subscriptionService.getPlans({
-        planType: user?.role === "vendor" ? "vendor" : "planner",
-      });
-      console.log("Fetched plans for modal:", plans);
-      setBillingData((prev) => ({
-        ...prev,
-        availablePlans: plans,
-        loadingPlans: false,
-      }));
-    } catch (error) {
-      console.error("Error fetching plans:", error);
-      toast.error("Failed to load subscription plans");
-      setBillingData((prev) => ({
-        ...prev,
-        loadingPlans: false,
-      }));
     }
   };
 
@@ -1326,65 +1246,14 @@ export default function SettingsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-xl font-semibold mb-6">Billing Settings</h2>
               <div className="space-y-6">
-                {/* Current Plan */}
+                {/* Current Plan and usage */}
                 <div>
                   <h3 className="font-medium mb-3">Current Plan</h3>
-                  {billingData.currentPlan ? (
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold text-lg">
-                            {billingData.currentPlan.planName ||
-                              "Professional Plan"}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {billingData.currentPlan.amount
-                              ? `${
-                                  billingData.currentPlan.currency === "NGN"
-                                    ? "₦"
-                                    : billingData.currentPlan.currency
-                                } ${(
-                                  billingData.currentPlan.amount / 100
-                                ).toLocaleString()}`
-                              : "₦15,000"}{" "}
-                            / {billingData.currentPlan.billingCycle || "month"}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Status:{" "}
-                            <span
-                              className={`font-medium ${
-                                billingData.currentPlan.status === "active"
-                                  ? "text-green-600"
-                                  : "text-yellow-600"
-                              }`}
-                            >
-                              {billingData.currentPlan.status}
-                            </span>
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleOpenChangePlanModal}
-                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          Change Plan
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg p-4">
-                      <p className="text-sm text-gray-600">
-                        No active subscription
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleOpenChangePlanModal}
-                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        Subscribe Now
-                      </button>
-                    </div>
-                  )}
+                  <PlanUsage
+                    accent="purple"
+                    refreshKey={planRefresh}
+                    onChangePlan={() => setShowPlanPicker(true)}
+                  />
                 </div>
 
                 {/* Payment Methods */}
@@ -1470,148 +1339,16 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Change Plan Modal */}
-                {billingData.showChangePlanModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">
-                          Change Subscription Plan
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setBillingData({
-                              ...billingData,
-                              showChangePlanModal: false,
-                            })
-                          }
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <X className="w-6 h-6" />
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Choose a plan that works best for you. You can change or
-                        cancel anytime.
-                      </p>
-                      <div className="space-y-3">
-                        {billingData.loadingPlans ? (
-                          <div className="text-center py-8">
-                            <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-                            <p className="text-gray-600">Loading plans...</p>
-                          </div>
-                        ) : billingData.availablePlans.length > 0 ? (
-                          billingData.availablePlans.map((plan: any) => {
-                            const isCurrentPlan =
-                              billingData.currentPlan?.planName ===
-                              plan.planName;
-
-                            // Get pricing for NGN currency (or first available)
-                            const ngnPricing =
-                              plan.pricing?.find(
-                                (p: any) => p.currency === "NGN"
-                              ) || plan.pricing?.[0];
-                            const displayPrice = ngnPricing?.amount || 0;
-                            const displayCurrency =
-                              ngnPricing?.currency || "NGN";
-
-                            return (
-                              <div
-                                key={plan._id}
-                                className={`border-2 rounded-lg p-4 ${
-                                  isCurrentPlan
-                                    ? "border-purple-600 bg-purple-50"
-                                    : "border-gray-200"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-semibold text-lg">
-                                        {plan.displayName || plan.planName}
-                                      </p>
-                                      {isCurrentPlan && (
-                                        <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded">
-                                          Current Plan
-                                        </span>
-                                      )}
-                                      {plan.isPopular && !isCurrentPlan && (
-                                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">
-                                          Popular
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                      {displayCurrency === "NGN"
-                                        ? "₦"
-                                        : displayCurrency}{" "}
-                                      {displayPrice.toLocaleString()} /{" "}
-                                      {plan.billingCycle}
-                                    </p>
-                                    {plan.description && (
-                                      <p className="text-xs text-gray-500 mt-2">
-                                        {plan.description}
-                                      </p>
-                                    )}
-                                    {plan.features &&
-                                      plan.features.length > 0 && (
-                                        <ul className="mt-3 space-y-1">
-                                          {plan.features
-                                            .slice(0, 3)
-                                            .map(
-                                              (
-                                                feature: string,
-                                                idx: number
-                                              ) => (
-                                                <li
-                                                  key={idx}
-                                                  className="text-xs text-gray-600 flex items-center gap-1"
-                                                >
-                                                  <span className="text-green-600">
-                                                    ✓
-                                                  </span>
-                                                  {feature}
-                                                </li>
-                                              )
-                                            )}
-                                          {plan.features.length > 3 && (
-                                            <li className="text-xs text-gray-500 italic">
-                                              +{plan.features.length - 3} more
-                                              features
-                                            </li>
-                                          )}
-                                        </ul>
-                                      )}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleChangePlan(plan)}
-                                    disabled={loading || isCurrentPlan}
-                                    className={`px-4 py-2 rounded-lg transition-colors ${
-                                      isCurrentPlan
-                                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        : "bg-purple-600 text-white hover:bg-purple-700"
-                                    } disabled:opacity-50`}
-                                  >
-                                    {loading
-                                      ? "Processing..."
-                                      : isCurrentPlan
-                                      ? "Current"
-                                      : "Select Plan"}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="text-center py-8">
-                            <p className="text-gray-600">Loading plans...</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                {/* Change Plan */}
+                {showPlanPicker && (
+                  <PlanPicker
+                    planType="vendor"
+                    accent="purple"
+                    currentPlanName={billingData.currentPlan?.planName}
+                    currentBillingCycle={billingData.currentPlan?.billingCycle === "yearly" ? "yearly" : "monthly"}
+                    onClose={() => setShowPlanPicker(false)}
+                    onChanged={() => setPlanRefresh((n) => n + 1)}
+                  />
                 )}
 
                 {/* Add Payment Method Modal */}

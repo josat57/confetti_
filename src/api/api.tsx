@@ -27,6 +27,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Plan limits and paid features: let the dashboard offer an upgrade (components/subscription/PlanLimitPrompt)
+    const planCode = error.response?.data?.code;
+    if (
+      typeof window !== "undefined" &&
+      (planCode === "PLAN_LIMIT_REACHED" || planCode === "PLAN_FEATURE_REQUIRED")
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("confetti:plan-limit", { detail: error.response.data })
+      );
+    }
+
     // List of URLs that should NOT trigger token refresh
     const excludedUrls = [
       "/auth/refresh-token",
@@ -144,8 +155,11 @@ export const Auth = {
     confirmPassword: string;
     planId?: string;
     planName?: string;
-    planType?: "vendor" | "event_planner";
+    planType?: "vendor" | "event_planner" | "planner" | "client";
     amount?: number;
+    currency?: string;
+    billingCycle?: "monthly" | "yearly";
+    couponCode?: string;
   }) => {
     const response = await api.post("/auth/register", userData);
     return response.data;

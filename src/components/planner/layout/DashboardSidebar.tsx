@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
+import { subscriptionService } from "@/services/subscription.service";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -34,10 +35,17 @@ interface DashboardSidebarProps {
 export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
-  const [subscriptionTier, setSubscriptionTier] = useState("starter");
+  const [subscriptionTier, setSubscriptionTier] = useState("Solo");
 
   useEffect(() => {
-    setSubscriptionTier("starter");
+    let active = true;
+    subscriptionService
+      .getUsage()
+      .then((summary) => active && summary.plan && setSubscriptionTier(summary.plan.displayName))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   const unreadMessages = useUnreadMessages();
@@ -47,6 +55,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Events",     href: "/planner/dashboard/events",     icon: Calendar,        tier: "starter" },
     { name: "AI Planner", href: "/planner/dashboard/ai-planner", icon: Sparkles,        tier: "professional" },
     { name: "Vendors",    href: "/planner/dashboard/vendors",    icon: Briefcase,       tier: "starter" },
+    { name: "Bookings",   href: "/planner/dashboard/bookings",   icon: CheckSquare,     tier: "starter" },
     { name: "Clients",    href: "/planner/dashboard/clients",    icon: UserCircle,      tier: "starter" },
     { name: "Budget",     href: "/planner/dashboard/budget",     icon: DollarSign,      tier: "starter" },
     { name: "Tasks",      href: "/planner/dashboard/tasks",      icon: CheckSquare,     tier: "starter" },

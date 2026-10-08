@@ -1,5 +1,6 @@
 "use client";
 
+import PlanLimitPrompt from "@/components/subscription/PlanLimitPrompt";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +77,7 @@ export default function VendorDashboardLayout({
 
         {/* Page Content */}
         <main className="p-4 md:p-6 lg:p-8">{children}</main>
+        <PlanLimitPrompt dashboard="vendor" />
       </div>
     </div>
   );

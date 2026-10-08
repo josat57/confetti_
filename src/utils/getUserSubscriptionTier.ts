@@ -55,12 +55,14 @@ function normalizeSubscriptionTier(tier: string): string {
 
   const normalized = tier.toLowerCase().trim();
 
-  // Map common variations to standard tiers
-  if (normalized.includes("enterprise")) return "enterprise";
+  // Map plan names (current and older) to tier keys:
+  // Venue/Enterprise → enterprise, Business → business, Pro/Professional → professional,
+  // Listing/Basic/Free → basic
+  if (normalized.includes("venue") || normalized.includes("enterprise")) return "enterprise";
   if (normalized.includes("business")) return "business";
   if (normalized.includes("professional") || normalized.includes("pro"))
     return "professional";
-  if (normalized.includes("basic") || normalized.includes("free"))
+  if (normalized.includes("listing") || normalized.includes("basic") || normalized.includes("free"))
     return "basic";
 
   // If it's already a valid tier, return it

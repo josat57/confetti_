@@ -9,6 +9,9 @@ export interface Lead {
   source: LeadSource;
   notes: Note[];
   assignedTo?: string;
+  /** Signed-in client who sent the enquiry (can be messaged) */
+  customerUser?: string;
+  booking?: string;
   priority: "low" | "medium" | "high";
   estimatedValue?: number;
   followUpDate?: Date;

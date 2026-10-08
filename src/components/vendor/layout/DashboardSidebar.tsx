@@ -69,17 +69,20 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
 
   const unreadMessages = useUnreadMessages();
 
+  // Which plan unlocks each page (basic = Listing, professional = Pro, business = Business).
+  // Listing vendors can answer 5 enquiries a month, so leads, quotes and bookings stay open;
+  // the API enforces the limits.
   const navigation = [
     { name: "Dashboard",  href: "/vendor/dashboard",            icon: LayoutDashboard, tier: "basic" },
     { name: "Profile",    href: "/vendor/dashboard/profile",    icon: User,            tier: "basic" },
     { name: "Events",     href: "/vendor/dashboard/events",     icon: Image,           tier: "basic" },
     { name: "Calendar",   href: "/vendor/dashboard/calendar",   icon: Calendar,        tier: "professional" },
-    { name: "Leads",      href: "/vendor/dashboard/leads",      icon: Users,           tier: "professional" },
-    { name: "Bookings",   href: "/vendor/dashboard/bookings",   icon: Briefcase,       tier: "professional" },
-    { name: "Quotes",     href: "/vendor/dashboard/quotes",     icon: Briefcase,       tier: "professional" },
-    { name: "Clients",    href: "/vendor/dashboard/clients",    icon: UserCircle,      tier: "business" },
+    { name: "Leads",      href: "/vendor/dashboard/leads",      icon: Users,           tier: "basic" },
+    { name: "Bookings",   href: "/vendor/dashboard/bookings",   icon: Briefcase,       tier: "basic" },
+    { name: "Quotes",     href: "/vendor/dashboard/quotes",     icon: Briefcase,       tier: "basic" },
+    { name: "Clients",    href: "/vendor/dashboard/clients",    icon: UserCircle,      tier: "professional" },
     { name: "Team",       href: "/vendor/dashboard/team",       icon: Users,           tier: "business" },
-    { name: "Payments",   href: "/vendor/dashboard/payments",   icon: CreditCard,      tier: "business" },
+    { name: "Payments",   href: "/vendor/dashboard/payments",   icon: CreditCard,      tier: "professional" },
     { name: "AI Planner", href: "/vendor/dashboard/ai-planner", icon: Bot,             tier: "business" },
     { name: "Messages",       href: "/vendor/dashboard/messages",       icon: MessageSquare,   tier: "basic" },
     { name: "Analytics",      href: "/vendor/dashboard/analytics",      icon: BarChart3,       tier: "basic" },

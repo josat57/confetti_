@@ -43,7 +43,8 @@ export default function RegisterPage() {
     confirmPassword: "",
     planId: "",
     planName: "",
-    planType: "" as "vendor" | "event_planner" | "",
+    planType: "" as "vendor" | "event_planner" | "planner" | "client" | "",
+    couponCode: "",
     amount: 0,
     currency: "NGN" as "NGN" | "USD",
   });
@@ -206,7 +207,8 @@ export default function RegisterPage() {
     try {
       // Include plan data in registration payload
       // Convert amount to smallest unit (kobo for NGN, cents for USD)
-      const amountInSmallestUnit = formData.amount * 100;
+      // Round: e.g. 9.99 * 100 is 999.0000000000001 in floating point
+      const amountInSmallestUnit = Math.round(formData.amount * 100);
 
       const registrationPayload = {
         userName: formData.userName,
@@ -216,9 +218,11 @@ export default function RegisterPage() {
         confirmPassword: formData.confirmPassword,
         planId: formData.planId,
         planName: formData.planName,
-        planType: formData.planType as "vendor" | "event_planner",
+        planType: formData.planType as "vendor" | "event_planner" | "planner" | "client",
         amount: amountInSmallestUnit,
+        couponCode: formData.couponCode.trim() || undefined,
         currency: formData.currency,
+        billingCycle: selectedPlan?.billingCycle || "monthly",
       };
 
       // Store registration data for potential retry
@@ -746,6 +750,25 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
+
+              {/* Coupon (paid plans) */}
+              {formData.amount > 0 && (
+                <div>
+                  <label htmlFor="couponCode" className="block text-sm font-medium text-gray-700">
+                    Coupon code (optional)
+                  </label>
+                  <input
+                    id="couponCode"
+                    name="couponCode"
+                    type="text"
+                    disabled={isLoading}
+                    value={formData.couponCode}
+                    onChange={(e) => setFormData({ ...formData, couponCode: e.target.value.toUpperCase() })}
+                    className="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-lg uppercase focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                    placeholder="e.g. PRO3FREE"
+                  />
+                </div>
+              )}
 
               {/* Password */}
               <div>

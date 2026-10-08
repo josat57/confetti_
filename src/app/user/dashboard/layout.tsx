@@ -1,5 +1,6 @@
 "use client";
 
+import PlanLimitPrompt from "@/components/subscription/PlanLimitPrompt";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +78,7 @@ export default function UserDashboardLayout({
       <div className="lg:pl-64">
         <UserHeader user={user} onMenuClick={() => setSidebarOpen(true)} />
         <main className="p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">{children}</main>
+        <PlanLimitPrompt dashboard="user" />
       </div>
 
       <UserMobileNav />

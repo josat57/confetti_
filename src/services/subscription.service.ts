@@ -55,6 +55,12 @@ export interface Subscription {
     reason: string;
     feedback: string;
   };
+  pendingChange?: {
+    planName: string;
+    billingCycle?: "monthly" | "yearly";
+    effectiveAt: Date;
+  };
+  cancelAtPeriodEnd?: boolean;
   pendingUpgrade?: {
     newPlanName: string;
     amount: number;
@@ -87,6 +93,46 @@ export interface SubscriptionPlan {
   updatedAt: Date;
 }
 
+export type BillingCycle = "monthly" | "yearly";
+
+export interface PlanPrice {
+  currency: string;
+  amount: number;
+  amountInMinorUnits: number;
+}
+
+export interface UsageMeter {
+  used: number;
+  /** null = unlimited, 0 = not included */
+  limit: number | null;
+  label: string;
+}
+
+export interface UsageSummary {
+  planType: "vendor" | "planner" | "client";
+  plan: { key: string; displayName: string; level: number; features: Record<string, boolean> } | null;
+  subscription: {
+    _id: string;
+    planName: string;
+    status: Subscription["status"];
+    billingCycle: BillingCycle;
+    endDate: string;
+  } | null;
+  usage: Record<string, UsageMeter>;
+}
+
+export interface ChangePlanResult {
+  action: "payment_required" | "scheduled" | "changed";
+  subscription: Subscription;
+  paymentUrl?: string;
+  reference?: string;
+  amountDue?: number;
+  currency?: string;
+  effectiveAt?: string;
+  freeUntil?: string;
+}
+
+// API: confetti_server routes/subscription.routes.js (my-subscription endpoints)
 export const subscriptionService = {
   /**
    * Get current user's subscription
@@ -97,12 +143,12 @@ export const subscriptionService = {
   },
 
   /**
-   * Get all available subscription plans
+   * Active plans with monthly and yearly prices
    */
   async getPlans(params?: {
     planType?: "vendor" | "planner";
     currency?: string;
-  }): Promise<SubscriptionPlan[]> {
+  }): Promise<Array<SubscriptionPlan & { yearlyPricing?: Array<PlanPrice | null> }>> {
     const response = await api.get("/subscription-plans", { params });
     return response.data.data?.plans || response.data.plans;
   },
@@ -116,44 +162,47 @@ export const subscriptionService = {
   },
 
   /**
-   * Upgrade subscription
+   * Change plan. Upgrades return a paymentUrl (the change applies once paid);
+   * cheaper plans are scheduled for the end of the paid period.
    */
+  async changePlan(data: {
+    planId?: string;
+    planName?: string;
+    billingCycle?: BillingCycle;
+    paymentProvider?: "flutterwave" | "paystack";
+    currency?: string;
+    couponCode?: string;
+  }): Promise<ChangePlanResult> {
+    const response = await api.post("/subscriptions/change-plan", data);
+    return response.data.data;
+  },
+
+  /** Older name for changePlan */
   async upgrade(data: {
     newPlanId: string;
     paymentMethod: "flutterwave" | "paystack";
-  }): Promise<{
-    subscription: Subscription;
-    paymentUrl?: string;
-    paymentReference?: string;
-  }> {
+    billingCycle?: BillingCycle;
+  }): Promise<ChangePlanResult> {
     const response = await api.post("/subscriptions/upgrade", data);
     return response.data.data;
   },
 
-  /**
-   * Downgrade subscription
-   */
-  async downgrade(data: {
-    newPlanId: string;
-    reason?: string;
-  }): Promise<Subscription> {
+  /** Older name for changePlan (cheaper plan, applied at period end) */
+  async downgrade(data: { newPlanId: string; reason?: string }): Promise<Subscription> {
     const response = await api.post("/subscriptions/downgrade", data);
     return response.data.data.subscription;
   },
 
   /**
-   * Cancel subscription
+   * Cancel: the plan stays until the end of the paid period
    */
-  async cancel(data: {
-    reason: string;
-    feedback?: string;
-  }): Promise<Subscription> {
+  async cancel(data: { reason: string; feedback?: string }): Promise<Subscription> {
     const response = await api.post("/subscriptions/cancel", data);
     return response.data.data.subscription;
   },
 
   /**
-   * Reactivate cancelled subscription
+   * Undo a cancellation or a scheduled plan change
    */
   async reactivate(): Promise<Subscription> {
     const response = await api.post("/subscriptions/reactivate");
@@ -161,20 +210,9 @@ export const subscriptionService = {
   },
 
   /**
-   * Get subscription usage
+   * Plan, limits and current usage
    */
-  async getUsage(): Promise<{
-    eventsCreated: number;
-    photosUploaded: number;
-    limits: {
-      eventsPerMonth: number;
-      photosPerEvent: number;
-    };
-    percentageUsed: {
-      events: number;
-      photos: number;
-    };
-  }> {
+  async getUsage(): Promise<UsageSummary> {
     const response = await api.get("/subscriptions/usage");
     return response.data.data;
   },

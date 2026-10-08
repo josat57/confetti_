@@ -12,10 +12,13 @@ import {
 export interface PlanData {
   planId: string;
   planName: string;
-  planType: "vendor" | "event_planner";
+  /** "client" = planning their own event (no subscription) */
+  planType: "vendor" | "event_planner" | "planner" | "client";
   amount: number;
   currency: "NGN" | "USD";
   period: string;
+  /** Yearly plans charge 10 months for 12 (amount is the yearly total) */
+  billingCycle?: "monthly" | "yearly";
   timestamp: number;
 }
 

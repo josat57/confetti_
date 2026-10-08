@@ -1,4 +1,7 @@
-// Subscription tier utilities
+// Subscription tier utilities (vendor plans).
+// Internal tier keys stay stable; they map to the plans sold today:
+// basic = Listing, professional = Pro, business = Business, enterprise = Venue.
+// Limits are enforced by the API (PLAN_LIMIT_REACHED); these are for display.
 
 export type SubscriptionTier =
   | "basic"
@@ -23,7 +26,8 @@ export function hasFeatureAccess(
 ): boolean {
   const normalizedCurrentTier = currentTier.toLowerCase() as SubscriptionTier;
 
-  if (!tierHierarchy[normalizedCurrentTier]) {
+  // basic is level 0, so check membership rather than truthiness
+  if (!(normalizedCurrentTier in tierHierarchy)) {
     return false;
   }
 
@@ -50,14 +54,14 @@ export function isTierHigher(tier1: string, tier2: string): boolean {
  */
 export function getTierDisplayName(tier: string): string {
   const tierNames: Record<SubscriptionTier, string> = {
-    basic: "Basic",
-    professional: "Professional",
+    basic: "Listing",
+    professional: "Pro",
     business: "Business",
-    enterprise: "Enterprise",
+    enterprise: "Venue",
   };
 
   const normalizedTier = tier.toLowerCase() as SubscriptionTier;
-  return tierNames[normalizedTier] || "Basic";
+  return tierNames[normalizedTier] || "Listing";
 }
 
 /**
@@ -81,42 +85,34 @@ export function getTierColor(tier: string): string {
 export function getTierFeatures(tier: string): string[] {
   const features: Record<SubscriptionTier, string[]> = {
     basic: [
-      "Profile Management",
-      "5 Event Listings/month",
-      "Basic Analytics",
-      "Customer Reviews",
-      "Search Visibility",
+      "Profile and 10 portfolio photos",
+      "5 lead replies a month",
+      "Reviews",
+      "5% per booking",
     ],
     professional: [
-      "All Basic Features",
-      "Unlimited Event Listings",
-      "Booking Calendar",
-      "Lead Management",
-      "Quote Builder",
-      "Advanced Analytics",
-      "Email Notifications",
-      "Featured in Search",
+      "Unlimited leads, quotes and invoices",
+      "Availability calendar and CRM",
+      "Verified badge after an ID check",
+      "Basic analytics",
+      "3% per booking",
     ],
     business: [
-      "All Professional Features",
-      "Team Collaboration (5 members)",
-      "Payment Processing",
-      "CRM System",
-      "Email Marketing",
-      "Document Storage (10GB)",
-      "Custom Packages",
+      "Everything in Pro",
+      "Team of up to 5",
+      "Featured placement credits",
+      "AI proposal writer, advanced analytics",
+      "2% per booking",
     ],
     enterprise: [
-      "All Business Features",
-      "Unlimited Team Members",
-      "API Access",
-      "White-Label Options",
-      "Advanced Security (2FA, SSO)",
-      "Multi-Location Management",
-      "Advanced Financial Reporting",
-      "Dedicated Account Manager",
+      "Everything in Business",
+      "Venue calendar and booking management",
+      "Featured venue listing",
+      "Holds and deposit tracking",
+      "2% per booking",
     ],
   };
+
 
   const normalizedTier = tier.toLowerCase() as SubscriptionTier;
   return features[normalizedTier] || features.basic;
@@ -135,9 +131,9 @@ export function getTierPricing(tier: string): {
     { amount: number; currency: string; period: string }
   > = {
     basic: { amount: 0, currency: "NGN", period: "month" },
-    professional: { amount: 75362, currency: "NGN", period: "month" },
-    business: { amount: 152262, currency: "NGN", period: "month" },
-    enterprise: { amount: 304524, currency: "NGN", period: "month" },
+    professional: { amount: 7500, currency: "NGN", period: "month" },
+    business: { amount: 20000, currency: "NGN", period: "month" },
+    enterprise: { amount: 30000, currency: "NGN", period: "month" },
   };
 
   const normalizedTier = tier.toLowerCase() as SubscriptionTier;
@@ -148,38 +144,22 @@ export function getTierPricing(tier: string): {
  * Get tier limits
  */
 export function getTierLimits(tier: string): {
-  eventListings: number | "unlimited";
+  portfolioPhotos: number | "unlimited";
+  leadRepliesPerMonth: number | "unlimited";
   teamMembers: number | "unlimited";
-  storage: string;
 } {
   const limits: Record<
     SubscriptionTier,
     {
-      eventListings: number | "unlimited";
+      portfolioPhotos: number | "unlimited";
+      leadRepliesPerMonth: number | "unlimited";
       teamMembers: number | "unlimited";
-      storage: string;
     }
   > = {
-    basic: {
-      eventListings: 5,
-      teamMembers: 1,
-      storage: "1GB",
-    },
-    professional: {
-      eventListings: "unlimited",
-      teamMembers: 1,
-      storage: "5GB",
-    },
-    business: {
-      eventListings: "unlimited",
-      teamMembers: 5,
-      storage: "10GB",
-    },
-    enterprise: {
-      eventListings: "unlimited",
-      teamMembers: "unlimited",
-      storage: "unlimited",
-    },
+    basic: { portfolioPhotos: 10, leadRepliesPerMonth: 5, teamMembers: 0 },
+    professional: { portfolioPhotos: "unlimited", leadRepliesPerMonth: "unlimited", teamMembers: 0 },
+    business: { portfolioPhotos: "unlimited", leadRepliesPerMonth: "unlimited", teamMembers: 5 },
+    enterprise: { portfolioPhotos: "unlimited", leadRepliesPerMonth: "unlimited", teamMembers: 5 },
   };
 
   const normalizedTier = tier.toLowerCase() as SubscriptionTier;

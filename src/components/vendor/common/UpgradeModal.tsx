@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X, Lock, Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { getTierDisplayName } from "@/utils/subscriptionTier";
+import { getTierDisplayName, getTierFeatures } from "@/utils/subscriptionTier";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -22,27 +22,9 @@ export default function UpgradeModal({
   currentTier,
 }: UpgradeModalProps) {
   const tierFeatures: Record<string, string[]> = {
-    professional: [
-      "Unlimited event listings",
-      "Booking calendar",
-      "Lead management",
-      "Quote builder",
-      "Advanced analytics",
-    ],
-    business: [
-      "All Professional features",
-      "Team collaboration (5 members)",
-      "Payment processing",
-      "CRM system",
-      "Email marketing",
-    ],
-    enterprise: [
-      "All Business features",
-      "Unlimited team members",
-      "API access",
-      "White-label options",
-      "Dedicated account manager",
-    ],
+    professional: getTierFeatures("professional"),
+    business: getTierFeatures("business"),
+    enterprise: getTierFeatures("enterprise"),
   };
 
   return (
@@ -150,7 +132,7 @@ export default function UpgradeModal({
                       Maybe Later
                     </button>
                     <Link
-                      href="/#pricing"
+                      href="/vendor/dashboard/settings?tab=billing"
                       onClick={onClose}
                       className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                     >

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 interface PlanDetailsCardProps {
   planName: string;
-  planType: "vendor" | "event_planner";
+  planType: "vendor" | "event_planner" | "planner" | "client";
   amount: number;
   period: string;
 }
@@ -16,7 +16,8 @@ export default function PlanDetailsCard({
   amount,
   period,
 }: PlanDetailsCardProps) {
-  const displayType = planType === "vendor" ? "Vendor" : "Event Planner";
+  const displayType =
+    planType === "vendor" ? "Vendor" : planType === "client" ? "Planning my own event" : "Event Planner";
   const isFree = amount === 0;
 
   return (
