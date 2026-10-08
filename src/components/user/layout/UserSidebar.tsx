@@ -13,8 +13,10 @@ import {
   LogOut,
   User,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
 
 interface UserSidebarProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ const navigation = [
   { name: "My Events",     href: "/user/dashboard/events",        icon: Calendar },
   { name: "My Bookings",   href: "/user/dashboard/bookings",      icon: BookOpen },
   { name: "Find Vendors",  href: "/user/dashboard/vendors",       icon: Briefcase },
+  { name: "Messages",      href: "/user/dashboard/messages",      icon: MessageSquare },
   { name: "AI Planner",    href: "/user/dashboard/ai-planner",    icon: Sparkles },
   { name: "Notifications", href: "/user/dashboard/notifications", icon: Bell },
   { name: "Settings",      href: "/user/dashboard/settings",      icon: Settings },
@@ -35,6 +38,7 @@ const navigation = [
 export default function UserSidebar({ isOpen, onClose, user }: UserSidebarProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const unreadMessages = useUnreadMessages();
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -78,6 +82,7 @@ export default function UserSidebar({ isOpen, onClose, user }: UserSidebarProps)
             >
               <Icon className="w-5 h-5 mr-3" />
               <span>{item.name}</span>
+              {item.href === "/user/dashboard/messages" && <UnreadBadge count={unreadMessages} />}
             </Link>
           );
         })}

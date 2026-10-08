@@ -23,6 +23,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
   useEffect(() => {
     setSubscriptionTier("starter");
   }, [user]);
+
+  const unreadMessages = useUnreadMessages();
 
   const navigation = [
     { name: "Dashboard",  href: "/planner/dashboard",            icon: LayoutDashboard, tier: "starter" },
@@ -103,6 +106,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
             >
               <Icon className="w-5 h-5 mr-3" />
               <span className="flex-1">{item.name}</span>
+              {item.href === "/planner/dashboard/messages" && <UnreadBadge count={unreadMessages} className="bg-teal-600" />}
               {isLocked && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-500" />}
             </Link>
           );

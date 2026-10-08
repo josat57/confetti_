@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, Briefcase, BookOpen, Settings } from "lucide-react";
+import { LayoutDashboard, Calendar, Briefcase, BookOpen, MessageSquare } from "lucide-react";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const navItems = [
   { name: "Home", href: "/user/dashboard", icon: LayoutDashboard },
   { name: "Events", href: "/user/dashboard/events", icon: Calendar },
   { name: "Bookings", href: "/user/dashboard/bookings", icon: BookOpen },
   { name: "Vendors", href: "/user/dashboard/vendors", icon: Briefcase },
-  { name: "Settings", href: "/user/dashboard/settings", icon: Settings },
+  { name: "Messages", href: "/user/dashboard/messages", icon: MessageSquare },
 ];
 
 export default function UserMobileNav() {
   const pathname = usePathname();
+  const unreadMessages = useUnreadMessages();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden">
@@ -35,7 +37,14 @@ export default function UserMobileNav() {
                   : "text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
               }`}
             >
-              <Icon className="w-6 h-6 mb-1" />
+              <span className="relative">
+                <Icon className="w-6 h-6 mb-1" />
+                {item.href === "/user/dashboard/messages" && unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
+              </span>
               <span className="text-xs font-medium">{item.name}</span>
             </Link>
           );

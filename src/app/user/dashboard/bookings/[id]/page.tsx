@@ -9,6 +9,7 @@ import {
 import { userBookingService, UserBooking, UserBookingStatus } from "@/services/user-booking.service";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
+import MessageButton from "@/components/messages/MessageButton";
 
 const statusConfig: Record<
   UserBookingStatus,
@@ -230,7 +231,16 @@ export default function BookingDetailPage() {
       )}
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        {typeof booking.vendor === "object" && booking.vendor?._id && (
+          <MessageButton
+            participantId={booking.vendor._id}
+            relatedBooking={booking._id}
+            subject={`Booking with ${getVendorName(booking)}`}
+            label="Message Vendor"
+            className="flex items-center gap-2 px-4 py-2.5 border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 text-sm font-medium rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors disabled:opacity-50"
+          />
+        )}
         {canCancel && (
           <button
             onClick={handleCancel}

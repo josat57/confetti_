@@ -28,6 +28,7 @@ import UpgradeModal from "@/components/vendor/common/UpgradeModal";
 import { hasFeatureAccess } from "@/utils/subscriptionTier";
 import { getUserSubscriptionTier } from "@/utils/getUserSubscriptionTier";
 import api from "@/api/api";
+import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -65,6 +66,8 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     };
     fetchSubscription();
   }, [user]);
+
+  const unreadMessages = useUnreadMessages();
 
   const navigation = [
     { name: "Dashboard",  href: "/vendor/dashboard",            icon: LayoutDashboard, tier: "basic" },
@@ -147,6 +150,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
             >
               <Icon className="w-5 h-5" />
               <span>{item.name}</span>
+              {item.href === "/vendor/dashboard/messages" && <UnreadBadge count={unreadMessages} />}
             </Link>
           );
         })}

@@ -19,6 +19,7 @@ import type { Vendor } from "@/types/planner";
 import { toast } from "react-toastify";
 import QuoteRequestModal from "@/components/user/booking/QuoteRequestModal";
 import SmartMatchPanel from "@/components/user/vendors/SmartMatchPanel";
+import MessageButton from "@/components/messages/MessageButton";
 import { useVendors, useFavoriteVendors } from "@/hooks/useVendors";
 import { scoreVendors, MatchCriteria, MatchedVendor } from "@/services/smart-match.service";
 import { useQueryClient } from "@tanstack/react-query";
@@ -362,6 +363,10 @@ export default function UserVendorsPage() {
                           <ExternalLink className="w-3.5 h-3.5" /> Website
                         </a>
                       )}
+                      <MessageButton
+                        participantId={vendor._id}
+                        subject={`Enquiry for ${vendor.businessName}`}
+                      />
                       <button
                         onClick={(e) => toggleFavorite(vendor._id, e)}
                         className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${

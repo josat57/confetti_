@@ -4,6 +4,7 @@ import { Vendor } from "@/types/planner";
 import { MapPin, Star, Heart, ExternalLink, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import MessageButton from "@/components/messages/MessageButton";
 
 interface VendorCardProps {
   vendor: Vendor;
@@ -174,6 +175,11 @@ export default function VendorCard({
           >
             View Profile
           </Link>
+          <MessageButton
+            participantId={vendor._id}
+            subject={vendor.businessName ? `Enquiry for ${vendor.businessName}` : undefined}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors disabled:opacity-50"
+          />
           {onBook && (
             <button
               onClick={handleBook}
