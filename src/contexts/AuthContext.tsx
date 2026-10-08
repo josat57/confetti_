@@ -162,7 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             localStorage.removeItem("user");
             localStorage.removeItem("rememberedEmail");
-            router.push("/sign-in");
+            // Public pages (e.g. an RSVP link) work without signing in
+            if (!window.location.pathname.startsWith("/rsvp/")) router.push("/sign-in");
           }
           // Network errors / 500s: keep the user logged in with stored data
         }

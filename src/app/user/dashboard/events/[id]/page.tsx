@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowLeft, Calendar, Check, Crown, Loader2, MapPin, Sparkles, Users, Briefcase, MessageSquare } from "lucide-react";
+import { Calendar, Check, Crown, Loader2, MapPin, Sparkles, Users, Briefcase, MessageSquare } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/api/api";
 import { normalizeEvent, UserEvent } from "@/services/user.service";
+import EventSubNav from "@/components/user/events/EventSubNav";
 import { eventPassService, ActivePass, EventPassOffer, PassTier } from "@/services/event-pass.service";
 
 const RANK: Record<PassTier, number> = { celebration: 1, plus: 2, diaspora: 2 };
@@ -100,9 +101,7 @@ export default function UserEventPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <Link href="/user/dashboard/events" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-purple-700">
-        <ArrowLeft className="w-4 h-4" /> My events
-      </Link>
+      <EventSubNav eventId={id} showTitle={false} />
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
