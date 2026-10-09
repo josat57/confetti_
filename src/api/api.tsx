@@ -510,7 +510,7 @@ export const SubscriptionPlans = {
   // Get all subscription plans with optional filters
   getAllPlans: async (params?: {
     planType?: "vendor" | "event_planner";
-    currency?: "NGN" | "USD";
+    currency?: "NGN" | "USD" | "GBP";
     activeOnly?: boolean;
   }) => {
     try {
@@ -534,7 +534,7 @@ export const SubscriptionPlans = {
   getPlanByTypeAndName: async (
     planType: "vendor" | "event_planner",
     planName: string,
-    currency?: "NGN" | "USD"
+    currency?: "NGN" | "USD" | "GBP"
   ) => {
     try {
       const queryParams = currency ? `?currency=${currency}` : "";

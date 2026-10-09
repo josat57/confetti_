@@ -145,7 +145,7 @@ export default function PricingSection() {
       planName: plan.planName,
       planType: plan.planType,
       amount: selectedPrice.amount,
-      currency: selectedPrice.currency as "NGN" | "USD",
+      currency: selectedPrice.currency as "NGN" | "USD" | "GBP",
       period: isFree ? "" : billingCycle === "yearly" ? "/year" : "/month",
       billingCycle: isFree ? "monthly" : billingCycle,
     });
@@ -445,7 +445,7 @@ export default function PricingSection() {
                   planName: clientPlan.planName,
                   planType: "client",
                   amount: 0,
-                  currency: (currency as "NGN" | "USD") || "NGN",
+                  currency: (currency as "NGN" | "USD" | "GBP") || "NGN",
                   period: "",
                   billingCycle: "monthly",
                 });

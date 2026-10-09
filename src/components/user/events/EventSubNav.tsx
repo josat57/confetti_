@@ -13,6 +13,11 @@ const TABS = [
   { label: "Checklist", path: "/checklist" },
   { label: "Seating", path: "/seating" },
   { label: "Invitations", path: "/invitations" },
+  // Celebration Plus
+  { label: "Run sheet", path: "/run-sheet", plus: true },
+  { label: "Gifts", path: "/gifts", plus: true },
+  { label: "Aso-ebi", path: "/aso-ebi", plus: true },
+  { label: "Shortlist", path: "/shortlist", plus: true },
 ];
 
 /** Event name and tabs across the client event screens */
@@ -57,6 +62,9 @@ export default function EventSubNav({ eventId, showTitle = true }: { eventId: st
               }`}
             >
               {tab.label}
+              {"plus" in tab && tab.plus && (
+                <span className="ml-1 align-middle text-[10px] font-semibold uppercase text-amber-600">Plus</span>
+              )}
             </Link>
           );
         })}

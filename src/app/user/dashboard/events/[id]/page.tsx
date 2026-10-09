@@ -10,6 +10,7 @@ import api from "@/api/api";
 import { normalizeEvent, UserEvent } from "@/services/user.service";
 import EventSubNav from "@/components/user/events/EventSubNav";
 import { eventPassService, ActivePass, EventPassOffer, PassTier } from "@/services/event-pass.service";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const RANK: Record<PassTier, number> = { celebration: 1, plus: 2, diaspora: 2 };
 
@@ -23,6 +24,8 @@ export default function UserEventPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [provider, setProvider] = useState<"flutterwave" | "paystack">("flutterwave");
+  const { currency: preferred } = useCurrency();
+  const [currency, setCurrency] = useState<"NGN" | "USD" | "GBP">(preferred || "NGN");
   const [buying, setBuying] = useState<PassTier | null>(null);
 
   const load = useCallback(async () => {
@@ -60,7 +63,19 @@ export default function UserEventPage() {
   async function buy(tier: PassTier) {
     setBuying(tier);
     try {
-      const { paymentUrl } = await eventPassService.checkout({ eventId: id, tier, paymentProvider: provider });
+      const offer = offers.find((o) => o.key === tier);
+      // Pay in the chosen currency when the pass is sold in it, otherwise in its first currency
+      const payIn = (pass
+        ? pass.currency || "NGN"
+        : offer?.prices[currency] !== undefined
+        ? currency
+        : Object.keys(offer?.prices || { NGN: 0 })[0]) as typeof currency;
+      const { paymentUrl } = await eventPassService.checkout({
+        eventId: id,
+        tier,
+        currency: payIn,
+        paymentProvider: payIn === "GBP" ? "flutterwave" : provider,
+      });
       window.location.href = paymentUrl;
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Couldn't start the payment");
@@ -87,16 +102,18 @@ export default function UserEventPage() {
   }
 
   const current = pass ? offers.find((o) => o.key === pass.tier) : null;
-  const upgrades = offers.filter((o) => !pass || RANK[o.key] > RANK[pass.tier]);
-  const ngn = (offer: EventPassOffer) => offer.prices.NGN;
+  // Upgrades are paid in the currency the pass was bought in (the difference)
+  const passCurrency = pass?.currency || "NGN";
+  const upgrades = offers.filter((o) => !pass || (RANK[o.key] > RANK[pass.tier] && o.prices[passCurrency] !== undefined));
+  const SYMBOL: Record<string, string> = { NGN: "₦", USD: "$", GBP: "£" };
+  const currencyFor = (offer: EventPassOffer) =>
+    pass ? passCurrency : offer.prices[currency] !== undefined ? currency : Object.keys(offer.prices)[0] || "NGN";
   const priceLabel = (offer: EventPassOffer) => {
-    if (!offer.available) {
-      const usd = offer.prices.USD;
-      return usd ? `$${usd}` : "Coming soon";
-    }
-    const full = ngn(offer);
-    const paid = current ? ngn(current) || 0 : 0;
-    return `₦${(full - paid).toLocaleString()}${paid ? " to upgrade" : ""}`;
+    if (!offer.available) return "Coming soon";
+    const cur = currencyFor(offer);
+    const full = offer.prices[cur] ?? 0;
+    const paid = current ? current.prices[cur] || 0 : 0;
+    return `${SYMBOL[cur] || `${cur} `}${(full - paid).toLocaleString()}${paid ? " to upgrade" : ""}`;
   };
 
   return (
@@ -175,6 +192,18 @@ export default function UserEventPage() {
               </h2>
               <p className="text-sm text-gray-500">One payment for this event. No subscription.</p>
             </div>
+            {!pass && (
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as "NGN" | "USD" | "GBP")}
+                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5"
+                aria-label="Currency"
+              >
+                <option value="NGN">Pay in naira</option>
+                <option value="USD">Pay in US dollars</option>
+                <option value="GBP">Pay in pounds</option>
+              </select>
+            )}
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value as "flutterwave" | "paystack")}

@@ -46,7 +46,7 @@ export default function RegisterPage() {
     planType: "" as "vendor" | "event_planner" | "planner" | "client" | "",
     couponCode: "",
     amount: 0,
-    currency: "NGN" as "NGN" | "USD",
+    currency: "NGN" as "NGN" | "USD" | "GBP",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -158,6 +158,18 @@ export const bookingsService = {
   },
 
   /**
+   * Set the deposit and balance schedule (Venue plan). An empty list goes back to deposit + balance.
+   */
+  async setSchedule(
+    id: string,
+    items: Array<{ label?: string; amount: number; dueDate: string }>,
+    totalAmount?: number
+  ): Promise<Booking> {
+    const response = await api.put(`/vendors/bookings/${id}/schedule`, { items, totalAmount });
+    return response.data.data.booking;
+  },
+
+  /**
    * Mark deposit as paid
    */
   async markDepositPaid(id: string, paymentMethod: string): Promise<Booking> {

@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-export type Currency = "NGN" | "USD";
+export type Currency = "NGN" | "USD" | "GBP";
 
 interface CurrencyContextType {
   currency: Currency;
@@ -22,10 +22,8 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(
 );
 
 // Conversion rates (NGN to USD)
-const CONVERSION_RATES = {
-  NGN_TO_USD: 0.00065, // 1 NGN = ~0.00065 USD (approximate)
-  USD_TO_NGN: 1538, // 1 USD = ~1538 NGN (approximate)
-};
+// Naira per unit, approximate (display only; payments use the server's rates)
+const NGN_PER: Record<Currency, number> = { NGN: 1, USD: 1600, GBP: 2050 };
 
 // localStorage key
 const CURRENCY_STORAGE_KEY = "confetti_currency";
@@ -45,7 +43,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CURRENCY_STORAGE_KEY);
-      if (stored && (stored === "NGN" || stored === "USD")) {
+      if (stored && (stored === "NGN" || stored === "USD" || stored === "GBP")) {
         setCurrencyState(stored as Currency);
       }
     } catch (error) {
@@ -69,24 +67,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       return amount;
     }
 
-    if (fromCurrency === "USD" && currency === "NGN") {
-      return Math.round(amount * CONVERSION_RATES.USD_TO_NGN);
-    }
-
-    if (fromCurrency === "NGN" && currency === "USD") {
-      return Math.round(amount * CONVERSION_RATES.NGN_TO_USD * 100) / 100;
-    }
-
-    return amount;
+    const naira = amount * NGN_PER[fromCurrency];
+    return currency === "NGN" ? Math.round(naira) : Math.round((naira / NGN_PER[currency]) * 100) / 100;
   };
 
   // Format amount with currency symbol
   const formatAmount = (amount: number): string => {
-    if (currency === "NGN") {
-      return `₦${amount.toLocaleString()}`;
-    } else {
-      return `$${amount.toLocaleString()}`;
-    }
+    const symbol = currency === "NGN" ? "₦" : currency === "GBP" ? "£" : "$";
+    return `${symbol}${amount.toLocaleString()}`;
   };
 
   const value = {

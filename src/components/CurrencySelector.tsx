@@ -8,6 +8,7 @@ import { ChevronDown } from "lucide-react";
 const currencies: { code: Currency; symbol: string; name: string }[] = [
   { code: "NGN", symbol: "₦", name: "Nigerian Naira" },
   { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
 ];
 
 export default function CurrencySelector() {

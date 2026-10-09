@@ -19,6 +19,8 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import PaymentSchedule from "@/components/bookings/PaymentSchedule";
+import VideoCallButton from "@/components/meetings/VideoCallButton";
 import { bookingsService } from "@/services/bookings.service";
 import type { Booking, BookingNote } from "@/types/booking.types";
 import Link from "next/link";
@@ -401,6 +403,30 @@ export default function BookingDetailsPage() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Deposit and balance schedule (Venue plan) */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xl font-semibold">Payment schedule</h2>
+              <div className="flex items-center gap-2">
+                <VideoCallButton bookingId={bookingId} defaultTitle={`Call with ${booking.client.name}`} />
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">Deposit and instalments. The client is reminded before each is due.</p>
+            <PaymentSchedule
+              schedule={booking.schedule}
+              currency={booking.payment.currency}
+              onSave={async (items, totalAmount) => {
+                try {
+                  setBooking(await bookingsService.setSchedule(bookingId, items, totalAmount));
+                  toast.success("Schedule saved");
+                } catch (error: any) {
+                  toast.error(error.response?.data?.message || "Couldn't save the schedule");
+                  throw error;
+                }
+              }}
+            />
           </div>
 
           {/* Notes */}

@@ -15,7 +15,7 @@ interface PlanLimitDetail {
   details?: { upgradeTo?: string | null; planType?: string; eventId?: string | null };
 }
 
-const PASS_NAMES: Record<string, string> = { celebration: "Celebration Pass", plus: "Celebration Plus" };
+const PASS_NAMES: Record<string, string> = { celebration: "Celebration Pass", plus: "Celebration Plus", diaspora: "Diaspora Pass" };
 
 /**
  * Shown when an action hits a plan limit or a paid feature (the API returns

@@ -14,7 +14,7 @@ import {
   User,
   BookOpen,
   MessageSquare,
-  LifeBuoy,
+  LifeBuoy, Building2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
@@ -33,6 +33,7 @@ const navigation = [
   { name: "Messages",      href: "/user/dashboard/messages",      icon: MessageSquare },
   { name: "AI Planner",    href: "/user/dashboard/ai-planner",    icon: Sparkles },
   { name: "Notifications", href: "/user/dashboard/notifications", icon: Bell },
+  { name: "Company",        href: "/company",                    icon: Building2 },
   { name: "Help & support", href: "/user/dashboard/support",     icon: LifeBuoy },
   { name: "Settings",      href: "/user/dashboard/settings",      icon: Settings },
 ];

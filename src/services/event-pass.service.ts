@@ -15,6 +15,7 @@ export interface EventPassOffer {
 export interface ActivePass {
   tier: PassTier;
   activatedAt?: string;
+  currency?: string;
 }
 
 // API: confetti_server routes/event-pass.routes.js
@@ -41,6 +42,7 @@ export const eventPassService = {
     eventId: string;
     tier: PassTier;
     paymentProvider?: "flutterwave" | "paystack";
+    currency?: string;
   }): Promise<{ paymentUrl: string; amount: number; currency: string }> {
     const res = await api.post("/event-passes/checkout", data);
     return res.data.data;

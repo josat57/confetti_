@@ -29,6 +29,8 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState<"flutterwave" | "paystack">("flutterwave");
+  // Pay in naira, or in dollars/pounds from abroad (the vendor still gets naira)
+  const [payCurrency, setPayCurrency] = useState("NGN");
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [disputing, setDisputing] = useState<EscrowPaymentView | null>(null);
@@ -39,6 +41,10 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
       const res = await escrowService.getBookingPayments(bookingId);
       setData(res);
       setAmount(res.totals.outstanding ? String(res.totals.outstanding) : "");
+      if (res.passCurrency && res.fxRates?.[res.passCurrency]) {
+        setPayCurrency(res.passCurrency);
+        setProvider("flutterwave");
+      }
     } catch {
       setData(null);
     } finally {
@@ -56,7 +62,12 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
     if (!(value > 0)) return toast.error("Enter an amount");
     setPaying(true);
     try {
-      const { paymentUrl } = await escrowService.checkout({ bookingId, amount: value, paymentProvider: provider });
+      const { paymentUrl } = await escrowService.checkout({
+        bookingId,
+        amount: value,
+        paymentProvider: payCurrency === "NGN" ? provider : "flutterwave",
+        currency: payCurrency,
+      });
       window.location.href = paymentUrl;
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Couldn't start the payment");
@@ -104,6 +115,9 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
   }
   if (!data) return null;
   const { totals } = data;
+  const rate = payCurrency !== "NGN" ? data.fxRates?.[payCurrency] : undefined;
+  const SYMBOL: Record<string, string> = { USD: "$", GBP: "£" };
+  const converted = rate && Number(amount) > 0 ? `≈ ${SYMBOL[payCurrency] || ""}${(Number(amount) / rate).toFixed(2)}` : null;
 
   return (
     <div className="space-y-4">
@@ -122,6 +136,12 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
             <p className="font-semibold">{naira(totals.outstanding)}</p>
           </div>
         </div>
+      )}
+
+      {data.escrowRequired && (
+        <p className="text-xs text-blue-800 bg-blue-50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+          <ShieldCheck className="w-4 h-4 flex-shrink-0" /> With your Diaspora Pass, payments to this vendor go through Confetti so your money is protected.
+        </p>
       )}
 
       {data.canPay ? (
@@ -151,14 +171,31 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
                 Pay deposit ({naira(totals.deposit)})
               </button>
             )}
-            <select value={provider} onChange={(e) => setProvider(e.target.value as "flutterwave" | "paystack")} className="text-sm border border-gray-300 rounded-lg px-2 py-2" aria-label="Payment provider">
-              <option value="flutterwave">Flutterwave</option>
-              <option value="paystack">Paystack</option>
-            </select>
+            {data.fxRates && Object.keys(data.fxRates).length > 0 && (
+              <select value={payCurrency} onChange={(e) => setPayCurrency(e.target.value)} className="text-sm border border-gray-300 rounded-lg px-2 py-2" aria-label="Pay in">
+                <option value="NGN">Pay in ₦</option>
+                {Object.keys(data.fxRates).map((c) => (
+                  <option key={c} value={c}>
+                    Pay in {c}
+                  </option>
+                ))}
+              </select>
+            )}
+            {payCurrency === "NGN" && (
+              <select value={provider} onChange={(e) => setProvider(e.target.value as "flutterwave" | "paystack")} className="text-sm border border-gray-300 rounded-lg px-2 py-2" aria-label="Payment provider">
+                <option value="flutterwave">Flutterwave</option>
+                <option value="paystack">Paystack</option>
+              </select>
+            )}
             <button type="submit" disabled={paying} className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 ${theme.button}`}>
               {paying ? "Opening…" : "Pay through Confetti"}
             </button>
           </div>
+          {converted && (
+            <p className="text-xs text-gray-500">
+              {converted} at ₦{rate!.toLocaleString()} per {payCurrency}, charged by Flutterwave. The vendor receives {naira(Number(amount))}.
+            </p>
+          )}
         </form>
       ) : totals.total > 0 && totals.outstanding === 0 ? (
         <p className="text-sm text-green-700 flex items-center gap-1.5">
@@ -180,6 +217,7 @@ export default function BookingPaymentPanel({ bookingId, accent = "purple" }: { 
                   {p.paidAt && `Paid ${new Date(p.paidAt).toLocaleDateString()}`}
                   {p.status === "held" && p.releaseAfter && ` · releases ${new Date(p.releaseAfter).toLocaleDateString()}`}
                   {p.refunded > 0 && ` · ${naira(p.refunded)} refunded`}
+                  {p.charged && ` · charged ${p.charged.currency} ${p.charged.amount.toFixed(2)}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">

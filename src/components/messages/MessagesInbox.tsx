@@ -16,6 +16,7 @@ import { messagingService, Conversation, Message, MessageRole } from "@/services
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "react-toastify";
+import VideoCallButton from "@/components/meetings/VideoCallButton";
 
 const THREAD_POLL_MS = 10_000;
 const INBOX_POLL_MS = 20_000;
@@ -432,6 +433,7 @@ export default function MessagesInbox({ theme: themeName = "purple", role, empty
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activeConvo.subject}</p>
                 )}
               </div>
+              {activeId && <VideoCallButton key={activeId} conversationId={activeId} defaultTitle={`Call with ${otherParticipant?.name || "you"}`} />}
               <button
                 onClick={() => activeId && loadMessages(activeId)}
                 title="Refresh"

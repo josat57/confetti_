@@ -77,6 +77,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Profile",    href: "/vendor/dashboard/profile",    icon: User,            tier: "basic" },
     { name: "Events",     href: "/vendor/dashboard/events",     icon: Image,           tier: "basic" },
     { name: "Calendar",   href: "/vendor/dashboard/calendar",   icon: Calendar,        tier: "professional" },
+    { name: "Venue",      href: "/vendor/dashboard/venue",      icon: Calendar,        tier: "enterprise" },
     { name: "Leads",      href: "/vendor/dashboard/leads",      icon: Users,           tier: "basic" },
     { name: "Bookings",   href: "/vendor/dashboard/bookings",   icon: Briefcase,       tier: "basic" },
     { name: "Quotes",     href: "/vendor/dashboard/quotes",     icon: Briefcase,       tier: "basic" },

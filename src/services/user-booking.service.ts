@@ -1,3 +1,4 @@
+import type { PaymentScheduleView } from "@/types/booking.types";
 import api from "@/api/api";
 
 export type UserBookingStatus =
@@ -29,6 +30,8 @@ export interface UserBooking {
   currency: string;
   specialRequirements?: string;
   quotedPrice?: number;
+  /** What's due when, once the vendor has set a total */
+  paymentSchedule?: PaymentScheduleView | null;
   notes?: Array<{ content: string; createdAt: string; createdBy: string }>;
   createdAt: string;
   updatedAt: string;

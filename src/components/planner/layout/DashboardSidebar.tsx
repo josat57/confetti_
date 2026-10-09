@@ -20,7 +20,7 @@ import {
   Bell,
   Settings,
   LogOut,
-  Lock,
+  Lock, Building2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages, UnreadBadge } from "@/hooks/useUnreadMessages";
@@ -66,6 +66,7 @@ export default function DashboardSidebar({ isOpen, onClose, user }: DashboardSid
     { name: "Documents",      href: "/planner/dashboard/documents",      icon: FileText,        tier: "starter" },
     { name: "Team",           href: "/planner/dashboard/team",           icon: UsersRound,      tier: "professional" },
     { name: "Notifications",  href: "/planner/dashboard/notifications",  icon: Bell,            tier: "starter" },
+    { name: "Company account", href: "/company",                         icon: Building2,       tier: "starter" },
     { name: "Help & support", href: "/planner/dashboard/support",        icon: MessageSquare,   tier: "starter" },
     { name: "Settings",       href: "/planner/dashboard/settings",       icon: Settings,        tier: "starter" },
   ];

@@ -61,6 +61,25 @@ export interface BookingNote {
   createdAt: string;
 }
 
+/** Deposit and balance schedule (API utils/payment-schedule.js) */
+export interface PaymentScheduleView {
+  items: Array<{
+    _id?: string;
+    label: string;
+    amount: number;
+    dueDate?: string | null;
+    paid: number;
+    outstanding: number;
+    status: "paid" | "partial" | "upcoming" | "due_soon" | "overdue";
+    explicit: boolean;
+  }>;
+  total: number;
+  paid: number;
+  balance: number;
+  nextDue: { label: string; amount: number; dueDate?: string | null; status: string } | null;
+  overdue: number;
+}
+
 export interface Booking {
   _id: string;
   vendor: string;
@@ -79,6 +98,8 @@ export interface Booking {
   completedAt?: string;
   cancelledAt?: string;
   cancellationReason?: string;
+  schedule?: PaymentScheduleView;
+  depositDueDate?: string;
 }
 
 export interface BookingCreate {

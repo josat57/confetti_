@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { userBookingService, UserBooking, UserBookingStatus } from "@/services/user-booking.service";
 import MessageButton from "@/components/messages/MessageButton";
 import BookingPaymentPanel from "@/components/escrow/BookingPaymentPanel";
+import PaymentSchedule from "@/components/bookings/PaymentSchedule";
 
 const STATUS_STYLE: Record<UserBookingStatus, string> = {
   Pending: "bg-amber-100 text-amber-700",
@@ -173,6 +174,12 @@ export default function PlannerBookingsPage() {
               {openPayment === b._id && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <BookingPaymentPanel bookingId={b._id} accent="teal" />
+                  {b.paymentSchedule?.items?.length ? (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">What&apos;s due when</p>
+                      <PaymentSchedule schedule={b.paymentSchedule} currency={b.currency} />
+                    </div>
+                  ) : null}
                 </div>
               )}
               </div>

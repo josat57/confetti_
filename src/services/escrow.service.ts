@@ -26,6 +26,8 @@ export interface EscrowPaymentView {
   refundStatus: string;
   payoutStatus: PayoutStatus;
   dispute: { reason: string; openedByRole: string; resolution?: string; resolvedAt?: string } | null;
+  /** Paid from abroad: what the client was charged */
+  charged?: { amount: number; currency: string } | null;
 }
 
 export interface BookingPayments {
@@ -34,6 +36,11 @@ export interface BookingPayments {
   canPay: boolean;
   bookingStatus: string;
   autoReleaseDays: number;
+  /** Naira per USD/GBP, for paying from abroad */
+  fxRates?: Record<string, number>;
+  /** Diaspora Pass: this booking is paid through Confetti only */
+  escrowRequired?: boolean;
+  passCurrency?: string | null;
 }
 
 export interface PayoutAccount {
@@ -51,7 +58,12 @@ export const escrowService = {
     const res = await api.get(`/escrow/bookings/${bookingId}`);
     return res.data.data;
   },
-  async checkout(data: { bookingId: string; amount?: number; paymentProvider?: "flutterwave" | "paystack" }): Promise<{ paymentUrl: string }> {
+  async checkout(data: {
+    bookingId: string;
+    amount?: number;
+    paymentProvider?: "flutterwave" | "paystack";
+    currency?: string;
+  }): Promise<{ paymentUrl: string; charged?: { amount: number; currency: string } | null }> {
     const res = await api.post("/escrow/checkout", data);
     return res.data.data;
   },

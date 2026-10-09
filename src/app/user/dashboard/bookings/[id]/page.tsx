@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { toast } from "react-toastify";
 import MessageButton from "@/components/messages/MessageButton";
 import BookingPaymentPanel from "@/components/escrow/BookingPaymentPanel";
+import PaymentSchedule from "@/components/bookings/PaymentSchedule";
+import VideoCallButton from "@/components/meetings/VideoCallButton";
 
 const statusConfig: Record<
   UserBookingStatus,
@@ -169,8 +171,19 @@ export default function BookingDetailPage() {
 
       {/* Vendor card */}
       <div className={cardClass}>
-        <h2 className={sectionHeadingClass}>Payment</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={sectionHeadingClass}>Payment</h2>
+          <div className="flex items-center gap-2">
+            <VideoCallButton bookingId={id} defaultTitle="Call with the vendor" />
+          </div>
+        </div>
         <BookingPaymentPanel bookingId={id} />
+        {booking.paymentSchedule?.items?.length ? (
+          <div className="mt-5 pt-5 border-t border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">What&apos;s due when</h3>
+            <PaymentSchedule schedule={booking.paymentSchedule} currency={booking.currency} />
+          </div>
+        ) : null}
       </div>
 
       <div className={cardClass}>

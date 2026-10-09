@@ -128,6 +128,11 @@ const navigation: NavigationItem[] = [
     icon: Users,
   },
   {
+    name: "Curated Shortlists",
+    href: "/admin/dashboard/curation",
+    icon: Flag,
+  },
+  {
     name: "Billing & Subscriptions",
     icon: CreditCard,
     children: [
@@ -144,6 +149,11 @@ const navigation: NavigationItem[] = [
       {
         name: "Escrow & Commission",
         href: "/admin/dashboard/escrow",
+        icon: CreditCard,
+      },
+      {
+        name: "Corporate accounts",
+        href: "/admin/dashboard/corporate",
         icon: CreditCard,
       },
     ],

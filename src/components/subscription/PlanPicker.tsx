@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   subscriptionService,
   BillingCycle,
@@ -64,6 +65,8 @@ export default function PlanPicker({
   const [error, setError] = useState(false);
   const [cycle, setCycle] = useState<BillingCycle>(currentBillingCycle);
   const [provider, setProvider] = useState<"flutterwave" | "paystack">("flutterwave");
+  const { currency: preferredCurrency } = useCurrency();
+  const [currency, setCurrency] = useState<string>(preferredCurrency || "NGN");
   const [coupon, setCoupon] = useState("");
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
 
@@ -80,7 +83,11 @@ export default function PlanPicker({
   }, [planType]);
 
   const priceOf = (plan: any): PlanPrice | null => {
-    const monthly = plan.pricing?.find((p: PlanPrice) => p.currency === "NGN") || plan.pricing?.[0] || null;
+    const monthly =
+      plan.pricing?.find((p: PlanPrice) => p.currency === currency) ||
+      plan.pricing?.find((p: PlanPrice) => p.currency === "NGN") ||
+      plan.pricing?.[0] ||
+      null;
     if (!monthly || cycle === "monthly" || monthly.amount === 0) return monthly;
     return plan.yearlyPricing?.find((p: PlanPrice | null) => p?.currency === monthly.currency) || null;
   };
@@ -97,6 +104,7 @@ export default function PlanPicker({
         planId: plan._id,
         billingCycle: cycle,
         paymentProvider: provider,
+        currency: priceOf(plan)?.currency || currency,
         couponCode: coupon.trim() || undefined,
       });
 
@@ -150,13 +158,28 @@ export default function PlanPicker({
             ))}
           </div>
           <select
+            value={currency}
+            onChange={(e) => {
+              setCurrency(e.target.value);
+              if (e.target.value === "GBP" || e.target.value === "EUR") setProvider("flutterwave");
+            }}
+            className={`text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 ${theme.ring}`}
+            aria-label="Currency"
+          >
+            <option value="NGN">₦ Naira</option>
+            <option value="USD">$ US dollar</option>
+            <option value="GBP">£ Pound</option>
+          </select>
+          <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as "flutterwave" | "paystack")}
             className={`text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 ${theme.ring}`}
             aria-label="Payment provider"
           >
             <option value="flutterwave">Pay with Flutterwave</option>
-            <option value="paystack">Pay with Paystack</option>
+            <option value="paystack" disabled={currency === "GBP" || currency === "EUR"}>
+              Pay with Paystack
+            </option>
           </select>
           <input
             value={coupon}
