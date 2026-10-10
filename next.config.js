@@ -13,10 +13,9 @@ const nextConfig = {
         pathname: "/uploads/**",
       },
     ],
-    // Disable optimization for localhost images
-    unoptimized: process.env.NODE_ENV === "development",
-    // Image optimization settings
-    formats: ["image/avif", "image/webp"],
+    // Resizing is done by the image's own CDN, not this server; see the loader
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
