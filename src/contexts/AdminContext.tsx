@@ -249,7 +249,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   // User Management
-  const getUsers = async (params?: any) => {
+  // Stable identity: pages call this from a useEffect keyed on it, and
+  // setLoading re-renders the provider, so a fresh function each render
+  // would refetch forever
+  const getUsers = useCallback(async (params?: any) => {
     try {
       setLoading(true);
       const response = await AdminAPI.getUsers(params);
@@ -261,7 +264,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getUserDetails = async (userId: string) => {
     try {
@@ -308,7 +311,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   // Vendor Management
-  const getVendors = async (params?: any) => {
+  // Stable identity: pages call this from a useEffect keyed on it, and
+  // setLoading re-renders the provider, so a fresh function each render
+  // would refetch forever
+  const getVendors = useCallback(async (params?: any) => {
     try {
       setLoading(true);
       const response = await AdminAPI.getVendors(params);
@@ -320,7 +326,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getVendorDetails = async (vendorId: string) => {
     try {
